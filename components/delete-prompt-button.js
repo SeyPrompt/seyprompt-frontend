@@ -1,0 +1,39 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export function DeletePromptButton({ id }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Delete this prompt? This action cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+
+    const response = await fetch(`/api/prompts/${id}`, {
+      method: "DELETE"
+    });
+
+    if (!response.ok) {
+      setLoading(false);
+      window.alert("Unable to delete this prompt.");
+      return;
+    }
+
+    router.refresh();
+  }
+
+  return (
+    <button className="button-danger" disabled={loading} onClick={handleDelete}>
+      {loading ? "Deleting..." : "Delete"}
+    </button>
+  );
+}
