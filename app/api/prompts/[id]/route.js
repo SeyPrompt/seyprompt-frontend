@@ -7,6 +7,12 @@ async function getToken() {
   return (await cookies()).get(authCookieName)?.value;
 }
 
+async function readBackendResponse(response) {
+  return response.json().catch(() => ({
+    error: response.ok ? "OK" : "Backend request failed."
+  }));
+}
+
 export async function PUT(request, { params }) {
   const token = await getToken();
 
@@ -26,7 +32,7 @@ export async function PUT(request, { params }) {
     body: JSON.stringify(payload)
   });
 
-  const result = await response.json();
+  const result = await readBackendResponse(response);
   return NextResponse.json(result, { status: response.status });
 }
 
@@ -46,6 +52,6 @@ export async function DELETE(_request, { params }) {
     }
   });
 
-  const result = await response.json();
+  const result = await readBackendResponse(response);
   return NextResponse.json(result, { status: response.status });
 }

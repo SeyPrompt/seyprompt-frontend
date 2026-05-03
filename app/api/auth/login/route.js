@@ -14,7 +14,9 @@ export async function POST(request) {
     body: JSON.stringify(payload)
   });
 
-  const result = await response.json();
+  const result = await response.json().catch(() => ({
+    error: response.ok ? "OK" : "Login request failed."
+  }));
 
   if (!response.ok) {
     return NextResponse.json(result, { status: response.status });

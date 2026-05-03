@@ -12,10 +12,12 @@ export default async function AdminPromptsPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const q = resolvedSearchParams?.q || "";
   const status = resolvedSearchParams?.status || "";
+  const visibility = resolvedSearchParams?.visibility || "";
 
   const response = await fetchAdminPrompts(token, {
     q,
     status,
+    visibility,
     limit: "50"
   }).catch(() => ({
     data: [],
@@ -31,6 +33,11 @@ export default async function AdminPromptsPage({ searchParams }) {
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
+        </select>
+        <select defaultValue={visibility} name="visibility">
+          <option value="">All visibility</option>
+          <option value="public">Public</option>
+          <option value="private">Private</option>
         </select>
         <button className="button" type="submit">
           Filter
@@ -49,45 +56,71 @@ export default async function AdminPromptsPage({ searchParams }) {
         </div>
 
         {response.data?.length ? (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Visibility</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {response.data.map((prompt) => (
-                  <tr key={prompt._id}>
-                    <td>
-                      <strong>{prompt.title}</strong>
-                      <div className="muted">{prompt.slug}</div>
-                    </td>
-                    <td>{prompt.category || "General"}</td>
-                    <td>
-                      <span className="status-badge">{prompt.status}</span>
-                    </td>
-                    <td>{prompt.visibility}</td>
-                    <td>
-                      <div className="toolbar">
-                        <Link
-                          className="button-secondary"
-                          href={`/admin/prompts/${prompt._id}/edit`}
-                        >
-                          Edit
-                        </Link>
-                        <DeletePromptButton id={prompt._id} />
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Visibility</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {response.data.map((prompt) => (
+                    <tr key={prompt._id || prompt.id}>
+                      <td>
+                        <strong>{prompt.title}</strong>
+                        <div className="muted">{prompt.slug}</div>
+                      </td>
+                      <td>{prompt.category || "General"}</td>
+                      <td>
+                        <span className="status-badge">{prompt.status}</span>
+                      </td>
+                      <td>{prompt.visibility}</td>
+                      <td>
+                        <div className="toolbar">
+                          <Link
+                            className="button-secondary"
+                            href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                          >
+                            Edit
+                          </Link>
+                          <DeletePromptButton id={prompt._id || prompt.id} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="admin-card-list">
+              {response.data.map((prompt) => (
+                <article className="admin-prompt-card" key={prompt._id || prompt.id}>
+                  <div>
+                    <strong>{prompt.title}</strong>
+                    <p className="muted">{prompt.slug}</p>
+                  </div>
+                  <div className="admin-card-meta">
+                    <span>{prompt.category || "General"}</span>
+                    <span className="status-badge">{prompt.status}</span>
+                    <span>{prompt.visibility}</span>
+                  </div>
+                  <div className="toolbar">
+                    <Link
+                      className="button-secondary"
+                      href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                    >
+                      Edit
+                    </Link>
+                    <DeletePromptButton id={prompt._id || prompt.id} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="empty-state">
             <h3>No prompts found</h3>

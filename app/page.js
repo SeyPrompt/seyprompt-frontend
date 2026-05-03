@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
 
@@ -15,23 +16,32 @@ export default async function HomePage() {
       <section className="hero">
         <div className="container hero-grid">
           <div className="card hero-card">
-            <div className="eyebrow">Prompt Operating System</div>
-            <h1>Publish searchable prompt assets with server-rendered speed.</h1>
+            <div className="eyebrow">Prompt operating system</div>
+            <h1>SeyPrompt turns useful prompts into a living, searchable library.</h1>
             <p>
-              SeyPrompt gives you a public-facing prompt library for discovery and a
-              private admin panel for managing copy, tools, categories, and publishing
-              states without splitting into two apps.
+              A server-rendered public catalog for fast discovery, paired with a
+              focused admin workspace for drafting, tagging, publishing, and refining
+              your strongest prompt assets.
             </p>
             <div className="hero-actions">
               <Link className="button" href="/prompts">
-                Explore Prompt Library
+                Browse library
               </Link>
               <Link className="button-secondary" href="/admin/prompts">
-                Open Admin Panel
+                Admin panel
               </Link>
             </div>
           </div>
-          <aside className="card stats-card">
+          <aside className="hero-visual" aria-label="SeyPrompt product preview">
+            <Image
+              src="/images/seyprompt-hero.png"
+              alt="Layered prompt library cards and search facets"
+              fill
+              priority
+              sizes="(max-width: 980px) 100vw, 42vw"
+            />
+          </aside>
+          <aside className="stats-strip" aria-label="SeyPrompt highlights">
             <div className="stat-list">
               <div className="stat-item">
                 <div className="stat-label">Published prompts</div>
@@ -39,11 +49,11 @@ export default async function HomePage() {
               </div>
               <div className="stat-item">
                 <div className="stat-label">Rendering mode</div>
-                <div className="stat-value">Server-side by default</div>
+                <div className="stat-value">SSR-first</div>
               </div>
               <div className="stat-item">
                 <div className="stat-label">Admin flow</div>
-                <div className="stat-value">JWT-backed via secure cookie proxy</div>
+                <div className="stat-value">JWT-secured</div>
               </div>
             </div>
           </aside>
@@ -64,7 +74,7 @@ export default async function HomePage() {
           {prompts.length ? (
             <div className="grid prompt-grid">
               {prompts.map((prompt) => (
-                <PromptCard key={prompt._id} prompt={prompt} />
+                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
               ))}
             </div>
           ) : (

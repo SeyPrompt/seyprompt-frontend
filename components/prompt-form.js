@@ -10,6 +10,38 @@ function normalizeList(value) {
     .filter(Boolean);
 }
 
+function validatePrompt(payload) {
+  if (!payload.title || payload.title.length < 3 || payload.title.length > 120) {
+    return "Title must be between 3 and 120 characters.";
+  }
+
+  if (!payload.slug) {
+    return "Slug is required.";
+  }
+
+  if (!payload.prompt || payload.prompt.length < 10 || payload.prompt.length > 10000) {
+    return "Prompt must be between 10 and 10,000 characters.";
+  }
+
+  if (payload.category.length > 80) {
+    return "Category must be 80 characters or fewer.";
+  }
+
+  if (payload.sampleOutput.length > 10000) {
+    return "Sample output must be 10,000 characters or fewer.";
+  }
+
+  if (!["public", "private"].includes(payload.visibility)) {
+    return "Visibility must be public or private.";
+  }
+
+  if (!["draft", "published", "archived"].includes(payload.status)) {
+    return "Status must be draft, published, or archived.";
+  }
+
+  return "";
+}
+
 export function PromptForm({ mode, prompt }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -22,18 +54,27 @@ export function PromptForm({ mode, prompt }) {
 
     const formData = new FormData(event.currentTarget);
     const payload = {
-      title: formData.get("title"),
-      category: formData.get("category"),
+      title: String(formData.get("title") || "").trim(),
+      slug: String(formData.get("slug") || "").trim(),
+      category: String(formData.get("category") || "").trim(),
       tags: normalizeList(formData.get("tags") || ""),
       tools: normalizeList(formData.get("tools") || ""),
-      prompt: formData.get("prompt"),
-      sampleOutput: formData.get("sampleOutput"),
-      visibility: formData.get("visibility"),
-      status: formData.get("status")
+      prompt: String(formData.get("prompt") || "").trim(),
+      sampleOutput: String(formData.get("sampleOutput") || "").trim(),
+      visibility: String(formData.get("visibility") || "public"),
+      status: String(formData.get("status") || "published")
     };
 
+    const validationError = validatePrompt(payload);
+
+    if (validationError) {
+      setError(validationError);
+      setLoading(false);
+      return;
+    }
+
     const endpoint =
-      mode === "create" ? "/api/prompts" : `/api/prompts/${prompt._id}`;
+      mode === "create" ? "/api/prompts" : `/api/prompts/${prompt._id || prompt.id}`;
     const method = mode === "create" ? "POST" : "PUT";
 
     const response = await fetch(endpoint, {
@@ -44,7 +85,7 @@ export function PromptForm({ mode, prompt }) {
       body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       if (result.details?.length) {
@@ -64,11 +105,37 @@ export function PromptForm({ mode, prompt }) {
     <form className="panel form-card stack" onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="title">Title</label>
-        <input defaultValue={prompt?.title || ""} id="title" name="title" required />
+        <input
+          defaultValue={prompt?.title || ""}
+          id="title"
+          maxLength={120}
+          minLength={3}
+          name="title"
+          required
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="slug">Slug</label>
+        <input
+          defaultValue={prompt?.slug || ""}
+          id="slug"
+          name="slug"
+          pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+          placeholder="launch-plan-generator"
+          required
+        />
+        <span className="field-hint muted">
+          Lowercase letters, numbers, and hyphens. Must be unique.
+        </span>
       </div>
       <div className="field">
         <label htmlFor="category">Category</label>
-        <input defaultValue={prompt?.category || ""} id="category" name="category" />
+        <input
+          defaultValue={prompt?.category || ""}
+          id="category"
+          maxLength={80}
+          name="category"
+        />
       </div>
       <div className="field">
         <label htmlFor="tags">Tags</label>
@@ -91,13 +158,21 @@ export function PromptForm({ mode, prompt }) {
       </div>
       <div className="field">
         <label htmlFor="prompt">Prompt</label>
-        <textarea defaultValue={prompt?.prompt || ""} id="prompt" name="prompt" required />
+        <textarea
+          defaultValue={prompt?.prompt || ""}
+          id="prompt"
+          maxLength={10000}
+          minLength={10}
+          name="prompt"
+          required
+        />
       </div>
       <div className="field">
         <label htmlFor="sampleOutput">Sample output</label>
         <textarea
           defaultValue={prompt?.sampleOutput || ""}
           id="sampleOutput"
+          maxLength={10000}
           name="sampleOutput"
         />
       </div>

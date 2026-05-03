@@ -1,15 +1,31 @@
 import { notFound } from "next/navigation";
 import { fetchPromptBySlug } from "@/lib/api";
+import { APP_URL } from "@/lib/config";
+
+function descriptionFromPrompt(prompt) {
+  const source = prompt.sampleOutput || prompt.prompt || prompt.title;
+  return source.replace(/\s+/g, " ").slice(0, 155);
+}
 
 export async function generateMetadata({ params }) {
   try {
     const { slug } = await params;
     const prompt = await fetchPromptBySlug(slug);
+    const description = descriptionFromPrompt(prompt);
+    const url = `${APP_URL}/prompts/${prompt.slug}`;
 
     return {
       title: prompt.title,
-      description:
-        prompt.prompt.slice(0, 150) + (prompt.prompt.length > 150 ? "..." : "")
+      description,
+      alternates: {
+        canonical: url
+      },
+      openGraph: {
+        title: `${prompt.title} | SeyPrompt`,
+        description,
+        url,
+        type: "article"
+      }
     };
   } catch (_error) {
     return {
@@ -34,6 +50,15 @@ export default async function PromptDetailPage({ params }) {
             <div className="eyebrow">{prompt.category || "General"}</div>
             <h1 className="page-title">{prompt.title}</h1>
           </div>
+          {(prompt.tools || []).length ? (
+            <div className="pill-row">
+              {(prompt.tools || []).map((tool) => (
+                <span className="pill pill-alt" key={tool}>
+                  {tool}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="pill-row">
             {(prompt.tags || []).map((tag) => (
               <span className="pill" key={tag}>
@@ -71,9 +96,9 @@ export default async function PromptDetailPage({ params }) {
           <div>
             <div className="eyebrow">Publishing</div>
             <p className="muted">
-              Status: {prompt.status}
+              Status: published
               <br />
-              Visibility: {prompt.visibility}
+              Visibility: public
             </p>
           </div>
         </aside>

@@ -2,10 +2,15 @@ import { AdminNav } from "@/components/admin-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { requireAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
+import { redirect } from "next/navigation";
 
 export default async function AdminDashboardLayout({ children }) {
   const token = await requireAdminToken();
   const currentUser = await fetchCurrentAdmin(token).catch(() => null);
+
+  if (!currentUser) {
+    redirect("/admin/login");
+  }
 
   return (
     <main className="admin-shell">
