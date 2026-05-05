@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CopyButton } from "@/components/CopyButton";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
@@ -34,9 +35,7 @@ export function PromptCard({ prompt }) {
           ))}
         </div>
         <div className="prompt-actions">
-          <button className="button-secondary compact" type="button">
-            Copy
-          </button>
+          <CopyButton className="compact" text={prompt.prompt} />
           <Link className="button compact" href={`/prompts/${prompt.slug}`}>
             View
           </Link>

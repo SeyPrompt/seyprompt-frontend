@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { fetchPublicPrompts } from "@/lib/api";
-import { PromptCard } from "@/components/prompt-card";
+import { PromptLibraryView } from "@/components/prompt-library-view";
 
 export const metadata = {
   title: "Prompt Library",
@@ -39,66 +39,40 @@ export default async function PromptsPage({ searchParams }) {
           </p>
         </div>
 
-        <form className="filter-bar" method="get">
-          <input defaultValue={q} name="q" placeholder="Search prompts, tags, tools..." />
-          <input defaultValue={category} name="category" placeholder="All Categories" />
-          <input placeholder="All Tools" />
-          <input defaultValue={tag} name="tag" placeholder="All Tags" />
-          <input name="limit" type="hidden" value={limit} />
-          <button className="button" type="submit">
-            Search
-          </button>
-          <Link className="button-secondary" href="/prompts">
-            Reset
-          </Link>
-        </form>
-
-        <div className="section-header">
-          <div>
-            <strong>{response.pagination?.total || 0}</strong>{" "}
-            <span className="muted">published prompts found</span>
-          </div>
-        </div>
-
-        {response.data?.length ? (
-          <>
-            <div className="prompt-list">
-              {response.data.map((prompt) => (
-                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
-              ))}
-            </div>
-            <nav className="pagination" aria-label="Prompt pagination">
-              <Link
-                aria-disabled={currentPage <= 1}
-                className="button-secondary"
-                href={{
-                  pathname: "/prompts",
-                  query: { q, category, tag, page: Math.max(currentPage - 1, 1), limit }
-                }}
-              >
-                Previous
-              </Link>
-              <span className="muted">
-                Page {currentPage} of {Math.max(totalPages, 1)}
-              </span>
-              <Link
-                aria-disabled={currentPage >= totalPages}
-                className="button-secondary"
-                href={{
-                  pathname: "/prompts",
-                  query: { q, category, tag, page: currentPage + 1, limit }
-                }}
-              >
-                Next
-              </Link>
-            </nav>
-          </>
-        ) : (
-          <div className="panel empty-state">
-            <h3>No prompts matched your filters.</h3>
-            <p className="muted">Try a broader search or clear your filters.</p>
-          </div>
-        )}
+        <PromptLibraryView
+          category={category}
+          limit={limit}
+          prompts={response.data || []}
+          q={q}
+          tag={tag}
+          total={response.pagination?.total || 0}
+        >
+          <nav className="pagination" aria-label="Prompt pagination">
+            <Link
+              aria-disabled={currentPage <= 1}
+              className="button-secondary"
+              href={{
+                pathname: "/prompts",
+                query: { q, category, tag, page: Math.max(currentPage - 1, 1), limit }
+              }}
+            >
+              Previous
+            </Link>
+            <span className="muted">
+              Page {currentPage} of {Math.max(totalPages, 1)}
+            </span>
+            <Link
+              aria-disabled={currentPage >= totalPages}
+              className="button-secondary"
+              href={{
+                pathname: "/prompts",
+                query: { q, category, tag, page: currentPage + 1, limit }
+              }}
+            >
+              Next
+            </Link>
+          </nav>
+        </PromptLibraryView>
       </div>
     </main>
   );

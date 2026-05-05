@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchPromptBySlug } from "@/lib/api";
 import { APP_URL } from "@/lib/config";
+import { CopyOpenButton } from "@/components/CopyOpenButton";
 
 function descriptionFromPrompt(prompt) {
   const source = prompt.sampleOutput || prompt.prompt || prompt.title;
@@ -80,14 +81,7 @@ export default async function PromptDetailPage({ params }) {
               <div className="prose content-box sample-box">{prompt.sampleOutput}</div>
             </section>
           ) : null}
-          <div className="detail-actions">
-            <button className="button" type="button">
-              Copy Prompt
-            </button>
-            <Link className="button-secondary" href="/prompts">
-              Browse More
-            </Link>
-          </div>
+          <CopyOpenButton text={prompt.prompt} />
         </article>
 
         <aside className="panel sidebar-card stack">

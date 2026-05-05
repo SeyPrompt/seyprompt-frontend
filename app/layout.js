@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Footer } from "@/components/Footer";
 import { SiteHeader } from "@/components/site-header";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,7 @@ export default function RootLayout({ children }) {
         <div className="shell">
           <SiteHeader />
           {children}
-          <footer className="footer">
-            <div className="container">
-              SeyPrompt combines a public prompt catalog with an admin workflow in a
-              single SSR-first app.
-            </div>
-          </footer>
+          <Footer />
         </div>
       </body>
     </html>

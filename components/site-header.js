@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/prompts", label: "Prompt Library" }
+  { href: "/prompts", label: "Prompt Library" },
+  { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
+  { href: "/ai-tools", label: "AI Tools" },
+  { href: "/use-cases", label: "Use Cases" },
+  { href: "/contact", label: "Contact" }
 ];
 
 export function SiteHeader() {
@@ -37,9 +41,6 @@ export function SiteHeader() {
               </Link>
             );
           })}
-          <Link className="login-button" href="/admin/login">
-            Login
-          </Link>
         </nav>
       </div>
     </header>
