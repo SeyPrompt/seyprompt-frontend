@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/prompts", label: "Prompt Library" },
-  { href: "/admin/prompts", label: "Admin" }
+  { href: "/prompts", label: "Prompt Library" }
 ];
 
 export function SiteHeader() {
@@ -16,6 +15,9 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-nav">
         <Link className="brand" href="/">
+          <span className="brand-mark" aria-hidden="true">
+            <span />
+          </span>
           SeyPrompt
         </Link>
         <nav className="nav-links">
@@ -35,6 +37,9 @@ export function SiteHeader() {
               </Link>
             );
           })}
+          <Link className="login-button" href="/admin/login">
+            Login
+          </Link>
         </nav>
       </div>
     </header>

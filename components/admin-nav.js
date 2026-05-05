@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/admin/prompts", label: "All Prompts" },
-  { href: "/admin/prompts/new", label: "Create Prompt" }
+  { href: "/admin/prompts", label: "Prompts" },
+  { href: "/admin/prompts/new", label: "Add Prompt" }
 ];
 
 export function AdminNav() {

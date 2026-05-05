@@ -26,7 +26,7 @@ export default async function AdminPromptsPage({ searchParams }) {
 
   return (
     <div className="stack">
-      <form className="panel form-card toolbar" method="get">
+      <form className="admin-toolbar" method="get">
         <input defaultValue={q} name="q" placeholder="Search title, tags, tools..." />
         <select defaultValue={status} name="status">
           <option value="">All statuses</option>
@@ -42,8 +42,8 @@ export default async function AdminPromptsPage({ searchParams }) {
         <button className="button" type="submit">
           Filter
         </button>
-        <Link className="button-secondary" href="/admin/prompts/new">
-          New Prompt
+        <Link className="button" href="/admin/prompts/new">
+          Add New Prompt
         </Link>
       </form>
 
@@ -63,6 +63,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                   <tr>
                     <th>Title</th>
                     <th>Category</th>
+                    <th>Tools</th>
                     <th>Status</th>
                     <th>Visibility</th>
                     <th>Actions</th>
@@ -76,6 +77,15 @@ export default async function AdminPromptsPage({ searchParams }) {
                         <div className="muted">{prompt.slug}</div>
                       </td>
                       <td>{prompt.category || "General"}</td>
+                      <td>
+                        <div className="pill-row">
+                          {(prompt.tools || []).slice(0, 2).map((tool) => (
+                            <span className="pill pill-alt" key={tool}>
+                              {tool}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
                       <td>
                         <span className="status-badge">{prompt.status}</span>
                       </td>

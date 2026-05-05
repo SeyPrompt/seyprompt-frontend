@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
 
@@ -10,52 +9,51 @@ export default async function HomePage() {
   }));
 
   const prompts = promptResponse.data || [];
+  const categories = ["Marketing", "Coding", "Resume", "AI Tools", "Design", "Business"];
 
   return (
     <main>
       <section className="hero">
         <div className="container hero-grid">
-          <div className="card hero-card">
+          <div className="hero-card">
             <div className="eyebrow">Prompt operating system</div>
-            <h1>SeyPrompt turns useful prompts into a living, searchable library.</h1>
+            <h1>Smart Prompts. Better Results.</h1>
             <p>
-              A server-rendered public catalog for fast discovery, paired with a
-              focused admin workspace for drafting, tagging, publishing, and refining
-              your strongest prompt assets.
+              Discover, copy, and use the best AI prompts for every use case.
             </p>
-            <div className="hero-actions">
-              <Link className="button" href="/prompts">
-                Browse library
-              </Link>
-              <Link className="button-secondary" href="/admin/prompts">
-                Admin panel
-              </Link>
+            <form className="hero-search" action="/prompts">
+              <input name="q" placeholder="Search prompts, tags, tools..." />
+              <button className="button" type="submit">
+                Search
+              </button>
+            </form>
+            <div className="category-pills" aria-label="Popular categories">
+              {categories.map((category) => (
+                <Link
+                  className="category-pill"
+                  href={{ pathname: "/prompts", query: { category } }}
+                  key={category}
+                >
+                  {category}
+                </Link>
+              ))}
             </div>
           </div>
           <aside className="hero-visual" aria-label="SeyPrompt product preview">
-            <Image
-              src="/images/seyprompt-hero.png"
-              alt="Layered prompt library cards and search facets"
-              fill
-              priority
-              sizes="(max-width: 980px) 100vw, 42vw"
-            />
-          </aside>
-          <aside className="stats-strip" aria-label="SeyPrompt highlights">
-            <div className="stat-list">
-              <div className="stat-item">
-                <div className="stat-label">Published prompts</div>
-                <div className="stat-value">{promptResponse.pagination?.total || 0}</div>
+            <div className="mock-window">
+              <div className="mock-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
               </div>
-              <div className="stat-item">
-                <div className="stat-label">Rendering mode</div>
-                <div className="stat-value">SSR-first</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-label">Admin flow</div>
-                <div className="stat-value">JWT-secured</div>
-              </div>
+              <div className="mock-line long" />
+              <div className="mock-input" />
+              <div className="mock-line" />
+              <div className="mock-line short" />
             </div>
+            <div className="float-tile tile-purple">*</div>
+            <div className="float-tile tile-teal">&lt;/&gt;</div>
+            <div className="float-tile tile-orange">/</div>
           </aside>
         </div>
       </section>
@@ -64,8 +62,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-header">
             <div>
-              <div className="eyebrow">Fresh prompts</div>
-              <h2>Latest published entries</h2>
+              <h2>Trending Prompts</h2>
             </div>
             <Link className="button-secondary" href="/prompts">
               View all prompts

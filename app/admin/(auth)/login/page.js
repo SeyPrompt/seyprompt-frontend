@@ -19,9 +19,9 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <main className="section">
-      <div className="container" style={{ maxWidth: 520 }}>
-        <div className="stack" style={{ marginBottom: 18 }}>
+    <main className="section login-section">
+      <div className="container login-container">
+        <div className="stack">
           <div className="eyebrow">Admin access</div>
           <h1 className="page-title">Sign in to manage prompts</h1>
           <p className="page-subtitle">

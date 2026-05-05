@@ -33,18 +33,17 @@ export default async function PromptsPage({ searchParams }) {
     <main className="section">
       <div className="container stack">
         <div>
-          <div className="eyebrow">Public library</div>
           <h1 className="page-title">Prompt Library</h1>
           <p className="page-subtitle">
             Search the published SeyPrompt catalog by intent, category, tag, and tool.
-            Every listing is server-rendered for a fast first load.
           </p>
         </div>
 
-        <form className="panel form-card search-bar" method="get">
+        <form className="filter-bar" method="get">
           <input defaultValue={q} name="q" placeholder="Search prompts, tags, tools..." />
-          <input defaultValue={category} name="category" placeholder="Filter by category" />
-          <input defaultValue={tag} name="tag" placeholder="Filter by tag" />
+          <input defaultValue={category} name="category" placeholder="All Categories" />
+          <input placeholder="All Tools" />
+          <input defaultValue={tag} name="tag" placeholder="All Tags" />
           <input name="limit" type="hidden" value={limit} />
           <button className="button" type="submit">
             Search
@@ -63,7 +62,7 @@ export default async function PromptsPage({ searchParams }) {
 
         {response.data?.length ? (
           <>
-            <div className="grid prompt-grid">
+            <div className="prompt-list">
               {response.data.map((prompt) => (
                 <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
               ))}

@@ -15,20 +15,26 @@ export default async function AdminDashboardLayout({ children }) {
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="eyebrow">Admin panel</div>
-        <h2 style={{ marginTop: 10 }}>SeyPrompt CMS</h2>
-        <p className="muted">
+        <div className="admin-brand">
+          <span className="brand-mark dark" aria-hidden="true">
+            <span />
+          </span>
+          <strong>SeyPrompt</strong>
+        </div>
+        <p className="admin-user">
           {currentUser?.user?.email || "Authenticated admin"}
         </p>
         <AdminNav />
+        <div className="admin-logout">
+          <LogoutButton />
+        </div>
       </aside>
       <section className="admin-main">
         <div className="admin-header">
           <div>
-            <div className="eyebrow">Protected workspace</div>
-            <h1 style={{ margin: "10px 0 0" }}>Prompt management</h1>
+            <h1>Prompts</h1>
+            <p className="muted">Manage all prompts in your library.</p>
           </div>
-          <LogoutButton />
         </div>
         {children}
       </section>

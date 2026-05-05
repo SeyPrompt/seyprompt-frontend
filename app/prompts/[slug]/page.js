@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { fetchPromptBySlug } from "@/lib/api";
 import { APP_URL } from "@/lib/config";
 
@@ -46,6 +47,9 @@ export default async function PromptDetailPage({ params }) {
     <main className="section">
       <div className="container split">
         <article className="panel content-card stack">
+          <Link className="back-link" href="/prompts">
+            &lt;- Back to library
+          </Link>
           <div>
             <div className="eyebrow">{prompt.category || "General"}</div>
             <h1 className="page-title">{prompt.title}</h1>
@@ -68,38 +72,57 @@ export default async function PromptDetailPage({ params }) {
           </div>
           <section>
             <h2>Prompt</h2>
-            <div className="prose">{prompt.prompt}</div>
+            <div className="prose content-box">{prompt.prompt}</div>
           </section>
           {prompt.sampleOutput ? (
             <section>
               <h2>Sample Output</h2>
-              <div className="prose muted">{prompt.sampleOutput}</div>
+              <div className="prose content-box sample-box">{prompt.sampleOutput}</div>
             </section>
           ) : null}
+          <div className="detail-actions">
+            <button className="button" type="button">
+              Copy Prompt
+            </button>
+            <Link className="button-secondary" href="/prompts">
+              Browse More
+            </Link>
+          </div>
         </article>
 
         <aside className="panel sidebar-card stack">
           <div>
-            <div className="eyebrow">Tool stack</div>
-            <div className="pill-row" style={{ marginTop: 12 }}>
-              {(prompt.tools || []).length ? (
-                prompt.tools.map((tool) => (
-                  <span className="pill" key={tool}>
-                    {tool}
-                  </span>
-                ))
-              ) : (
-                <span className="muted">No specific tools listed.</span>
-              )}
-            </div>
+            <div className="eyebrow">Details</div>
+            <dl className="metadata-list">
+              <div>
+                <dt>Category</dt>
+                <dd>{prompt.category || "General"}</dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>{prompt.createdAt ? new Date(prompt.createdAt).toLocaleDateString() : "-"}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span className="status-badge">Published</span>
+                </dd>
+              </div>
+            </dl>
           </div>
           <div>
-            <div className="eyebrow">Publishing</div>
-            <p className="muted">
-              Status: published
-              <br />
-              Visibility: public
-            </p>
+            <div className="eyebrow">Related prompts</div>
+            <div className="related-list">
+              {(prompt.tags || []).slice(0, 3).map((tag) => (
+                <Link href={{ pathname: "/prompts", query: { tag } }} key={tag}>
+                  #{tag}
+                  <span>&gt;</span>
+                </Link>
+              ))}
+              {!(prompt.tags || []).length ? (
+                <p className="muted">Browse the full library for more prompts.</p>
+              ) : null}
+            </div>
           </div>
         </aside>
       </div>
