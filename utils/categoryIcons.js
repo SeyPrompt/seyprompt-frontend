@@ -1,0 +1,125 @@
+import {
+  BadgeCheck,
+  BarChart3,
+  Bot,
+  Briefcase,
+  Building2,
+  Clapperboard,
+  Code2,
+  Dumbbell,
+  FileText,
+  Gamepad2,
+  GraduationCap,
+  Headset,
+  HeartPulse,
+  LayoutTemplate,
+  Lightbulb,
+  Mail,
+  Megaphone,
+  MessageSquareQuote,
+  Microscope,
+  Music4,
+  Palette,
+  PenSquare,
+  PenTool,
+  Plane,
+  PlayCircle,
+  Rocket,
+  Scale,
+  Search,
+  Share2,
+  ShoppingCart,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Utensils,
+  Wallet,
+  WandSparkles,
+  Workflow,
+  AtSign,
+  Hash
+} from "lucide-react";
+
+export const categoryIconMap = {
+  marketing: Megaphone,
+  coding: Code2,
+  code: Code2,
+  development: Code2,
+  business: Briefcase,
+  resume: FileText,
+  career: BadgeCheck,
+  writing: PenTool,
+  "content writing": PenSquare,
+  content: PenSquare,
+  "social media": Share2,
+  social: Share2,
+  instagram: AtSign,
+  youtube: PlayCircle,
+  linkedin: Share2,
+  twitter: Hash,
+  "x": Hash,
+  "ai tools": Bot,
+  tools: Bot,
+  automation: Workflow,
+  productivity: Rocket,
+  education: GraduationCap,
+  finance: Wallet,
+  health: HeartPulse,
+  fitness: Dumbbell,
+  design: Palette,
+  "ui ux": LayoutTemplate,
+  "ui/ux": LayoutTemplate,
+  ux: LayoutTemplate,
+  seo: Search,
+  email: Mail,
+  "customer support": Headset,
+  support: Headset,
+  sales: TrendingUp,
+  ecommerce: ShoppingCart,
+  "e-commerce": ShoppingCart,
+  startup: Lightbulb,
+  legal: Scale,
+  "real estate": Building2,
+  travel: Plane,
+  food: Utensils,
+  gaming: Gamepad2,
+  music: Music4,
+  video: Clapperboard,
+  research: Microscope,
+  "data analysis": BarChart3,
+  analytics: BarChart3,
+  hr: Users,
+  interview: MessageSquareQuote,
+  "prompt engineering": WandSparkles,
+  prompt: WandSparkles
+};
+
+export const categoryColorMap = {
+  marketing: "bg-green-100 text-green-700",
+  coding: "bg-blue-100 text-blue-700",
+  business: "bg-emerald-100 text-emerald-700",
+  resume: "bg-lime-100 text-lime-700",
+  career: "bg-lime-100 text-lime-700",
+  writing: "bg-teal-100 text-teal-700",
+  "content writing": "bg-teal-100 text-teal-700",
+  "social media": "bg-green-100 text-green-700",
+  design: "bg-emerald-100 text-emerald-700",
+  seo: "bg-lime-100 text-lime-700",
+  sales: "bg-green-100 text-green-700",
+  finance: "bg-emerald-100 text-emerald-700",
+  education: "bg-teal-100 text-teal-700"
+};
+
+function normalizeCategory(category = "") {
+  return String(category).toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+export function getCategoryIcon(category = "") {
+  const normalized = normalizeCategory(category);
+  return categoryIconMap[normalized] || Sparkles;
+}
+
+export function getCategoryColor(category = "") {
+  const normalized = normalizeCategory(category);
+  return categoryColorMap[normalized] || "bg-gray-100 text-gray-700";
+}

@@ -544,6 +544,7 @@ h2 {
   font-weight: 750;
   padding: 7px 11px;
   transition: all 0.2s ease;
+  gap: 5px;
 }
 
 .category-pill:hover {
@@ -835,6 +836,17 @@ h2 {
   background: linear-gradient(135deg, #EEF7E7, #F6FAF2);
   color: var(--primary-dark);
   font-weight: 900;
+}
+
+.category-icon {
+  flex: 0 0 auto;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .prompt-card-copy {
@@ -1177,6 +1189,9 @@ h2 {
 }
 
 .admin-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   border-radius: 10px;
   color: #c9d2e3;
   font-weight: 780;

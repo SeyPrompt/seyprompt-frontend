@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
+  const CategoryIcon = getCategoryIcon(prompt.category);
 
   return (
     <article className="card prompt-card">
       <div className="prompt-card-main">
-        <div className="prompt-icon" aria-hidden="true">
-          {prompt.category?.slice(0, 1) || "P"}
+        <div className="prompt-icon category-icon" aria-hidden="true">
+          <CategoryIcon size={22} />
         </div>
         <div className="prompt-card-copy">
           <div className="eyebrow">{prompt.category || "General"}</div>

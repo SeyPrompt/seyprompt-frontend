@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export default async function HomePage() {
   const promptResponse = await fetchPublicPrompts({ limit: "6" }).catch(() => ({
@@ -75,13 +76,20 @@ export default async function HomePage() {
         <div className="container">
           <div className="category-pills home-category-pills" aria-label="Popular categories">
             {categories.map((category) => (
-              <Link
-                className="category-pill"
-                href={{ pathname: "/prompts", query: { category } }}
-                key={category}
-              >
-                {category}
-              </Link>
+              (() => {
+                const CategoryIcon = getCategoryIcon(category);
+
+                return (
+                  <Link
+                    className="category-pill"
+                    href={{ pathname: "/prompts", query: { category } }}
+                    key={category}
+                  >
+                    <CategoryIcon size={15} />
+                    {category}
+                  </Link>
+                );
+              })()
             ))}
           </div>
         </div>

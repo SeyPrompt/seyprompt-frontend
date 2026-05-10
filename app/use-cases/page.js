@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export const metadata = {
   title: "AI Prompt Use Cases - Marketing, Coding, Resume",
@@ -62,25 +63,25 @@ const categories = [
 
 const aiUses = [
   {
-    icon: "C",
+    category: "Content Writing",
     title: "Content Creation",
     description:
       "Generate outlines, posts, captions, newsletters, scripts, and fresh angles for your content pipeline."
   },
   {
-    icon: "P",
+    category: "Coding",
     title: "Programming",
     description:
       "Explain technical concepts, draft code, review logic, and speed up debugging or documentation."
   },
   {
-    icon: "J",
+    category: "Career",
     title: "Job Search",
     description:
       "Improve resumes, tailor cover letters, prepare interviews, and translate experience into stronger stories."
   },
   {
-    icon: "B",
+    category: "Automation",
     title: "Business Automation",
     description:
       "Turn repeatable workflows into reusable prompts for summaries, analysis, planning, and operations."
@@ -110,26 +111,32 @@ export default function UseCasesPage() {
 
           <div className="cases-category-grid">
             {categories.map((category) => (
-              <article className="card case-category-card" key={category.title}>
-                <div>
-                  <div className="case-card-icon" aria-hidden="true">
-                    {category.title.slice(0, 1)}
-                  </div>
-                  <h3>{category.title}</h3>
-                  <p className="muted">{category.description}</p>
-                </div>
-                <ul>
-                  {category.prompts.map((prompt) => (
-                    <li key={prompt}>{prompt}</li>
-                  ))}
-                </ul>
-                <Link
-                  className="button-secondary compact"
-                  href={{ pathname: "/prompts", query: { category: category.title } }}
-                >
-                  View All
-                </Link>
-              </article>
+              (() => {
+                const CategoryIcon = getCategoryIcon(category.title);
+
+                return (
+                  <article className="card case-category-card" key={category.title}>
+                    <div>
+                      <div className="case-card-icon category-icon" aria-hidden="true">
+                        <CategoryIcon size={22} />
+                      </div>
+                      <h3>{category.title}</h3>
+                      <p className="muted">{category.description}</p>
+                    </div>
+                    <ul>
+                      {category.prompts.map((prompt) => (
+                        <li key={prompt}>{prompt}</li>
+                      ))}
+                    </ul>
+                    <Link
+                      className="button-secondary compact"
+                      href={{ pathname: "/prompts", query: { category: category.title } }}
+                    >
+                      View All
+                    </Link>
+                  </article>
+                );
+              })()
             ))}
           </div>
         </div>
@@ -147,13 +154,19 @@ export default function UseCasesPage() {
 
           <div className="cases-use-grid">
             {aiUses.map((item) => (
-              <article className="card cases-use-card" key={item.title}>
-                <div className="case-card-icon" aria-hidden="true">
-                  {item.icon}
-                </div>
-                <h3>{item.title}</h3>
-                <p className="muted">{item.description}</p>
-              </article>
+              (() => {
+                const CategoryIcon = getCategoryIcon(item.category);
+
+                return (
+                  <article className="card cases-use-card" key={item.title}>
+                    <div className="case-card-icon category-icon" aria-hidden="true">
+                      <CategoryIcon size={22} />
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p className="muted">{item.description}</p>
+                  </article>
+                );
+              })()
             ))}
           </div>
         </div>

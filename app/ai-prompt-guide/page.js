@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export const metadata = {
   title: "AI Prompt Guide - Learn How to Write Better Prompts",
@@ -14,25 +15,25 @@ export const metadata = {
 
 const structureCards = [
   {
-    icon: "R",
+    category: "Prompt Engineering",
     title: "Role",
     label: "Act as a...",
     text: "Tell the AI what expert perspective it should use before it starts."
   },
   {
-    icon: "T",
+    category: "Productivity",
     title: "Task",
     label: "What to do",
     text: "Describe the exact job you want completed in plain, specific language."
   },
   {
-    icon: "C",
+    category: "Research",
     title: "Context",
     label: "Add details",
     text: "Include audience, goal, constraints, brand tone, or background details."
   },
   {
-    icon: "O",
+    category: "Writing",
     title: "Output",
     label: "Expected result",
     text: "Define the format, length, style, or structure you want back."
@@ -132,16 +133,22 @@ export default function AiPromptGuidePage() {
 
           <div className="guide-card-grid">
             {structureCards.map((card) => (
-              <article className="card guide-info-card" key={card.title}>
-                <div className="guide-icon" aria-hidden="true">
-                  {card.icon}
-                </div>
-                <div>
-                  <span>{card.label}</span>
-                  <h3>{card.title}</h3>
-                </div>
-                <p className="muted">{card.text}</p>
-              </article>
+              (() => {
+                const CategoryIcon = getCategoryIcon(card.category);
+
+                return (
+                  <article className="card guide-info-card" key={card.title}>
+                    <div className="guide-icon category-icon" aria-hidden="true">
+                      <CategoryIcon size={22} />
+                    </div>
+                    <div>
+                      <span>{card.label}</span>
+                      <h3>{card.title}</h3>
+                    </div>
+                    <p className="muted">{card.text}</p>
+                  </article>
+                );
+              })()
             ))}
           </div>
         </div>
@@ -179,10 +186,21 @@ export default function AiPromptGuidePage() {
 
           <div className="guide-card-grid examples">
             {examples.map((example) => (
-              <article className="card guide-prompt-example" key={example.category}>
-                <div className="eyebrow">{example.category}</div>
-                <p>{example.prompt}</p>
-              </article>
+              (() => {
+                const CategoryIcon = getCategoryIcon(example.category);
+
+                return (
+                  <article className="card guide-prompt-example" key={example.category}>
+                    <div className="detail-title-row">
+                      <div className="category-icon guide-icon" aria-hidden="true">
+                        <CategoryIcon size={20} />
+                      </div>
+                      <div className="eyebrow">{example.category}</div>
+                    </div>
+                    <p>{example.prompt}</p>
+                  </article>
+                );
+              })()
             ))}
           </div>
         </div>

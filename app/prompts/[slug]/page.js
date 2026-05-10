@@ -3,6 +3,7 @@ import Link from "next/link";
 import { fetchPromptBySlug } from "@/lib/api";
 import { APP_URL } from "@/lib/config";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 function descriptionFromPrompt(prompt) {
   const sampleOutput =
@@ -112,6 +113,8 @@ export default async function PromptDetailPage({ params }) {
     notFound();
   }
 
+  const CategoryIcon = getCategoryIcon(prompt.category);
+
   return (
     <main className="section">
       <div className="container split">
@@ -120,7 +123,12 @@ export default async function PromptDetailPage({ params }) {
             &lt;- Back to library
           </Link>
           <div>
-            <div className="eyebrow">{prompt.category || "General"}</div>
+            <div className="detail-title-row">
+              <div className="category-icon prompt-icon" aria-hidden="true">
+                <CategoryIcon size={22} />
+              </div>
+              <div className="eyebrow">{prompt.category || "General"}</div>
+            </div>
             <h1 className="page-title">{prompt.title}</h1>
           </div>
           {(prompt.tools || []).length ? (
