@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -31,10 +32,13 @@ export function Navbar() {
       <div className="container navbar-inner">
         <Link className="brand navbar-brand" href="/" onClick={closeMenu}>
           <span className="logo-wrap">
-            <img
+            <Image
               alt="SeyPrompt logo"
               className="navbar-logo-image"
+              height={42}
+              priority
               src="/images/seyprompt-logo.png"
+              width={135}
             />
           </span>
         </Link>

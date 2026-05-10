@@ -1,0 +1,10 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin
+
+# Host
+Host: https://seyprompt.com
+
+# Sitemaps
+Sitemap: https://seyprompt.com/sitemap.xml

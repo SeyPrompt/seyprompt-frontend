@@ -1,11 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Best AI Tools for 2026 - ChatGPT, Claude, Midjourney",
   description:
     "Explore the best AI tools for writing, coding, design, and productivity.",
-  keywords: ["AI tools list", "ChatGPT alternatives", "best AI tools"],
-};
+  path: "/ai-tools",
+  keywords: ["AI tools list", "ChatGPT alternatives", "best AI tools", "AI prompts"]
+});
 
 const tools = [
   {
@@ -84,10 +87,13 @@ export default function AiToolsPage() {
                 <div className="tool-card-top">
                   <div className="home-tool-mark" aria-hidden="true">
                     {tool.logo ? (
-                      <img
+                      <Image
                         src={tool.logo}
                         alt={tool.name}
                         className="home-tool-logo"
+                        height={36}
+                        loading="lazy"
+                        width={36}
                       />
                     ) : (
                       tool.name.slice(0, 1)

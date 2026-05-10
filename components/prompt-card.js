@@ -37,7 +37,7 @@ export function PromptCard({ prompt }) {
           ) : null}
         </div>
         <div className="prompt-actions">
-          <CopyButton className="compact" text={prompt.prompt} />
+          <CopyButton className="compact" text={prompt.prompt} trackingLabel={prompt.slug || prompt.title} />
           <Link className="button compact" href={`/prompts/${prompt.slug}`}>
             View
           </Link>

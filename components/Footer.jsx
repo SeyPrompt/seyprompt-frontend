@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -43,10 +44,12 @@ export function Footer() {
             <div className="footer-brand-heading">
               <a href="/" className="navbar-brand">
                 <span className="logo-wrap">
-                  <img
+                  <Image
                     alt="SeyPrompt logo"
                     className="navbar-logo-image"
+                    height={42}
                     src="/images/seyprompt-logo.png"
+                    width={135}
                   />
                 </span>
               </a>

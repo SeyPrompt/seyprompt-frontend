@@ -1,7 +1,15 @@
 import Link from "next/link";
+import Image from "next/image";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Smart Prompts. Better Results.",
+  description: SITE_DESCRIPTION,
+  path: "/"
+});
 
 export default async function HomePage() {
   const promptResponse = await fetchPublicPrompts({ limit: "6" }).catch(() => ({
@@ -177,10 +185,13 @@ export default async function HomePage() {
               <article className="card home-tool-card" key={tool.name}>
                 <div className="home-tool-mark" aria-hidden="true">
                   {tool.logo ? (
-                    <img
+                    <Image
                       src={tool.logo}
                       alt={tool.name}
                       className="home-tool-logo"
+                      height={36}
+                      loading="lazy"
+                      width={36}
                     />
                   ) : (
                     tool.name.slice(0, 1)

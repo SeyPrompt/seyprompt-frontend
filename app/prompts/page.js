@@ -1,11 +1,56 @@
 import Link from "next/link";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptLibraryView } from "@/components/prompt-library-view";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Prompt Library",
-  description: "Browse published prompts by category, tags, and intent."
+const categoryDescriptions = {
+  Marketing: "Discover the best AI marketing prompts for ChatGPT, Claude, and more.",
+  Coding: "Find coding AI prompts for debugging, explaining code, writing tests, and building faster.",
+  Business: "Explore business AI prompts for strategy, planning, operations, and decision-making.",
+  Resume: "Browse resume AI prompts for stronger applications, career stories, and job search workflows.",
+  Design: "Discover design and image prompts for Midjourney, Canva, ChatGPT, and creative workflows.",
+  "Image Prompts": "Explore AI image prompts for Midjourney, visual concepts, campaigns, and creative direction.",
+  "Social Media": "Find social media AI prompts for captions, content calendars, hooks, and short-form ideas."
 };
+
+export async function generateMetadata({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+  const category = resolvedSearchParams?.category || "";
+  const tag = resolvedSearchParams?.tag || "";
+  const q = resolvedSearchParams?.q || "";
+
+  if (category) {
+    const title = `${category} AI Prompts`;
+    const description =
+      categoryDescriptions[category] ||
+      `Discover the best ${category.toLowerCase()} AI prompts for ChatGPT, Claude, and more.`;
+    const path = `/prompts?category=${encodeURIComponent(category)}`;
+
+    return createPageMetadata({ title, description, path });
+  }
+
+  if (tag) {
+    return createPageMetadata({
+      title: `#${tag} AI Prompts`,
+      description: `Browse SeyPrompt prompts tagged ${tag} for ChatGPT, Claude, Midjourney, and more.`,
+      path: `/prompts?tag=${encodeURIComponent(tag)}`
+    });
+  }
+
+  if (q) {
+    return createPageMetadata({
+      title: `Search AI Prompts for ${q}`,
+      description: `Search SeyPrompt for AI prompts related to ${q}.`,
+      path: `/prompts?q=${encodeURIComponent(q)}`
+    });
+  }
+
+  return createPageMetadata({
+    title: "Prompt Library",
+    description: "Browse published AI prompts by category, tags, intent, and tool.",
+    path: "/prompts"
+  });
+}
 
 export default async function PromptsPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;

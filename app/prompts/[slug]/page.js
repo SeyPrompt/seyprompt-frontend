@@ -1,17 +1,19 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchPromptBySlug } from "@/lib/api";
-import { APP_URL } from "@/lib/config";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import {
+  absoluteUrl,
+  createPageMetadata,
+  getPromptImage,
+  promptSchema,
+  truncateDescription
+} from "@/lib/seo";
 
 function descriptionFromPrompt(prompt) {
-  const sampleOutput =
-    prompt.sampleOutput && typeof prompt.sampleOutput === "object"
-      ? prompt.sampleOutput.value
-      : prompt.sampleOutput;
-  const source = sampleOutput || prompt.prompt || prompt.title;
-  return source.replace(/\s+/g, " ").slice(0, 155);
+  const source = prompt.description || prompt.prompt || prompt.title;
+  return truncateDescription(source);
 }
 
 function SampleOutputDisplay({ prompt }) {
@@ -83,24 +85,30 @@ export async function generateMetadata({ params }) {
     const { slug } = await params;
     const prompt = await fetchPromptBySlug(slug);
     const description = descriptionFromPrompt(prompt);
-    const url = `${APP_URL}/prompts/${prompt.slug}`;
+    const path = `/prompts/${prompt.slug}`;
+    const image = getPromptImage(prompt);
 
-    return {
+    return createPageMetadata({
       title: prompt.title,
       description,
-      alternates: {
-        canonical: url
-      },
-      openGraph: {
-        title: `${prompt.title} | SeyPrompt`,
-        description,
-        url,
-        type: "article"
-      }
-    };
+      path,
+      image,
+      type: "article",
+      keywords: [
+        prompt.category,
+        ...(prompt.tools || []),
+        ...(prompt.tags || []),
+        "AI prompts",
+        "prompt engineering"
+      ].filter(Boolean)
+    });
   } catch (_error) {
     return {
-      title: "Prompt Not Found"
+      title: "Prompt Not Found",
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 }
@@ -117,6 +125,10 @@ export default async function PromptDetailPage({ params }) {
 
   return (
     <main className="section">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(promptSchema(prompt)) }}
+      />
       <div className="container split">
         <article className="panel content-card stack">
           <Link className="back-link" href="/prompts">
@@ -157,7 +169,12 @@ export default async function PromptDetailPage({ params }) {
               <SampleOutputDisplay prompt={prompt} />
             </section>
           ) : null}
-          <CopyOpenButton text={prompt.prompt} />
+          <CopyOpenButton
+            description={descriptionFromPrompt(prompt)}
+            text={prompt.prompt}
+            title={prompt.title}
+            url={absoluteUrl(`/prompts/${prompt.slug}`)}
+          />
         </article>
 
         <aside className="panel sidebar-card stack">

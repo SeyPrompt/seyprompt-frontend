@@ -2,13 +2,24 @@
 
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
-export function CopyButton({ text, label = "Copy", copiedLabel = "Copied!", className = "" }) {
+export function CopyButton({
+  text,
+  label = "Copy",
+  copiedLabel = "Copied!",
+  className = "",
+  trackingLabel = "prompt"
+}) {
   const [status, setStatus] = useState("idle");
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text || "");
+      trackEvent("copy_prompt_click", {
+        event_category: "Prompt",
+        event_label: trackingLabel
+      });
       setStatus("copied");
       window.setTimeout(() => setStatus("idle"), 2000);
     } catch (_error) {

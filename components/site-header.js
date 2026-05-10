@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -19,10 +20,12 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-nav">
         <Link className="brand" href="/">
-          <img
+          <Image
             alt="SeyPrompt logo"
             className="navbar-logo-image"
+            height={42}
             src="/images/seyprompt-logo.png"
+            width={135}
           />
           SeyPrompt
         </Link>

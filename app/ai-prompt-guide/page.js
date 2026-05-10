@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import { UserRound, Target, Layers3, Sparkles } from "lucide-react";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "AI Prompt Guide - Learn How to Write Better Prompts",
   description:
     "Learn how to write powerful AI prompts for ChatGPT, Claude, and more. Examples, tips, and best practices included.",
+  path: "/ai-prompt-guide",
   keywords: [
     "AI prompt guide",
     "how to write prompts",
     "ChatGPT prompts",
     "AI tips"
   ]
-};
+});
 
 const structureCards = [
   {

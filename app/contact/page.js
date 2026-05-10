@@ -1,11 +1,13 @@
 import { ContactForm } from "@/components/contact-form";
 import { WandSparkles, Sparkles, Workflow, Bot } from "lucide-react";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Contact SeyPrompt - Custom AI Prompts & Support",
   description:
     "Need custom AI prompts or AI solutions? Contact SeyPrompt for personalized help.",
-};
+  path: "/contact"
+});
 
 const services = [
   {

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "AI Prompt Use Cases - Marketing, Coding, Resume",
   description:
     "Browse AI prompts by use case including marketing, coding, business, and more.",
-  keywords: ["AI prompts for marketing", "coding prompts", "resume prompts"]
-};
+  path: "/use-cases",
+  keywords: ["AI prompts for marketing", "coding prompts", "resume prompts", "business prompts"]
+});
 
 const categories = [
   {

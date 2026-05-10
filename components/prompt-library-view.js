@@ -5,6 +5,7 @@ import { useState } from "react";
 import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { PromptCard } from "@/components/prompt-card";
+import { trackEvent } from "@/lib/analytics";
 
 const views = [
   { label: "Card", title: "Card view", icon: LayoutGrid },
@@ -63,7 +64,11 @@ function PromptTable({ prompts }) {
               </td>
               <td>
                 <div className="prompt-actions">
-                  <CopyButton className="compact" text={prompt.prompt} />
+                  <CopyButton
+                    className="compact"
+                    text={prompt.prompt}
+                    trackingLabel={prompt.slug || prompt.title}
+                  />
                   <Link className="button compact" href={`/prompts/${prompt.slug}`}>
                     View
                   </Link>
@@ -90,7 +95,20 @@ export function PromptLibraryView({
 
   return (
     <>
-      <form className="filter-bar library-filter-bar" method="get">
+      <form
+        className="filter-bar library-filter-bar"
+        method="get"
+        onSubmit={(event) => {
+          const formData = new FormData(event.currentTarget);
+
+          trackEvent("search_usage", {
+            event_category: "Search",
+            search_term: formData.get("q") || "",
+            category: formData.get("category") || "",
+            tag: formData.get("tag") || ""
+          });
+        }}
+      >
         <input
           className="library-search-input"
           defaultValue={q}
