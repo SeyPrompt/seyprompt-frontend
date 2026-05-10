@@ -19,9 +19,11 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-nav">
         <Link className="brand" href="/">
-          <span className="brand-mark" aria-hidden="true">
-            <span />
-          </span>
+          <img
+            alt="SeyPrompt logo"
+            className="navbar-logo-image"
+            src="/images/seyprompt-logo.png"
+          />
           SeyPrompt
         </Link>
         <nav className="nav-links">

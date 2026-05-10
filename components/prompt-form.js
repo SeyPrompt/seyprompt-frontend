@@ -27,8 +27,12 @@ function validatePrompt(payload) {
     return "Category must be 80 characters or fewer.";
   }
 
-  if (payload.sampleOutput.length > 10000) {
+  if (payload.sampleOutput?.value?.length > 10000) {
     return "Sample output must be 10,000 characters or fewer.";
+  }
+
+  if (!["text", "image", "pdf"].includes(payload.sampleOutput?.type)) {
+    return "Sample output type must be text, image, or PDF.";
   }
 
   if (!["public", "private"].includes(payload.visibility)) {
@@ -42,8 +46,28 @@ function validatePrompt(payload) {
   return "";
 }
 
+function getInitialSampleOutput(prompt) {
+  const sampleOutput = prompt?.sampleOutput;
+
+  if (sampleOutput && typeof sampleOutput === "object") {
+    return {
+      type: ["text", "image", "pdf"].includes(sampleOutput.type) ? sampleOutput.type : "text",
+      value: sampleOutput.value || "",
+      fileName: sampleOutput.fileName || ""
+    };
+  }
+
+  return {
+    type: "text",
+    value: typeof sampleOutput === "string" ? sampleOutput : "",
+    fileName: ""
+  };
+}
+
 export function PromptForm({ mode, prompt }) {
   const router = useRouter();
+  const initialSampleOutput = getInitialSampleOutput(prompt);
+  const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +84,11 @@ export function PromptForm({ mode, prompt }) {
       tags: normalizeList(formData.get("tags") || ""),
       tools: normalizeList(formData.get("tools") || ""),
       prompt: String(formData.get("prompt") || "").trim(),
-      sampleOutput: String(formData.get("sampleOutput") || "").trim(),
+      sampleOutput: {
+        type: String(formData.get("sampleOutputType") || "text"),
+        value: String(formData.get("sampleOutputValue") || "").trim(),
+        fileName: String(formData.get("sampleOutputFileName") || "").trim()
+      },
       visibility: String(formData.get("visibility") || "public"),
       status: String(formData.get("status") || "published")
     };
@@ -167,14 +195,70 @@ export function PromptForm({ mode, prompt }) {
           required
         />
       </div>
-      <div className="field">
-        <label htmlFor="sampleOutput">Sample output</label>
-        <textarea
-          defaultValue={prompt?.sampleOutput || ""}
-          id="sampleOutput"
-          maxLength={10000}
-          name="sampleOutput"
-        />
+      <div className="sample-output-fields">
+        <div className="field">
+          <label htmlFor="sampleOutputType">Sample output type</label>
+          <select
+            id="sampleOutputType"
+            name="sampleOutputType"
+            onChange={(event) => setSampleOutputType(event.target.value)}
+            value={sampleOutputType}
+          >
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </div>
+
+        {sampleOutputType === "text" ? (
+          <div className="field">
+            <label htmlFor="sampleOutputValue">Sample output text</label>
+            <textarea
+              defaultValue={initialSampleOutput.type === "text" ? initialSampleOutput.value : ""}
+              id="sampleOutputValue"
+              key="sampleOutput-text"
+              maxLength={10000}
+              name="sampleOutputValue"
+              placeholder="Paste the sample response text..."
+            />
+          </div>
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="sampleOutputValue">
+                {sampleOutputType === "image" ? "Image URL" : "PDF URL"}
+              </label>
+              <input
+                defaultValue={
+                  initialSampleOutput.type === sampleOutputType ? initialSampleOutput.value : ""
+                }
+                id="sampleOutputValue"
+                key={`${sampleOutputType}-value`}
+                name="sampleOutputValue"
+                placeholder={
+                  sampleOutputType === "image"
+                    ? "https://example.com/sample-output.png"
+                    : "https://example.com/sample-output.pdf"
+                }
+                type="url"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="sampleOutputFileName">File name optional</label>
+              <input
+                defaultValue={
+                  initialSampleOutput.type === sampleOutputType
+                    ? initialSampleOutput.fileName
+                    : ""
+                }
+                id="sampleOutputFileName"
+                key={`${sampleOutputType}-fileName`}
+                name="sampleOutputFileName"
+                placeholder={sampleOutputType === "image" ? "sample-output.png" : "sample-output.pdf"}
+              />
+            </div>
+          </>
+        )}
       </div>
       <div className="toolbar">
         <div className="field" style={{ flex: 1 }}>

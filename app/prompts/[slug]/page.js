@@ -5,8 +5,76 @@ import { APP_URL } from "@/lib/config";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 
 function descriptionFromPrompt(prompt) {
-  const source = prompt.sampleOutput || prompt.prompt || prompt.title;
+  const sampleOutput =
+    prompt.sampleOutput && typeof prompt.sampleOutput === "object"
+      ? prompt.sampleOutput.value
+      : prompt.sampleOutput;
+  const source = sampleOutput || prompt.prompt || prompt.title;
   return source.replace(/\s+/g, " ").slice(0, 155);
+}
+
+function SampleOutputDisplay({ prompt }) {
+  const sampleOutput = prompt.sampleOutput;
+
+  if (!sampleOutput) {
+    return null;
+  }
+
+  if (typeof sampleOutput === "string") {
+    return <div className="prose content-box sample-box">{sampleOutput}</div>;
+  }
+
+  if (sampleOutput.type === "text") {
+    return <div className="prose content-box sample-box">{sampleOutput.value}</div>;
+  }
+
+  if (sampleOutput.type === "image") {
+    return (
+      <div className="sample-media-box">
+        <img
+          alt={sampleOutput.fileName || `${prompt.title} sample output`}
+          className="sample-output-image"
+          src={sampleOutput.value}
+        />
+        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
+      </div>
+    );
+  }
+
+  if (sampleOutput.type === "pdf") {
+    return (
+      <div className="sample-media-box">
+        <iframe
+          className="sample-output-pdf"
+          src={sampleOutput.value}
+          title={sampleOutput.fileName || `${prompt.title} PDF sample output`}
+        />
+        <a
+          className="button-secondary"
+          href={sampleOutput.value}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          View / Download PDF
+        </a>
+        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function hasSampleOutput(sampleOutput) {
+  if (!sampleOutput) {
+    return false;
+  }
+
+  if (typeof sampleOutput === "string") {
+    return Boolean(sampleOutput.trim());
+  }
+
+  return Boolean(sampleOutput.value);
 }
 
 export async function generateMetadata({ params }) {
@@ -75,10 +143,10 @@ export default async function PromptDetailPage({ params }) {
             <h2>Prompt</h2>
             <div className="prose content-box">{prompt.prompt}</div>
           </section>
-          {prompt.sampleOutput ? (
+          {hasSampleOutput(prompt.sampleOutput) ? (
             <section>
               <h2>Sample Output</h2>
-              <div className="prose content-box sample-box">{prompt.sampleOutput}</div>
+              <SampleOutputDisplay prompt={prompt} />
             </section>
           ) : null}
           <CopyOpenButton text={prompt.prompt} />

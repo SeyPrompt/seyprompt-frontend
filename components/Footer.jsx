@@ -6,18 +6,30 @@ const quickLinks = [
   { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
   { href: "/ai-tools", label: "AI Tools" },
   { href: "/use-cases", label: "Use Cases" },
-  { href: "/contact", label: "Contact" }
+  { href: "/contact", label: "Contact" },
 ];
 
 const categories = [
-  { href: { pathname: "/prompts", query: { category: "Marketing" } }, label: "Marketing Prompts" },
-  { href: { pathname: "/prompts", query: { category: "Coding" } }, label: "Coding Prompts" },
-  { href: { pathname: "/prompts", query: { category: "Resume" } }, label: "Resume Prompts" },
-  { href: { pathname: "/prompts", query: { category: "Business" } }, label: "Business Prompts" },
+  {
+    href: { pathname: "/prompts", query: { category: "Marketing" } },
+    label: "Marketing Prompts",
+  },
+  {
+    href: { pathname: "/prompts", query: { category: "Coding" } },
+    label: "Coding Prompts",
+  },
+  {
+    href: { pathname: "/prompts", query: { category: "Resume" } },
+    label: "Resume Prompts",
+  },
+  {
+    href: { pathname: "/prompts", query: { category: "Business" } },
+    label: "Business Prompts",
+  },
   {
     href: { pathname: "/prompts", query: { category: "Social Media" } },
-    label: "Social Media Prompts"
-  }
+    label: "Social Media Prompts",
+  },
 ];
 
 const tools = ["ChatGPT", "Claude", "Midjourney", "Canva"];
@@ -28,11 +40,21 @@ export function Footer() {
       <div className="container footer-inner">
         <div className="footer-grid">
           <div className="footer-brand">
-            <h2>SeyPrompt</h2>
+            <div className="footer-brand-heading">
+              <a href="/" className="navbar-brand">
+                <span className="logo-wrap">
+                  <img
+                    alt="SeyPrompt logo"
+                    className="navbar-logo-image"
+                    src="/images/seyprompt-logo.png"
+                  />
+                </span>
+              </a>
+            </div>
             <p className="footer-tagline">Smart Prompts. Better Results.</p>
             <p>
-              Discover, copy, and use the best AI prompts for ChatGPT, Claude, and
-              more.
+              Discover, copy, and use the best AI prompts for ChatGPT, Claude,
+              and more.
             </p>
           </div>
 
@@ -62,7 +84,10 @@ export function Footer() {
             <h3>Tools</h3>
             <nav>
               {tools.map((tool) => (
-                <Link href={{ pathname: "/prompts", query: { tag: tool } }} key={tool}>
+                <Link
+                  href={{ pathname: "/prompts", query: { tag: tool } }}
+                  key={tool}
+                >
                   {tool}
                 </Link>
               ))}

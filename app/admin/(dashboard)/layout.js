@@ -16,9 +16,11 @@ export default async function AdminDashboardLayout({ children }) {
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <span className="brand-mark dark" aria-hidden="true">
-            <span />
-          </span>
+          <img
+            alt="SeyPrompt logo"
+            className="navbar-logo-image"
+            src="/images/seyprompt-logo.png"
+          />
           <strong>SeyPrompt</strong>
         </div>
         <p className="admin-user">
