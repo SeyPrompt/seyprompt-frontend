@@ -6,7 +6,7 @@ import { getCategoryIcon } from "@/utils/categoryIcons";
 export default async function HomePage() {
   const promptResponse = await fetchPublicPrompts({ limit: "6" }).catch(() => ({
     data: [],
-    pagination: { total: 0 }
+    pagination: { total: 0 },
   }));
 
   const prompts = promptResponse.data || [];
@@ -15,32 +15,41 @@ export default async function HomePage() {
     {
       icon: "1",
       title: "Find a prompt",
-      description: "Search by use case, category, tag, or tool to discover the right starting point."
+      description:
+        "Search by use case, category, tag, or tool to discover the right starting point.",
     },
     {
       icon: "2",
       title: "Copy it",
-      description: "Grab a polished prompt that is structured, specific, and ready to customize."
+      description:
+        "Grab a polished prompt that is structured, specific, and ready to customize.",
     },
     {
       icon: "3",
       title: "Use in AI",
-      description: "Paste it into ChatGPT, Claude, Gemini, or your favorite AI workspace."
-    }
+      description:
+        "Paste it into ChatGPT, Claude, Gemini, or your favorite AI workspace.",
+    },
   ];
   const tools = [
     {
       name: "ChatGPT",
-      description: "Best for writing, ideation, coding help, and everyday productivity."
+      logo: "/icons/chatgpt.svg",
+      description:
+        "Best for writing, ideation, coding help, and everyday productivity.",
     },
     {
       name: "Claude",
-      description: "Great for long-form writing, careful reasoning, and document-heavy work."
+      logo: "/icons/claude.svg",
+      description:
+        "Great for long-form writing, careful reasoning, and document-heavy work.",
     },
     {
       name: "Midjourney",
-      description: "A strong choice for visual concepts, image prompts, and creative exploration."
-    }
+      logo: "/icons/midjourney.svg",
+      description:
+        "A strong choice for visual concepts, image prompts, and creative exploration.",
+    },
   ];
 
   return (
@@ -74,8 +83,11 @@ export default async function HomePage() {
 
       <section className="home-category-section">
         <div className="container">
-          <div className="category-pills home-category-pills" aria-label="Popular categories">
-            {categories.map((category) => (
+          <div
+            className="category-pills home-category-pills"
+            aria-label="Popular categories"
+          >
+            {categories.map((category) =>
               (() => {
                 const CategoryIcon = getCategoryIcon(category);
 
@@ -89,8 +101,8 @@ export default async function HomePage() {
                     {category}
                   </Link>
                 );
-              })()
-            ))}
+              })(),
+            )}
           </div>
         </div>
       </section>
@@ -100,8 +112,8 @@ export default async function HomePage() {
           <div className="home-section-heading">
             <h2>How It Works</h2>
             <p className="muted">
-              SeyPrompt keeps prompt discovery simple: find the right prompt, copy
-              it, and use it wherever you already work with AI.
+              SeyPrompt keeps prompt discovery simple: find the right prompt,
+              copy it, and use it wherever you already work with AI.
             </p>
           </div>
           <div className="home-info-grid">
@@ -131,14 +143,18 @@ export default async function HomePage() {
           {prompts.length ? (
             <div className="grid prompt-grid">
               {prompts.map((prompt) => (
-                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
+                <PromptCard
+                  key={prompt._id || prompt.id || prompt.slug}
+                  prompt={prompt}
+                />
               ))}
             </div>
           ) : (
             <div className="panel empty-state">
               <h3>No published prompts yet</h3>
               <p className="muted">
-                Once prompts are published from the admin panel, they will appear here.
+                Once prompts are published from the admin panel, they will
+                appear here.
               </p>
             </div>
           )}
@@ -149,17 +165,30 @@ export default async function HomePage() {
         <div className="container home-stack">
           <div className="home-section-heading">
             <h2>Works With Popular AI Tools</h2>
+
             <p className="muted">
-              Use SeyPrompt examples across leading AI platforms and creative tools.
+              Use SeyPrompt examples across leading AI platforms and creative
+              tools.
             </p>
           </div>
+
           <div className="home-tool-grid">
             {tools.map((tool) => (
               <article className="card home-tool-card" key={tool.name}>
                 <div className="home-tool-mark" aria-hidden="true">
-                  {tool.name.slice(0, 1)}
+                  {tool.logo ? (
+                    <img
+                      src={tool.logo}
+                      alt={tool.name}
+                      className="home-tool-logo"
+                    />
+                  ) : (
+                    tool.name.slice(0, 1)
+                  )}
                 </div>
+
                 <h3>{tool.name}</h3>
+
                 <p className="muted">{tool.description}</p>
               </article>
             ))}

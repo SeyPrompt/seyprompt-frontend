@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { UserRound, Target, Layers3, Sparkles } from "lucide-react";
 
 export const metadata = {
   title: "AI Prompt Guide - Learn How to Write Better Prompts",
@@ -82,13 +83,25 @@ export default function AiPromptGuidePage() {
             </Link>
           </div>
           <div className="guide-hero-card" aria-label="Prompt formula preview">
-            <div className="guide-formula-step">Role</div>
+            <div className="guide-formula-step">
+              <UserRound size={24} className="guide-formula-step-icon" />
+              Role
+            </div>
             <div className="guide-formula-plus">+</div>
-            <div className="guide-formula-step">Task</div>
+            <div className="guide-formula-step">
+              <Target size={24} className="guide-formula-step-icon" />
+              Task
+            </div>
             <div className="guide-formula-plus">+</div>
-            <div className="guide-formula-step">Context</div>
+            <div className="guide-formula-step">
+              <Layers3 size={24} className="guide-formula-step-icon" />
+              Context
+            </div>
             <div className="guide-formula-plus">+</div>
-            <div className="guide-formula-step">Output</div>
+            <div className="guide-formula-step">
+              <Sparkles size={24} className="guide-formula-step-icon" />
+              Output
+            </div>
           </div>
         </div>
       </section>
@@ -134,12 +147,21 @@ export default function AiPromptGuidePage() {
           <div className="guide-card-grid">
             {structureCards.map((card) => (
               (() => {
-                const CategoryIcon = getCategoryIcon(card.category);
+                const getIconForTitle = (title) => {
+                  switch (title) {
+                    case 'Role': return UserRound;
+                    case 'Task': return Target;
+                    case 'Context': return Layers3;
+                    case 'Output': return Sparkles;
+                    default: return UserRound;
+                  }
+                };
+                const Icon = getIconForTitle(card.title);
 
                 return (
                   <article className="card guide-info-card" key={card.title}>
                     <div className="guide-icon category-icon" aria-hidden="true">
-                      <CategoryIcon size={22} />
+                      <Icon size={22} />
                     </div>
                     <div>
                       <span>{card.label}</span>

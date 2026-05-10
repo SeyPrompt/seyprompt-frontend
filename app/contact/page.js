@@ -1,36 +1,37 @@
 import { ContactForm } from "@/components/contact-form";
+import { WandSparkles, Sparkles, Workflow, Bot } from "lucide-react";
 
 export const metadata = {
   title: "Contact SeyPrompt - Custom AI Prompts & Support",
   description:
-    "Need custom AI prompts or AI solutions? Contact SeyPrompt for personalized help."
+    "Need custom AI prompts or AI solutions? Contact SeyPrompt for personalized help.",
 };
 
 const services = [
   {
-    icon: "C",
+    icon: WandSparkles,
     title: "Custom AI Prompts",
     description:
-      "Get tailored prompts for your audience, workflow, tone, tools, and business goals."
+      "Get tailored prompts for your audience, workflow, tone, tools, and business goals.",
   },
   {
-    icon: "O",
+    icon: Sparkles,
     title: "Prompt Optimization",
     description:
-      "Improve existing prompts so they produce clearer, more reliable, and more useful outputs."
+      "Improve existing prompts so they produce clearer, more reliable, and more useful outputs.",
   },
   {
-    icon: "W",
+    icon: Workflow,
     title: "AI Workflow Setup",
     description:
-      "Design practical AI workflows for content, research, operations, customer support, and teams."
+      "Design practical AI workflows for content, research, operations, customer support, and teams.",
   },
   {
-    icon: "B",
+    icon: Bot,
     title: "Business Automation",
     description:
-      "Turn repeatable tasks into prompt-driven systems that save time and reduce manual effort."
-  }
+      "Turn repeatable tasks into prompt-driven systems that save time and reduce manual effort.",
+  },
 ];
 
 export default function ContactPage() {
@@ -42,7 +43,8 @@ export default function ContactPage() {
             <div className="eyebrow">Contact SeyPrompt</div>
             <h1>Need Custom AI Prompts or Solutions?</h1>
             <p>
-              We help you create powerful AI prompts and workflows for your needs.
+              We help you create powerful AI prompts and workflows for your
+              needs.
             </p>
           </div>
         </div>
@@ -51,15 +53,24 @@ export default function ContactPage() {
       <section className="section">
         <div className="container contact-container contact-stack">
           <div className="contact-services-grid">
-            {services.map((service) => (
-              <article className="card contact-service-card" key={service.title}>
-                <div className="contact-service-icon" aria-hidden="true">
-                  {service.icon}
-                </div>
-                <h2>{service.title}</h2>
-                <p className="muted">{service.description}</p>
-              </article>
-            ))}
+            {services.map((service) => {
+              const Icon = service.icon;
+
+              return (
+                <article
+                  className="card contact-service-card"
+                  key={service.title}
+                >
+                  <div className="contact-service-icon" aria-hidden="true">
+                    <Icon size={26} strokeWidth={2.2} />
+                  </div>
+
+                  <h2>{service.title}</h2>
+
+                  <p className="muted">{service.description}</p>
+                </article>
+              );
+            })}
           </div>
 
           <ContactForm />

@@ -4,6 +4,7 @@ import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
+  const [firstTool, ...remainingTools] = tools;
   const CategoryIcon = getCategoryIcon(prompt.category);
 
   return (
@@ -15,11 +16,11 @@ export function PromptCard({ prompt }) {
         <div className="prompt-card-copy">
           <div className="eyebrow">{prompt.category || "General"}</div>
           <h3>{prompt.title}</h3>
-          <p className="muted">
+          <p className="muted prompt-card-description">
             {prompt.prompt.slice(0, 150)}
             {prompt.prompt.length > 150 ? "..." : ""}
           </p>
-          <div className="pill-row">
+          <div className="pill-row prompt-card-tags">
             {(prompt.tags || []).slice(0, 3).map((tag) => (
               <span className="pill" key={tag}>
                 #{tag}
@@ -30,11 +31,10 @@ export function PromptCard({ prompt }) {
       </div>
       <div className="prompt-card-footer">
         <div className="pill-row tool-row">
-          {tools.slice(0, 2).map((tool) => (
-            <span className="pill pill-alt" key={tool}>
-              {tool}
-            </span>
-          ))}
+          {firstTool ? <span className="pill pill-alt">{firstTool}</span> : null}
+          {remainingTools.length ? (
+            <span className="pill pill-alt tool-count-badge">+{remainingTools.length}</span>
+          ) : null}
         </div>
         <div className="prompt-actions">
           <CopyButton className="compact" text={prompt.prompt} />

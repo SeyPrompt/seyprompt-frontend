@@ -4,52 +4,57 @@ export const metadata = {
   title: "Best AI Tools for 2026 - ChatGPT, Claude, Midjourney",
   description:
     "Explore the best AI tools for writing, coding, design, and productivity.",
-  keywords: ["AI tools list", "ChatGPT alternatives", "best AI tools"]
+  keywords: ["AI tools list", "ChatGPT alternatives", "best AI tools"],
 };
 
 const tools = [
   {
     name: "ChatGPT",
+    logo: "/icons/chatgpt.svg",
     description:
       "A versatile AI assistant for writing, brainstorming, coding help, research, and daily productivity.",
     bestFor: "Writing",
-    url: "#"
+    url: "#",
   },
   {
     name: "Claude",
+    logo: "/icons/claude.svg",
     description:
       "A strong AI assistant for long-form thinking, document analysis, careful writing, and deep reasoning.",
     bestFor: "Long text",
-    url: "#"
+    url: "#",
   },
   {
     name: "Midjourney",
+    logo: "/icons/midjourney.svg",
     description:
       "A creative image generation platform for concept art, campaign visuals, moodboards, and visual exploration.",
     bestFor: "Images",
-    url: "#"
+    url: "#",
   },
   {
     name: "Canva AI",
+    logo: "/icons/canva-icon.svg",
     description:
       "A design-focused AI toolkit for social posts, presentations, brand assets, and quick visual production.",
     bestFor: "Design",
-    url: "#"
+    url: "#",
   },
   {
     name: "Gemini",
+    logo: "/icons/gemini.svg",
     description:
       "A multimodal AI assistant for research, writing, planning, and productivity across Google workflows.",
     bestFor: "Productivity",
-    url: "#"
-  }
+    url: "#",
+  },
 ];
 
 const comparisons = [
   { useCase: "Writing", bestTool: "ChatGPT" },
   { useCase: "Long text", bestTool: "Claude" },
   { useCase: "Images", bestTool: "Midjourney" },
-  { useCase: "Design", bestTool: "Canva" }
+  { useCase: "Design", bestTool: "Canva" },
 ];
 
 export default function AiToolsPage() {
@@ -68,8 +73,8 @@ export default function AiToolsPage() {
           <div className="tools-section-heading">
             <h2>Best AI Tools for 2026</h2>
             <p className="muted">
-              Compare popular platforms for writing, coding, design, visual work,
-              and everyday productivity.
+              Compare popular platforms for writing, coding, design, visual
+              work, and everyday productivity.
             </p>
           </div>
 
@@ -77,8 +82,16 @@ export default function AiToolsPage() {
             {tools.map((tool) => (
               <article className="card tool-card" key={tool.name}>
                 <div className="tool-card-top">
-                  <div className="tool-logo" aria-hidden="true">
-                    {tool.name.slice(0, 1)}
+                  <div className="home-tool-mark" aria-hidden="true">
+                    {tool.logo ? (
+                      <img
+                        src={tool.logo}
+                        alt={tool.name}
+                        className="home-tool-logo"
+                      />
+                    ) : (
+                      tool.name.slice(0, 1)
+                    )}
                   </div>
                   <span className="tool-badge">Best for {tool.bestFor}</span>
                 </div>

@@ -386,7 +386,7 @@ a[aria-disabled="true"] {
 }
 
 .copy-button,
-.open-chatgpt-button {
+.share-prompt-button {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
@@ -403,13 +403,13 @@ a[aria-disabled="true"] {
 }
 
 .copy-button:hover,
-.open-chatgpt-button:hover {
+.share-prompt-button:hover {
   transform: scale(1.02);
   box-shadow: var(--shadow-md);
 }
 
 .copy-button:active,
-.open-chatgpt-button:active {
+.share-prompt-button:active {
   transform: scale(0.97);
 }
 
@@ -475,7 +475,7 @@ a[aria-disabled="true"] {
 .hero h1,
 .page-title {
   color: var(--ink);
-  font-size: clamp(2.4rem, 7vw, 4.7rem);
+  font-size: clamp(2.4rem, 7vw, 3rem);
   letter-spacing: 0;
   line-height: 1.03;
   margin: 0;
@@ -677,7 +677,7 @@ h2 {
 .home-hero h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2.75rem, 8vw, 5.4rem);
+  font-size: clamp(2.75rem, 8vw, 3rem);
   line-height: 1;
 }
 
@@ -773,7 +773,15 @@ h2 {
 }
 
 .home-tool-mark {
-  background: linear-gradient(135deg, #7DBA3A, var(--accent));
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.home-tool-mark img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .home-soft-section {
@@ -815,7 +823,9 @@ h2 {
 }
 
 .prompt-card {
-  display: grid;
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
   gap: 18px;
   padding: 22px;
   transition: all 0.2s ease;
@@ -852,6 +862,7 @@ h2 {
 .prompt-card-copy {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .prompt-card h3 {
@@ -864,11 +875,25 @@ h2 {
   margin: 0;
 }
 
+.prompt-card-description {
+  display: -webkit-box;
+  min-height: 3em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.prompt-card-tags {
+  max-height: 58px;
+  overflow: hidden;
+}
+
 .prompt-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  margin-top: auto;
 }
 
 .prompt-actions {
@@ -1079,6 +1104,43 @@ h2 {
   align-items: stretch;
 }
 
+.library-filter-bar .library-search-input {
+  flex: 999 1 320px;
+}
+
+.library-filter-bar .library-filter-select {
+  flex: 0 1 150px;
+}
+
+.library-filter-bar .library-filter-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.library-icon-button {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  flex: 0 0 48px;
+  border-radius: 12px;
+  padding: 0;
+}
+
+.library-icon-button:active,
+.view-button:active {
+  transform: scale(0.96);
+}
+
+.library-reset-button {
+  background: #F6FAF2;
+}
+
+.library-results-header {
+  align-items: center;
+}
+
 .filter-bar>*,
 .toolbar>*,
 .admin-toolbar>* {
@@ -1097,14 +1159,18 @@ h2 {
 }
 
 .view-button {
-  min-height: 36px;
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  place-items: center;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 10px;
   background: #fff;
   color: var(--muted);
   cursor: pointer;
   font-weight: 800;
-  padding: 8px 12px;
+  padding: 0;
   transition: all 0.2s ease;
 }
 
@@ -1115,8 +1181,16 @@ h2 {
 
 .view-button.active {
   color: #fff;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   box-shadow: 0 10px 20px rgba(91, 142, 45, 0.18);
+}
+
+.compact-tool-row {
+  flex-wrap: nowrap;
+}
+
+.tool-count-badge {
+  white-space: nowrap;
 }
 
 .library-list-view {
@@ -1402,7 +1476,7 @@ h2 {
 .guide-hero-copy h1 {
   max-width: 780px;
   margin: 0;
-  font-size: clamp(2.5rem, 7vw, 4.8rem);
+  font-size: clamp(2.5rem, 7vw, 3rem);
   line-height: 1.02;
 }
 
@@ -1432,12 +1506,23 @@ h2 {
 }
 
 .guide-formula-step {
+  position: relative;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(13, 99, 57, 0.05), rgba(183, 243, 61, 0.08));
   color: var(--ink);
   font-weight: 850;
-  padding: 16px 18px;
+  padding: 20px 18px 20px 60px;
+  overflow: hidden;
+}
+
+.guide-formula-step-icon {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
 }
 
 .guide-formula-plus {
@@ -1602,7 +1687,7 @@ h2 {
   max-width: 760px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2.45rem, 7vw, 4.7rem);
+  font-size: clamp(2.45rem, 7vw, 3rem);
   line-height: 1.02;
 }
 
@@ -1754,7 +1839,7 @@ h2 {
   max-width: 780px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2.45rem, 7vw, 4.7rem);
+  font-size: clamp(2.45rem, 7vw, 3rem);
   line-height: 1.02;
 }
 
@@ -1885,7 +1970,7 @@ h2 {
   max-width: 780px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2.35rem, 7vw, 4.5rem);
+  font-size: clamp(2.35rem, 7vw, 3rem);
   line-height: 1.04;
 }
 
@@ -2159,7 +2244,7 @@ h2 {
   .button-secondary,
   .button-danger,
   .copy-button,
-  .open-chatgpt-button {
+  .share-prompt-button {
     width: 100%;
   }
 
@@ -2199,6 +2284,32 @@ h2 {
 
   .view-button {
     flex: 1;
+  }
+
+  .library-results-header {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .library-results-header .view-switcher {
+    width: auto;
+    margin-left: auto;
+  }
+
+  .library-results-header .view-button {
+    flex: 0 0 40px;
+  }
+
+  .library-filter-bar .library-filter-actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  .library-filter-bar .library-icon-button {
+    width: 48px;
+    min-width: 48px;
+    flex: 0 0 48px;
   }
 
   .prompt-actions {
