@@ -44,21 +44,18 @@ function SampleOutputDisplay({ prompt }) {
     );
   }
 
-  if (sampleOutput.type === "pdf") {
+  if (sampleOutput.type === "pdf" || sampleOutput.type === "file") {
+    const label = sampleOutput.type === "pdf" ? "Open PDF" : "Open File";
+
     return (
       <div className="sample-media-box">
-        <iframe
-          className="sample-output-pdf"
-          src={sampleOutput.value}
-          title={sampleOutput.fileName || `${prompt.title} PDF sample output`}
-        />
         <a
           className="button-secondary"
           href={sampleOutput.value}
           rel="noopener noreferrer"
           target="_blank"
         >
-          View / Download PDF
+          {label}
         </a>
         {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
       </div>

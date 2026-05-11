@@ -21,11 +21,16 @@ export function DeletePromptButton({ id }) {
     const response = await fetch(`/api/prompts/${id}`, {
       method: "DELETE"
     });
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       setLoading(false);
-      window.alert("Unable to delete this prompt.");
+      window.alert(data.error || data.message || "Unable to delete this prompt.");
       return;
+    }
+
+    if (data.warning) {
+      console.warn(data.warning);
     }
 
     router.refresh();

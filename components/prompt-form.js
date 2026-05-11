@@ -86,6 +86,11 @@ export function PromptForm({ mode, prompt }) {
   const router = useRouter();
   const initialSampleOutput = getInitialSampleOutput(prompt);
   const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
+  const [sampleOutputMode, setSampleOutputMode] = useState(
+    SAMPLE_OUTPUT_URL_TYPES.includes(initialSampleOutput.type) && initialSampleOutput.value
+      ? "direct-url"
+      : "upload"
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -291,7 +296,19 @@ export function PromptForm({ mode, prompt }) {
           <select
             id="sampleOutputType"
             name="sampleOutputType"
-            onChange={(event) => setSampleOutputType(event.target.value)}
+            onChange={(event) => {
+              const nextType = event.target.value;
+              setSampleOutputType(nextType);
+
+              if (nextType !== "text" && sampleOutputType === "text") {
+                setSampleOutputMode(
+                  SAMPLE_OUTPUT_URL_TYPES.includes(initialSampleOutput.type) &&
+                    initialSampleOutput.value
+                    ? "direct-url"
+                    : "upload"
+                );
+              }
+            }}
             value={sampleOutputType}
           >
             <option value="text">Text</option>
@@ -316,49 +333,63 @@ export function PromptForm({ mode, prompt }) {
         ) : (
           <>
             <div className="field">
-              <label htmlFor="sampleOutputFile">Sample output file optional</label>
-              <input
-                accept={
-                  sampleOutputType === "image"
-                    ? "image/*"
-                    : sampleOutputType === "pdf"
-                      ? "application/pdf"
-                      : undefined
-                }
-                id="sampleOutputFile"
-                key={`${sampleOutputType}-file`}
-                name="sampleOutputFile"
-                type="file"
-              />
-              <span className="field-hint muted">
-                Uploads up to 10 MB. If a file is selected, it is used instead of the URL.
-              </span>
+              <label htmlFor="sampleOutputMode">Sample output source</label>
+              <select
+                id="sampleOutputMode"
+                onChange={(event) => setSampleOutputMode(event.target.value)}
+                value={sampleOutputMode}
+              >
+                <option value="upload">Upload file</option>
+                <option value="direct-url">Direct URL</option>
+              </select>
             </div>
-            <div className="field">
-              <label htmlFor="sampleOutputUrl">
-                {sampleOutputType === "image"
-                  ? "Image URL"
-                  : sampleOutputType === "pdf"
-                    ? "PDF URL"
-                    : "File URL"}
-              </label>
-              <input
-                defaultValue={
-                  initialSampleOutput.type === sampleOutputType ? initialSampleOutput.value : ""
-                }
-                id="sampleOutputUrl"
-                key={`${sampleOutputType}-value`}
-                name="sampleOutputUrl"
-                placeholder={
-                  sampleOutputType === "image"
-                    ? "https://example.com/sample-output.png"
+
+            {sampleOutputMode === "upload" ? (
+              <div className="field">
+                <label htmlFor="sampleOutputFile">Sample output file optional</label>
+                <input
+                  accept={
+                    sampleOutputType === "image"
+                      ? "image/*"
+                      : sampleOutputType === "pdf"
+                        ? "application/pdf"
+                        : undefined
+                  }
+                  id="sampleOutputFile"
+                  key={`${sampleOutputType}-file`}
+                  name="sampleOutputFile"
+                  type="file"
+                />
+                <span className="field-hint muted">Uploads up to 10 MB.</span>
+              </div>
+            ) : (
+              <div className="field">
+                <label htmlFor="sampleOutputUrl">
+                  {sampleOutputType === "image"
+                    ? "Image URL"
                     : sampleOutputType === "pdf"
-                      ? "https://example.com/sample-output.pdf"
-                      : "https://example.com/sample-output.zip"
-                }
-                type="url"
-              />
-            </div>
+                      ? "PDF URL"
+                      : "File URL"}
+                </label>
+                <input
+                  defaultValue={
+                    initialSampleOutput.type === sampleOutputType ? initialSampleOutput.value : ""
+                  }
+                  id="sampleOutputUrl"
+                  key={`${sampleOutputType}-value`}
+                  name="sampleOutputUrl"
+                  placeholder={
+                    sampleOutputType === "image"
+                      ? "https://example.com/sample-output.png"
+                      : sampleOutputType === "pdf"
+                        ? "https://example.com/sample-output.pdf"
+                        : "https://example.com/sample-output.zip"
+                  }
+                  type="url"
+                />
+              </div>
+            )}
+
             <div className="field">
               <label htmlFor="sampleOutputFileName">File name optional</label>
               <input
