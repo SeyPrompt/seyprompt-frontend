@@ -20,10 +20,10 @@ const categoryPaths = [
 ].map((category) => `/prompts?category=${encodeURIComponent(category)}`);
 
 async function getPromptPaths() {
-  const apiUrl = process.env.SEYPROMPT_API_URL || "http://localhost:5001";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   try {
-    const response = await fetch(`${apiUrl}/api/prompts?limit=1000`);
+    const response = await fetch(`${apiBaseUrl}/api/prompts?limit=1000`);
 
     if (!response.ok) {
       return [];
@@ -45,20 +45,11 @@ async function getPromptPaths() {
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl,
-  generateRobotsTxt: true,
+  generateRobotsTxt: false,
   sitemapSize: 5000,
   changefreq: "weekly",
   priority: 0.7,
   exclude: ["/admin/*", "/api/*"],
-  robotsTxtOptions: {
-    policies: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: "/admin"
-      }
-    ]
-  },
   additionalPaths: async (config) => {
     const promptPaths = await getPromptPaths();
     const paths = [...staticPaths, ...categoryPaths, ...promptPaths];

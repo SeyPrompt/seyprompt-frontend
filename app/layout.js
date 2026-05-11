@@ -2,6 +2,7 @@ import "./globals.css";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { UTMTracker } from "@/components/UTMTracker";
 import {
   DEFAULT_OG_IMAGE_URL,
   SEO_KEYWORDS,
@@ -104,6 +105,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
         />
         <div className="shell">
+          <UTMTracker />
           <Navbar />
           {children}
           <Footer />

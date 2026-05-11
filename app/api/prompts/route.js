@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { API_URL } from "@/lib/config";
+import { apiUrl } from "@/utils/api";
 import { authCookieName } from "@/lib/auth";
 
 async function readBackendResponse(response) {
@@ -18,10 +18,11 @@ export async function POST(request) {
 
   const payload = await request.json();
 
-  const response = await fetch(`${API_URL}/api/prompts`, {
+  const response = await fetch(apiUrl("/api/prompts"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-admin-key": token,
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(payload)

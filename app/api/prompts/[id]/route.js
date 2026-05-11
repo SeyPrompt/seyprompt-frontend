@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { API_URL } from "@/lib/config";
+import { apiUrl } from "@/utils/api";
 import { authCookieName } from "@/lib/auth";
 
 async function getToken() {
@@ -23,10 +23,11 @@ export async function PUT(request, { params }) {
   const { id } = await params;
   const payload = await request.json();
 
-  const response = await fetch(`${API_URL}/api/prompts/${id}`, {
+  const response = await fetch(apiUrl(`/api/prompts/${id}`), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
+      "x-admin-key": token,
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(payload)
@@ -45,9 +46,10 @@ export async function DELETE(_request, { params }) {
 
   const { id } = await params;
 
-  const response = await fetch(`${API_URL}/api/prompts/${id}`, {
+  const response = await fetch(apiUrl(`/api/prompts/${id}`), {
     method: "DELETE",
     headers: {
+      "x-admin-key": token,
       Authorization: `Bearer ${token}`
     }
   });
