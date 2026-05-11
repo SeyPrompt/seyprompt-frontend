@@ -23,10 +23,9 @@ export default async function AdminLoginPage() {
       <div className="container login-container">
         <div className="stack">
           <div className="eyebrow">Admin access</div>
-          <h1 className="page-title">Sign in to manage prompts</h1>
+          <h1 className="page-title">Login</h1>
           <p className="page-subtitle">
-            This login writes the backend JWT into a secure cookie so admin pages can
-            render server-side.
+            
           </p>
         </div>
         <AdminLoginForm />
