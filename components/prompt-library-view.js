@@ -125,9 +125,9 @@ export function PromptLibraryView({
   children
 }) {
   const [view, setView] = useState("Card");
-  const [selectedCategory, setSelectedCategory] = useState(category?.toLowerCase() || "");
-  const [selectedTag, setSelectedTag] = useState(tag?.toLowerCase() || "");
-  const [selectedTool, setSelectedTool] = useState(tool?.toLowerCase() || "");
+  const [selectedCategory, setSelectedCategory] = useState(category);
+  const [selectedTag, setSelectedTag] = useState(tag);
+  const [selectedTool, setSelectedTool] = useState(tool);
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     tags: [],
@@ -176,9 +176,9 @@ export function PromptLibraryView({
   }, []);
 
   useEffect(() => {
-    setSelectedCategory(category?.toLowerCase() || "");
-    setSelectedTag(tag?.toLowerCase() || "");
-    setSelectedTool(tool?.toLowerCase() || "");
+    setSelectedCategory(category);
+    setSelectedTag(tag);
+    setSelectedTool(tool);
   }, [category, tag, tool]);
 
   const categoryOptions = mergeSelectedOption(filterOptions.categories, selectedCategory);
@@ -233,7 +233,7 @@ export function PromptLibraryView({
           className="library-filter-select"
           disabled={filterOptionsLoading}
           name="category"
-          onChange={(event) => setSelectedCategory(event.target.value.toLowerCase())}
+          onChange={(event) => setSelectedCategory(event.target.value)}
           value={selectedCategory}
         >
           <option value="">{filterOptionRequests.categories.label}</option>
@@ -247,7 +247,7 @@ export function PromptLibraryView({
           className="library-filter-select"
           disabled={filterOptionsLoading}
           name="tool"
-          onChange={(event) => setSelectedTool(event.target.value.toLowerCase())}
+          onChange={(event) => setSelectedTool(event.target.value)}
           value={selectedTool}
         >
           <option value="">{filterOptionRequests.tools.label}</option>
@@ -257,7 +257,7 @@ export function PromptLibraryView({
           className="library-filter-select"
           disabled={filterOptionsLoading}
           name="tag"
-          onChange={(event) => setSelectedTag(event.target.value.toLowerCase())}
+          onChange={(event) => setSelectedTag(event.target.value)}
           value={selectedTag}
         >
           <option value="">{filterOptionRequests.tags.label}</option>
