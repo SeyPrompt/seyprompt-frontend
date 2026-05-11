@@ -10,10 +10,11 @@ export function ContactForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     setStatus("loading");
     setMessage("");
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const payload = {
       name: formData.get("name"),
       email: formData.get("email"),
@@ -23,6 +24,7 @@ export function ContactForm() {
     };
 
     try {
+      let data = null;
       const response = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: {
@@ -31,17 +33,37 @@ export function ContactForm() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error("Contact request failed.");
+      try {
+        data = await response.json();
+      } catch (_error) {
+        data = null;
       }
 
-      event.currentTarget.reset();
+      if (process.env.NODE_ENV === "development") {
+        console.log("Contact form response", {
+          status: response.status,
+          data
+        });
+      }
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          data?.message ||
+            "We could not send your message right now. Please try again in a moment."
+        );
+      }
+
       setStatus("success");
-      setMessage("Thanks, your message has been sent. We will get back to you soon.");
-    } catch (_error) {
+      setMessage(
+        data?.message ||
+          "Thanks — your message has been sent. We’ll get back to you soon."
+      );
+      form.reset();
+    } catch (error) {
       setStatus("error");
       setMessage(
-        "We could not send your message right now. Please try again in a moment."
+        error?.message ||
+          "We could not send your message right now. Please try again in a moment."
       );
     }
   }
