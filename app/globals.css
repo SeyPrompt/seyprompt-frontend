@@ -112,8 +112,7 @@ a[aria-disabled="true"] {
   padding: 0 6px;
 }
 
-.brand,
-.admin-brand {
+.brand {
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -877,7 +876,6 @@ h2 {
 
 .prompt-card-description {
   display: -webkit-box;
-  min-height: 3em;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1231,63 +1229,41 @@ h2 {
 }
 
 .admin-shell {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   min-height: calc(100vh - 73px);
   background: #fff;
 }
 
-.admin-sidebar {
-  display: grid;
-  gap: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: #071126;
-  color: #fff;
-  padding: 22px 16px;
+.admin-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fbf7;
+  padding: 10px max(16px, calc((100vw - var(--max-width)) / 2));
 }
 
 .admin-user {
-  color: #98a2b3;
+  color: var(--muted);
   font-size: 0.88rem;
+  font-weight: 720;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-main {
-  padding: 24px 16px 48px;
+  width: min(var(--max-width), calc(100% - 32px));
+  margin: 0 auto;
+  padding: 34px 0 56px;
 }
 
-.admin-nav {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.admin-nav a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 10px;
-  color: #c9d2e3;
-  font-weight: 780;
-  padding: 12px 14px;
-  transition: all 0.2s ease;
-}
-
-.admin-nav a:hover,
-.admin-nav a.active {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: #fff;
-}
-
-.admin-logout {
-  margin-top: auto;
-}
-
-.admin-logout .button-secondary {
-  width: 100%;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+.admin-bar .button-secondary {
+  min-height: 40px;
+  padding: 10px 20px;
 }
 
 .admin-header {
@@ -2153,27 +2129,6 @@ h2 {
   .split {
     grid-template-columns: minmax(0, 2fr) minmax(280px, 0.78fr);
     align-items: start;
-  }
-
-  .admin-shell {
-    grid-template-columns: 230px 1fr;
-  }
-
-  .admin-sidebar {
-    position: sticky;
-    top: 73px;
-    min-height: calc(100vh - 73px);
-    border-bottom: 0;
-    border-radius: 0 18px 18px 0;
-    padding: 28px 18px;
-  }
-
-  .admin-nav {
-    display: grid;
-  }
-
-  .admin-main {
-    padding: 34px 42px 56px;
   }
 
   .table-wrap {

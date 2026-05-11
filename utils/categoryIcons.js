@@ -90,6 +90,10 @@ export const categoryIconMap = {
   analytics: BarChart3,
   hr: Users,
   interview: MessageSquareQuote,
+  "ai automation": Workflow,
+  "health & fitness": HeartPulse,
+  "health fitness": HeartPulse,
+  "personal growth": Lightbulb,
   "prompt engineering": WandSparkles,
   prompt: WandSparkles
 };
@@ -103,11 +107,18 @@ export const categoryColorMap = {
   writing: "bg-teal-100 text-teal-700",
   "content writing": "bg-teal-100 text-teal-700",
   "social media": "bg-green-100 text-green-700",
+  "customer support": "bg-slate-100 text-slate-700",
   design: "bg-emerald-100 text-emerald-700",
   seo: "bg-lime-100 text-lime-700",
   sales: "bg-green-100 text-green-700",
   finance: "bg-emerald-100 text-emerald-700",
-  education: "bg-teal-100 text-teal-700"
+  education: "bg-teal-100 text-teal-700",
+  productivity: "bg-sky-100 text-sky-700",
+  "ai automation": "bg-slate-100 text-slate-700",
+  "health & fitness": "bg-rose-100 text-rose-700",
+  "personal growth": "bg-amber-100 text-amber-700",
+  travel: "bg-cyan-100 text-cyan-700",
+  ecommerce: "bg-orange-100 text-orange-700"
 };
 
 function normalizeCategory(category = "") {

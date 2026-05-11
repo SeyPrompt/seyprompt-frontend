@@ -1,4 +1,3 @@
-import { AdminNav } from "@/components/admin-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { requireAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
@@ -14,23 +13,12 @@ export default async function AdminDashboardLayout({ children }) {
 
   return (
     <main className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <img
-            alt="SeyPrompt logo"
-            className="navbar-logo-image"
-            src="/images/seyprompt-logo.png"
-          />
-          <strong>SeyPrompt</strong>
-        </div>
+      <div className="admin-bar">
         <p className="admin-user">
           {currentUser?.user?.email || "Authenticated admin"}
         </p>
-        <AdminNav />
-        <div className="admin-logout">
-          <LogoutButton />
-        </div>
-      </aside>
+        <LogoutButton />
+      </div>
       <section className="admin-main">
         <div className="admin-header">
           <div>

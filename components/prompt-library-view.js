@@ -32,6 +32,11 @@ const filterOptionRequests = {
   }
 };
 
+function capitalizeFirstLetter(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function mergeSelectedOption(options, selectedValue) {
   if (!selectedValue || options.includes(selectedValue)) {
     return options;
@@ -184,7 +189,7 @@ export function PromptLibraryView({
     if (filterOptionsLoading) {
       return (
         <>
-          {selectedValue ? <option value={selectedValue}>{selectedValue}</option> : null}
+          {selectedValue ? <option value={selectedValue}>{capitalizeFirstLetter(selectedValue)}</option> : null}
           <option value="">Loading...</option>
         </>
       );
@@ -196,7 +201,7 @@ export function PromptLibraryView({
 
     return options.map((option) => (
       <option key={option} value={option}>
-        {option}
+        {capitalizeFirstLetter(option)}
       </option>
     ));
   }
