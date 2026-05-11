@@ -1,17 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { PromptCard } from "@/components/prompt-card";
 import { trackEvent } from "@/lib/analytics";
+import { apiUrl } from "@/utils/api";
 
 const views = [
   { label: "Card", title: "Card view", icon: LayoutGrid },
   { label: "List", title: "List view", icon: List },
   { label: "Table", title: "Table view", icon: Table2 }
 ];
+
+const filterOptionRequests = {
+  categories: {
+    emptyLabel: "No Categories Found",
+    label: "All Categories",
+    path: "/api/prompts/categories"
+  },
+  tags: {
+    emptyLabel: "No Tags Found",
+    label: "All Tags",
+    path: "/api/prompts/tags"
+  },
+  tools: {
+    emptyLabel: "No Tools Found",
+    label: "All Tools",
+    path: "/api/prompts/tools"
+  }
+};
+
+function mergeSelectedOption(options, selectedValue) {
+  if (!selectedValue || options.includes(selectedValue)) {
+    return options;
+  }
+
+  return [selectedValue, ...options];
+}
 
 function ToolBadges({ tools = [] }) {
   const [firstTool, ...remainingTools] = tools;
@@ -85,13 +112,94 @@ function PromptTable({ prompts }) {
 export function PromptLibraryView({
   prompts,
   q,
-  category,
-  tag,
+  category = "",
+  tag = "",
+  tool = "",
   limit,
   total,
   children
 }) {
   const [view, setView] = useState("Card");
+  const [selectedCategory, setSelectedCategory] = useState(category);
+  const [selectedTag, setSelectedTag] = useState(tag);
+  const [selectedTool, setSelectedTool] = useState(tool);
+  const [filterOptions, setFilterOptions] = useState({
+    categories: [],
+    tags: [],
+    tools: []
+  });
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchFilterOptions() {
+      setFilterOptionsLoading(true);
+
+      const results = await Promise.all(
+        Object.entries(filterOptionRequests).map(async ([key, request]) => {
+          try {
+            const response = await fetch(apiUrl(request.path), {
+              headers: {
+                Accept: "application/json"
+              }
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to load ${key}.`);
+            }
+
+            const data = await response.json();
+            return [key, Array.isArray(data?.[key]) ? data[key] : []];
+          } catch {
+            return [key, []];
+          }
+        })
+      );
+
+      if (active) {
+        setFilterOptions(Object.fromEntries(results));
+        setFilterOptionsLoading(false);
+      }
+    }
+
+    fetchFilterOptions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSelectedCategory(category);
+    setSelectedTag(tag);
+    setSelectedTool(tool);
+  }, [category, tag, tool]);
+
+  const categoryOptions = mergeSelectedOption(filterOptions.categories, selectedCategory);
+  const tagOptions = mergeSelectedOption(filterOptions.tags, selectedTag);
+  const toolOptions = mergeSelectedOption(filterOptions.tools, selectedTool);
+
+  function renderFilterOptions(options, emptyLabel, selectedValue) {
+    if (filterOptionsLoading) {
+      return (
+        <>
+          {selectedValue ? <option value={selectedValue}>{selectedValue}</option> : null}
+          <option value="">Loading...</option>
+        </>
+      );
+    }
+
+    if (!options.length) {
+      return <option value="">{emptyLabel}</option>;
+    }
+
+    return options.map((option) => (
+      <option key={option} value={option}>
+        {option}
+      </option>
+    ));
+  }
 
   return (
     <>
@@ -105,7 +213,8 @@ export function PromptLibraryView({
             event_category: "Search",
             search_term: formData.get("q") || "",
             category: formData.get("category") || "",
-            tag: formData.get("tag") || ""
+            tag: formData.get("tag") || "",
+            tool: formData.get("tool") || ""
           });
         }}
       >
@@ -115,27 +224,39 @@ export function PromptLibraryView({
           name="q"
           placeholder="Search prompts, tags, tools..."
         />
-        <select className="library-filter-select" defaultValue={category} name="category">
-          <option value="">All Categories</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Coding">Coding</option>
-          <option value="Resume">Resume</option>
-          <option value="Business">Business</option>
-          <option value="Design">Design</option>
+        <select
+          className="library-filter-select"
+          disabled={filterOptionsLoading}
+          name="category"
+          onChange={(event) => setSelectedCategory(event.target.value)}
+          value={selectedCategory}
+        >
+          <option value="">{filterOptionRequests.categories.label}</option>
+          {renderFilterOptions(
+            categoryOptions,
+            filterOptionRequests.categories.emptyLabel,
+            selectedCategory
+          )}
         </select>
-        <select className="library-filter-select" defaultValue="">
-          <option value="">All Tools</option>
-          <option value="ChatGPT">ChatGPT</option>
-          <option value="Claude">Claude</option>
-          <option value="Midjourney">Midjourney</option>
-          <option value="Canva">Canva</option>
+        <select
+          className="library-filter-select"
+          disabled={filterOptionsLoading}
+          name="tool"
+          onChange={(event) => setSelectedTool(event.target.value)}
+          value={selectedTool}
+        >
+          <option value="">{filterOptionRequests.tools.label}</option>
+          {renderFilterOptions(toolOptions, filterOptionRequests.tools.emptyLabel, selectedTool)}
         </select>
-        <select className="library-filter-select" defaultValue={tag} name="tag">
-          <option value="">All Tags</option>
-          <option value="marketing">marketing</option>
-          <option value="coding">coding</option>
-          <option value="resume">resume</option>
-          <option value="productivity">productivity</option>
+        <select
+          className="library-filter-select"
+          disabled={filterOptionsLoading}
+          name="tag"
+          onChange={(event) => setSelectedTag(event.target.value)}
+          value={selectedTag}
+        >
+          <option value="">{filterOptionRequests.tags.label}</option>
+          {renderFilterOptions(tagOptions, filterOptionRequests.tags.emptyLabel, selectedTag)}
         </select>
         <input name="limit" type="hidden" value={limit} />
         <div className="library-filter-actions">

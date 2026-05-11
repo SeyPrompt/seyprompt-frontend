@@ -17,6 +17,7 @@ export async function generateMetadata({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const category = resolvedSearchParams?.category || "";
   const tag = resolvedSearchParams?.tag || "";
+  const tool = resolvedSearchParams?.tool || "";
   const q = resolvedSearchParams?.q || "";
 
   if (category) {
@@ -34,6 +35,14 @@ export async function generateMetadata({ searchParams }) {
       title: `#${tag} AI Prompts`,
       description: `Browse SeyPrompt prompts tagged ${tag} for ChatGPT, Claude, Midjourney, and more.`,
       path: `/prompts?tag=${encodeURIComponent(tag)}`
+    });
+  }
+
+  if (tool) {
+    return createPageMetadata({
+      title: `${tool} AI Prompts`,
+      description: `Browse SeyPrompt prompts for ${tool}.`,
+      path: `/prompts?tool=${encodeURIComponent(tool)}`
     });
   }
 
@@ -57,6 +66,7 @@ export default async function PromptsPage({ searchParams }) {
   const q = resolvedSearchParams?.q || "";
   const category = resolvedSearchParams?.category || "";
   const tag = resolvedSearchParams?.tag || "";
+  const tool = resolvedSearchParams?.tool || "";
   const page = resolvedSearchParams?.page || "1";
   const limit = resolvedSearchParams?.limit || "12";
 
@@ -64,15 +74,31 @@ export default async function PromptsPage({ searchParams }) {
     q,
     category,
     tag,
+    tool,
     page,
     limit
   }).catch(() => ({
     data: [],
     pagination: { total: 0, page: 1, pages: 0 }
   }));
+  const visiblePrompts = tool
+    ? (response.data || []).filter((prompt) => (prompt.tools || []).includes(tool))
+    : response.data || [];
+  const needsClientToolFilter = tool && visiblePrompts.length !== (response.data || []).length;
+  const filteredResponse = needsClientToolFilter
+    ? {
+        ...response,
+        data: visiblePrompts,
+        pagination: {
+          ...response.pagination,
+          total: visiblePrompts.length,
+          pages: 1
+        }
+      }
+    : response;
 
-  const currentPage = Number(response.pagination?.page || page || 1);
-  const totalPages = Number(response.pagination?.pages || 1);
+  const currentPage = Number(filteredResponse.pagination?.page || page || 1);
+  const totalPages = Number(filteredResponse.pagination?.pages || 1);
 
   return (
     <main className="section">
@@ -87,10 +113,11 @@ export default async function PromptsPage({ searchParams }) {
         <PromptLibraryView
           category={category}
           limit={limit}
-          prompts={response.data || []}
+          prompts={filteredResponse.data || []}
           q={q}
           tag={tag}
-          total={response.pagination?.total || 0}
+          tool={tool}
+          total={filteredResponse.pagination?.total || 0}
         >
           <nav className="pagination" aria-label="Prompt pagination">
             <Link
@@ -98,7 +125,7 @@ export default async function PromptsPage({ searchParams }) {
               className="button-secondary"
               href={{
                 pathname: "/prompts",
-                query: { q, category, tag, page: Math.max(currentPage - 1, 1), limit }
+                query: { q, category, tag, tool, page: Math.max(currentPage - 1, 1), limit }
               }}
             >
               Previous
@@ -111,7 +138,7 @@ export default async function PromptsPage({ searchParams }) {
               className="button-secondary"
               href={{
                 pathname: "/prompts",
-                query: { q, category, tag, page: currentPage + 1, limit }
+                query: { q, category, tag, tool, page: currentPage + 1, limit }
               }}
             >
               Next
