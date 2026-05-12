@@ -6,7 +6,29 @@ import { Share2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 export function CopyOpenButton({ description, text, title, url }) {
-  const chatGptUrl = `https://chat.openai.com/?q=${encodeURIComponent(text || "")}`;
+  const encodedPrompt = encodeURIComponent(text || "");
+  const aiTools = [
+    {
+      name: "ChatGPT",
+      url: `https://chat.openai.com/?q=${encodedPrompt}`,
+      event: "open_in_chatgpt_click"
+    },
+    {
+      name: "Claude",
+      url: `https://claude.ai/new?q=${encodedPrompt}`,
+      event: "open_in_claude_click"
+    },
+    {
+      name: "Gemini",
+      url: `https://gemini.google.com/app?text=${encodedPrompt}`,
+      event: "open_in_gemini_click"
+    },
+    {
+      name: "Perplexity",
+      url: `https://www.perplexity.ai/search?q=${encodedPrompt}`,
+      event: "open_in_perplexity_click"
+    }
+  ];
 
   const handleShare = async () => {
     const shareData = {
@@ -32,8 +54,8 @@ export function CopyOpenButton({ description, text, title, url }) {
     }
   };
 
-  const handleOpenChatGpt = () => {
-    trackEvent("open_in_chatgpt_click", {
+  const handleOpenTool = (eventName) => {
+    trackEvent(eventName, {
       event_category: "Prompt",
       event_label: title || "prompt"
     });
@@ -48,16 +70,19 @@ export function CopyOpenButton({ description, text, title, url }) {
         text={text}
         trackingLabel={title || "prompt"}
       />
-      <a
-        className="button-secondary"
-        href={chatGptUrl}
-        onClick={handleOpenChatGpt}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        Open in ChatGPT
-        <ExternalLink aria-hidden="true" size={16} />
-      </a>
+      {aiTools.map((tool) => (
+        <a
+          className="button-secondary"
+          href={tool.url}
+          key={tool.name}
+          onClick={() => handleOpenTool(tool.event)}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Open in {tool.name}
+          <ExternalLink aria-hidden="true" size={16} />
+        </a>
+      ))}
       <button
         aria-label={`Share ${title || "prompt"}`}
         className="share-prompt-button"

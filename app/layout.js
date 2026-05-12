@@ -98,7 +98,7 @@ export default function RootLayout({ children }) {
   const schemas = [organizationSchema(), websiteSchema()];
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <script
           type="application/ld+json"

@@ -3,11 +3,11 @@ import Image from "next/image";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
-  title: "Best AI Tools for 2026 - ChatGPT, Claude, Midjourney",
+  title: "Best AI Tools for 2026 - Compare ChatGPT, Claude, Gemini",
   description:
-    "Explore the best AI tools for writing, coding, design, and productivity.",
+    "Compare popular AI tools by use case, pricing, strengths, and matching prompts.",
   path: "/ai-tools",
-  keywords: ["AI tools list", "ChatGPT alternatives", "best AI tools", "AI prompts"]
+  keywords: ["AI tools comparison", "ChatGPT alternatives", "best AI tools", "AI prompts"]
 });
 
 const tools = [
@@ -16,48 +16,82 @@ const tools = [
     logo: "/icons/chatgpt.svg",
     description:
       "A versatile AI assistant for writing, brainstorming, coding help, research, and daily productivity.",
-    bestFor: "Writing",
-    url: "#",
+    bestFor: "Writing, coding, everyday work",
+    pricing: "Free plan; Plus from $20/month; Pro tiers for heavier usage",
+    strengths: "Broad assistant workflows, coding help, file analysis, image generation",
+    promptTool: "ChatGPT",
+    url: "https://chatgpt.com/",
+    pricingUrl: "https://help.openai.com/en/articles/6950777-what-is-chatgpt-plus"
   },
   {
     name: "Claude",
     logo: "/icons/claude.svg",
     description:
       "A strong AI assistant for long-form thinking, document analysis, careful writing, and deep reasoning.",
-    bestFor: "Long text",
-    url: "#",
-  },
-  {
-    name: "Midjourney",
-    logo: "/icons/midjourney.svg",
-    description:
-      "A creative image generation platform for concept art, campaign visuals, moodboards, and visual exploration.",
-    bestFor: "Images",
-    url: "#",
-  },
-  {
-    name: "Canva AI",
-    logo: "/icons/canva-icon.svg",
-    description:
-      "A design-focused AI toolkit for social posts, presentations, brand assets, and quick visual production.",
-    bestFor: "Design",
-    url: "#",
+    bestFor: "Long documents, careful writing",
+    pricing: "Free plan; Pro commonly starts at $20/month in the US",
+    strengths: "Long context, polished writing, analysis-heavy work",
+    promptTool: "Claude",
+    url: "https://claude.ai/",
+    pricingUrl: "https://support.anthropic.com/en/articles/8325610-how-much-does-claude-pro-cost"
   },
   {
     name: "Gemini",
     logo: "/icons/gemini.svg",
     description:
       "A multimodal AI assistant for research, writing, planning, and productivity across Google workflows.",
-    bestFor: "Productivity",
-    url: "#",
+    bestFor: "Google workflows, multimodal research",
+    pricing: "Free plan; Google AI Pro from $19.99/month; Ultra from $249.99/month",
+    strengths: "Search-connected work, Google app ecosystem, video and research features",
+    promptTool: "Gemini",
+    url: "https://gemini.google.com/",
+    pricingUrl: "https://gemini.google/subscriptions/?hl=en-US"
   },
+  {
+    name: "Perplexity",
+    logo: "/icons/perplexity-ai-icon.svg",
+    description:
+      "An answer engine for web research, source-backed exploration, and quick comparisons.",
+    bestFor: "Research with sources",
+    pricing: "Free plan; paid Pro and Enterprise options available",
+    strengths: "Fast web research, citations, answer refinement",
+    promptTool: "Perplexity",
+    url: "https://www.perplexity.ai/",
+    pricingUrl: "https://www.perplexity.ai/pro"
+  },
+  {
+    name: "Midjourney",
+    logo: "/icons/midjourney.svg",
+    description:
+      "A creative image generation platform for concept art, campaign visuals, moodboards, and visual exploration.",
+    bestFor: "Image concepts and art direction",
+    pricing: "Paid plans for regular image generation",
+    strengths: "Stylized visuals, creative exploration, high-impact image prompting",
+    promptTool: "Midjourney",
+    url: "https://www.midjourney.com/",
+    pricingUrl: "https://www.midjourney.com/account"
+  },
+  {
+    name: "Canva AI",
+    logo: "/icons/canva-icon.svg",
+    description:
+      "A design-focused AI toolkit for social posts, presentations, brand assets, and quick visual production.",
+    bestFor: "Design and branded assets",
+    pricing: "Free plan; paid Canva plans unlock more AI and team features",
+    strengths: "Templates, brand kits, social designs, presentations",
+    promptTool: "Canva",
+    url: "https://www.canva.com/ai/",
+    pricingUrl: "https://www.canva.com/pricing/"
+  }
 ];
 
 const comparisons = [
-  { useCase: "Writing", bestTool: "ChatGPT" },
-  { useCase: "Long text", bestTool: "Claude" },
-  { useCase: "Images", bestTool: "Midjourney" },
-  { useCase: "Design", bestTool: "Canva" },
+  { useCase: "Everyday writing and ideation", bestTool: "ChatGPT", runnerUp: "Claude" },
+  { useCase: "Long-form editing and document analysis", bestTool: "Claude", runnerUp: "ChatGPT" },
+  { useCase: "Research with current sources", bestTool: "Perplexity", runnerUp: "Gemini" },
+  { useCase: "Google Workspace productivity", bestTool: "Gemini", runnerUp: "ChatGPT" },
+  { useCase: "Image concepts and visual prompts", bestTool: "Midjourney", runnerUp: "Canva AI" },
+  { useCase: "Social designs and presentations", bestTool: "Canva AI", runnerUp: "Gemini" }
 ];
 
 export default function AiToolsPage() {
@@ -76,8 +110,8 @@ export default function AiToolsPage() {
           <div className="tools-section-heading">
             <h2>Best AI Tools for 2026</h2>
             <p className="muted">
-              Compare popular platforms for writing, coding, design, visual
-              work, and everyday productivity.
+              Compare popular platforms by practical use case, current pricing
+              shape, and the SeyPrompt prompts that fit each tool.
             </p>
           </div>
 
@@ -105,9 +139,40 @@ export default function AiToolsPage() {
                   <h3>{tool.name}</h3>
                   <p className="muted">{tool.description}</p>
                 </div>
-                <Link className="button-secondary compact" href={tool.url}>
-                  Visit Tool
-                </Link>
+                <dl className="tool-facts">
+                  <div>
+                    <dt>Pricing</dt>
+                    <dd>{tool.pricing}</dd>
+                  </div>
+                  <div>
+                    <dt>Strength</dt>
+                    <dd>{tool.strengths}</dd>
+                  </div>
+                </dl>
+                <div className="tool-card-actions">
+                  <a
+                    className="button-secondary compact"
+                    href={tool.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Visit Tool
+                  </a>
+                  <a
+                    className="button-secondary compact"
+                    href={tool.pricingUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Pricing
+                  </a>
+                  <Link
+                    className="button compact"
+                    href={{ pathname: "/prompts", query: { tool: tool.promptTool } }}
+                  >
+                    Matching Prompts
+                  </Link>
+                </div>
               </article>
             ))}
           </div>
@@ -127,11 +192,13 @@ export default function AiToolsPage() {
             <div className="comparison-row comparison-head">
               <span>Use Case</span>
               <span>Best Tool</span>
+              <span>Runner Up</span>
             </div>
             {comparisons.map((item) => (
               <div className="comparison-row" key={item.useCase}>
                 <span>{item.useCase}</span>
                 <strong>{item.bestTool}</strong>
+                <span>{item.runnerUp}</span>
               </div>
             ))}
           </div>
@@ -141,7 +208,7 @@ export default function AiToolsPage() {
       <section className="section">
         <div className="container">
           <div className="tools-cta">
-            <h2>Find prompts for these tools</h2>
+            <h2>Find prompts matched to your AI tool</h2>
             <Link className="button" href="/prompts">
               Explore Prompt Library
             </Link>

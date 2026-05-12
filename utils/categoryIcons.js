@@ -95,8 +95,13 @@ export const categoryIconMap = {
   "programming & ai": Code2,
   "ai automation": Workflow,
   "health & fitness": HeartPulse,
+  "health wellness": HeartPulse,
+  "health & wellness": HeartPulse,
   "health fitness": HeartPulse,
   "personal growth": Lightbulb,
+  "travel & lifestyle": Plane,
+  "finance & money": Wallet,
+  "legal & compliance": Scale,
   "prompt engineering": WandSparkles,
   prompt: WandSparkles
 };
@@ -117,12 +122,15 @@ export const categoryColorMap = {
   finance: "bg-emerald-100 text-emerald-700",
   education: "bg-teal-100 text-teal-700",
   "learning & education": "bg-teal-100 text-teal-700",
-  productivity: "bg-sky-100 text-sky-700",
+  "health & wellness": "bg-rose-100 text-rose-700",
+  "personal growth": "bg-amber-100 text-amber-700",
+  "travel & lifestyle": "bg-cyan-100 text-cyan-700",
+  "finance & money": "bg-emerald-100 text-emerald-700",
+  "legal & compliance": "bg-slate-100 text-slate-700",
   "ai automation": "bg-slate-100 text-slate-700",
   "programming & ai": "bg-blue-100 text-blue-700",
   "business & startup": "bg-amber-100 text-amber-700",
   "health & fitness": "bg-rose-100 text-rose-700",
-  "personal growth": "bg-amber-100 text-amber-700",
   travel: "bg-cyan-100 text-cyan-700",
   ecommerce: "bg-orange-100 text-orange-700"
 };
@@ -133,10 +141,36 @@ function normalizeCategory(category = "") {
 
 export function getCategoryIcon(category = "") {
   const normalized = normalizeCategory(category);
-  return categoryIconMap[normalized] || Sparkles;
+  
+  // First try exact match
+  if (categoryIconMap[normalized]) {
+    return categoryIconMap[normalized];
+  }
+  
+  // Fall back to keyword matching - check if category contains any mapped keyword
+  for (const key in categoryIconMap) {
+    if (normalized.includes(key)) {
+      return categoryIconMap[key];
+    }
+  }
+  
+  return Sparkles;
 }
 
 export function getCategoryColor(category = "") {
   const normalized = normalizeCategory(category);
-  return categoryColorMap[normalized] || "bg-gray-100 text-gray-700";
+  
+  // First try exact match
+  if (categoryColorMap[normalized]) {
+    return categoryColorMap[normalized];
+  }
+  
+  // Fall back to keyword matching - check if category contains any mapped keyword
+  for (const key in categoryColorMap) {
+    if (normalized.includes(key)) {
+      return categoryColorMap[key];
+    }
+  }
+  
+  return "bg-gray-100 text-gray-700";
 }

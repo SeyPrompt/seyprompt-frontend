@@ -1,4 +1,5 @@
 import { ContactForm } from "@/components/contact-form";
+import { SocialLinks } from "@/components/SocialLinks";
 import { WandSparkles, Sparkles, Workflow, Bot } from "lucide-react";
 import { createPageMetadata } from "@/lib/seo";
 
@@ -76,6 +77,17 @@ export default function ContactPage() {
           </div>
 
           <ContactForm />
+
+          <aside className="panel contact-social-card">
+            <div>
+              <h2>Follow SeyPrompt</h2>
+              <p className="muted">
+                Get fresh prompt ideas, creator workflows, and practical AI
+                examples between site updates.
+              </p>
+            </div>
+            <SocialLinks className="contact-social-links" />
+          </aside>
         </div>
       </section>
     </main>

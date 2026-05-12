@@ -12,6 +12,7 @@ const links = [
   { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
   { href: "/ai-tools", label: "AI Tools" },
   { href: "/use-cases", label: "Use Cases" },
+  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 

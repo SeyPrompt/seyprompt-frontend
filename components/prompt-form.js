@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
 const SAMPLE_OUTPUT_URL_TYPES = ["image", "pdf", "file"];
@@ -11,6 +11,14 @@ function normalizeList(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function getFileFromFormData(formData, fieldName) {
@@ -84,6 +92,7 @@ function getInitialSampleOutput(prompt) {
 
 export function PromptForm({ mode, prompt }) {
   const router = useRouter();
+  const slugEditedRef = useRef(Boolean(prompt?.slug));
   const initialSampleOutput = getInitialSampleOutput(prompt);
   const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
   const [sampleOutputMode, setSampleOutputMode] = useState(
@@ -234,6 +243,13 @@ export function PromptForm({ mode, prompt }) {
           maxLength={120}
           minLength={3}
           name="title"
+          onChange={(event) => {
+            if (mode !== "create" || slugEditedRef.current) {
+              return;
+            }
+
+            event.currentTarget.form.elements.slug.value = slugify(event.target.value);
+          }}
           required
         />
       </div>
@@ -243,6 +259,9 @@ export function PromptForm({ mode, prompt }) {
           defaultValue={prompt?.slug || ""}
           id="slug"
           name="slug"
+          onChange={() => {
+            slugEditedRef.current = true;
+          }}
           pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
           placeholder="launch-plan-generator"
           required

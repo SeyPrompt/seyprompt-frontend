@@ -121,6 +121,7 @@ export function PromptLibraryView({
   tag = "",
   tool = "",
   limit,
+  loadFailed = false,
   total,
   children
 }) {
@@ -184,6 +185,7 @@ export function PromptLibraryView({
   const categoryOptions = mergeSelectedOption(filterOptions.categories, selectedCategory);
   const tagOptions = mergeSelectedOption(filterOptions.tags, selectedTag);
   const toolOptions = mergeSelectedOption(filterOptions.tools, selectedTool);
+  const hasActiveFilters = Boolean(q || category || tag || tool);
 
   function renderFilterOptions(options, emptyLabel, selectedValue) {
     if (filterOptionsLoading) {
@@ -328,9 +330,36 @@ export function PromptLibraryView({
           {children}
         </>
       ) : (
-        <div className="panel empty-state">
-          <h3>No prompts matched your filters.</h3>
-          <p className="muted">Try a broader search or clear your filters.</p>
+        <div className="panel empty-state prompt-empty-state">
+          <h3>
+            {loadFailed
+              ? "We could not load the prompt library."
+              : hasActiveFilters
+                ? "No prompts matched your filters."
+                : "No published prompts yet."}
+          </h3>
+          <p className="muted">
+            {loadFailed
+              ? "The catalog may be temporarily unavailable. Try again, or request a custom prompt while it comes back."
+              : hasActiveFilters
+                ? "Try a broader search, clear your filters, or ask SeyPrompt for a custom prompt."
+                : "Published prompts will appear here as soon as they are added. You can still request a custom prompt now."}
+          </p>
+          <div className="empty-state-actions">
+            {hasActiveFilters ? (
+              <Link className="button-secondary" href="/prompts">
+                Clear Filters
+              </Link>
+            ) : null}
+            <Link className="button" href={loadFailed ? "/prompts" : "/contact"}>
+              {loadFailed ? "Try Again" : "Request a Prompt"}
+            </Link>
+            {loadFailed ? (
+              <Link className="button-secondary" href="/contact">
+                Contact SeyPrompt
+              </Link>
+            ) : null}
+          </div>
         </div>
       )}
     </>

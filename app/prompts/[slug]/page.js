@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { fetchPromptBySlug } from "@/lib/api";
+import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import {
@@ -77,6 +77,41 @@ function hasSampleOutput(sampleOutput) {
   return Boolean(sampleOutput.value);
 }
 
+async function fetchRelatedPrompts(prompt) {
+  const requests = [];
+
+  if (prompt.category) {
+    requests.push(fetchPublicPrompts({ category: prompt.category, limit: "6" }));
+  }
+
+  for (const tool of (prompt.tools || []).slice(0, 2)) {
+    requests.push(fetchPublicPrompts({ tool, limit: "6" }));
+  }
+
+  const responses = await Promise.all(requests.map((request) => request.catch(() => null)));
+  const seen = new Set([prompt.slug, prompt._id, prompt.id].filter(Boolean));
+  const related = [];
+
+  for (const response of responses) {
+    for (const item of response?.data || []) {
+      const key = item.slug || item._id || item.id;
+
+      if (!key || seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      related.push(item);
+
+      if (related.length >= 4) {
+        return related;
+      }
+    }
+  }
+
+  return related;
+}
+
 export async function generateMetadata({ params }) {
   try {
     const { slug } = await params;
@@ -119,6 +154,7 @@ export default async function PromptDetailPage({ params }) {
   }
 
   const CategoryIcon = getCategoryIcon(prompt.category);
+  const relatedPrompts = await fetchRelatedPrompts(prompt);
 
   return (
     <main className="section">
@@ -197,13 +233,30 @@ export default async function PromptDetailPage({ params }) {
           <div>
             <div className="eyebrow">Related prompts</div>
             <div className="related-list">
-              {(prompt.tags || []).slice(0, 3).map((tag) => (
-                <Link href={{ pathname: "/prompts", query: { tag } }} key={tag}>
-                  #{tag}
+              {relatedPrompts.map((relatedPrompt) => (
+                <Link href={`/prompts/${relatedPrompt.slug}`} key={relatedPrompt.slug}>
+                  <span>
+                    {relatedPrompt.title}
+                    <small>
+                      {relatedPrompt.category || (relatedPrompt.tools || [])[0] || "Prompt"}
+                    </small>
+                  </span>
                   <span>&gt;</span>
                 </Link>
               ))}
-              {!(prompt.tags || []).length ? (
+              {!relatedPrompts.length && prompt.category ? (
+                <Link href={{ pathname: "/prompts", query: { category: prompt.category } }}>
+                  More {prompt.category} prompts
+                  <span>&gt;</span>
+                </Link>
+              ) : null}
+              {!relatedPrompts.length && (prompt.tools || [])[0] ? (
+                <Link href={{ pathname: "/prompts", query: { tool: prompt.tools[0] } }}>
+                  More {(prompt.tools || [])[0]} prompts
+                  <span>&gt;</span>
+                </Link>
+              ) : null}
+              {!relatedPrompts.length && !prompt.category && !(prompt.tools || []).length ? (
                 <p className="muted">Browse the full library for more prompts.</p>
               ) : null}
             </div>

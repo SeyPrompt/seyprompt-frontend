@@ -6,7 +6,10 @@ const staticPaths = [
   "/ai-prompt-guide",
   "/ai-tools",
   "/use-cases",
-  "/contact"
+  "/about",
+  "/contact",
+  "/privacy-policy",
+  "/terms-of-use"
 ];
 
 const categoryPaths = [

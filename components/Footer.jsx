@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { SocialLinks } from "@/components/SocialLinks";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -7,6 +8,7 @@ const quickLinks = [
   { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
   { href: "/ai-tools", label: "AI Tools" },
   { href: "/use-cases", label: "Use Cases" },
+  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -35,6 +37,11 @@ const categories = [
 
 const tools = ["ChatGPT", "Claude", "Midjourney", "Canva"];
 
+const legalLinks = [
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/terms-of-use", label: "Terms of Use" },
+];
+
 export function Footer() {
   return (
     <footer className="footer">
@@ -59,6 +66,7 @@ export function Footer() {
               Discover, copy, and use the best AI prompts for ChatGPT, Claude,
               and more.
             </p>
+            <SocialLinks className="footer-social-links" />
           </div>
 
           <div className="footer-column">
@@ -100,6 +108,13 @@ export function Footer() {
 
         <div className="footer-bottom">
           <p>© 2026 SeyPrompt. All rights reserved.</p>
+          <nav className="footer-legal-links" aria-label="Legal links">
+            {legalLinks.map((link) => (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
           <p>Built for creators, developers, and businesses using AI.</p>
         </div>
       </div>

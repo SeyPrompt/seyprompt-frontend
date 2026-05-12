@@ -79,6 +79,7 @@ export default async function PromptsPage({ searchParams }) {
     limit
   }).catch(() => ({
     data: [],
+    loadFailed: true,
     pagination: { total: 0, page: 1, pages: 0 }
   }));
   const visiblePrompts = tool
@@ -113,6 +114,7 @@ export default async function PromptsPage({ searchParams }) {
         <PromptLibraryView
           category={category}
           limit={limit}
+          loadFailed={Boolean(filteredResponse.loadFailed)}
           prompts={filteredResponse.data || []}
           q={q}
           tag={tag}
