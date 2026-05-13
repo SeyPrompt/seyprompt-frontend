@@ -1,4 +1,4 @@
-const siteUrl = "https://seyprompt.com";
+const siteUrl = "https://www.seyprompt.com";
 
 const staticPaths = [
   "/",
@@ -8,6 +8,7 @@ const staticPaths = [
   "/use-cases",
   "/about",
   "/contact",
+  "/saved",
   "/privacy-policy",
   "/terms-of-use"
 ];
@@ -58,7 +59,7 @@ module.exports = {
   sitemapSize: 5000,
   changefreq: "weekly",
   priority: 0.7,
-  exclude: ["/admin/*", "/api/*"],
+  exclude: ["/admin", "/admin/*", "/api/*", "/login", "/dashboard"],
   additionalPaths: async (config) => {
     const promptPaths = await getPromptPaths();
     const paths = [...staticPaths, ...categoryPaths, ...promptPaths];

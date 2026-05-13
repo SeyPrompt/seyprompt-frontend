@@ -465,7 +465,8 @@ a[aria-disabled="true"] {
 }
 
 .copy-button,
-.share-prompt-button {
+.share-prompt-button,
+.save-prompt-button {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
@@ -482,13 +483,15 @@ a[aria-disabled="true"] {
 }
 
 .copy-button:hover,
-.share-prompt-button:hover {
+.share-prompt-button:hover,
+.save-prompt-button:hover {
   transform: scale(1.02);
   box-shadow: var(--shadow-md);
 }
 
 .copy-button:active,
-.share-prompt-button:active {
+.share-prompt-button:active,
+.save-prompt-button:active {
   transform: scale(0.97);
 }
 
@@ -502,6 +505,12 @@ a[aria-disabled="true"] {
   border-color: #fecdd3;
   background: #fff1f3;
   color: var(--danger);
+}
+
+.save-prompt-button.saved {
+  border-color: #BFD4AE;
+  background: #EEF7E7;
+  color: var(--success);
 }
 
 .copy-button-primary {
@@ -976,6 +985,7 @@ h2 {
 
 .prompt-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-left: auto;
 }
@@ -1103,6 +1113,79 @@ h2 {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 650;
+}
+
+.recent-prompts {
+  display: grid;
+  gap: 14px;
+}
+
+.recent-prompts-header {
+  margin-bottom: 0;
+}
+
+.recent-prompts-header h2 {
+  margin: 8px 0 0;
+  font-size: 1.08rem;
+}
+
+.recent-prompts-grid,
+.saved-prompts-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.recent-prompt-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+.recent-prompt-card svg {
+  color: var(--primary-dark);
+}
+
+.recent-prompt-card strong,
+.recent-prompt-card small {
+  display: block;
+}
+
+.recent-prompt-card strong {
+  line-height: 1.35;
+}
+
+.recent-prompt-card small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.saved-prompts-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.saved-prompt-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.saved-prompt-card h2 {
+  margin: 10px 0 8px;
+  font-size: 1.18rem;
+}
+
+.saved-prompt-card p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.saved-prompt-actions {
+  margin-left: 0;
 }
 
 .back-link {
@@ -2399,6 +2482,10 @@ h2 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+}
+
+.not-found-categories-header {
+  margin-bottom: 0;
 }
 
 .not-found-card {

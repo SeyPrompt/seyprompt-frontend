@@ -16,7 +16,7 @@ export function CopyButton({
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text || "");
-      trackEvent("copy_prompt_click", {
+      trackEvent("prompt_copy_click", {
         event_category: "Prompt",
         event_label: trackingLabel
       });

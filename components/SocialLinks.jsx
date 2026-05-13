@@ -1,11 +1,17 @@
+"use client";
+
 import { liveSocialLinks } from "@/lib/social-links";
+import { trackEvent } from "@/lib/analytics";
+import { useId } from "react";
 
 function SocialIcon({ id }) {
+  const gradientId = useId();
+
   if (id === "instagram") {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <defs>
-          <linearGradient id="instagram-logo-gradient" x1="3" x2="21" y1="21" y2="3">
+          <linearGradient id={gradientId} x1="3" x2="21" y1="21" y2="3">
             <stop offset="0" stopColor="#FEDA75" />
             <stop offset="0.28" stopColor="#FA7E1E" />
             <stop offset="0.55" stopColor="#D62976" />
@@ -13,7 +19,7 @@ function SocialIcon({ id }) {
             <stop offset="1" stopColor="#4F5BD5" />
           </linearGradient>
         </defs>
-        <rect fill="url(#instagram-logo-gradient)" x="2.75" y="2.75" width="18.5" height="18.5" rx="5.4" />
+        <rect fill={`url(#${gradientId})`} x="2.75" y="2.75" width="18.5" height="18.5" rx="5.4" />
         <circle cx="12" cy="12" r="4.2" fill="none" stroke="#fff" strokeWidth="1.8" />
         <circle cx="17.25" cy="6.75" r="1.25" fill="#fff" />
       </svg>
@@ -61,6 +67,13 @@ export function SocialLinks({ className = "", label = "SeyPrompt social links" }
           className={`social-link social-link-${link.id}`}
           href={link.href}
           key={link.id}
+          onClick={() =>
+            trackEvent("social_link_click", {
+              event_category: "Social",
+              event_label: link.label,
+              social_platform: link.id
+            })
+          }
           rel="noopener noreferrer"
           target="_blank"
           title={link.label}

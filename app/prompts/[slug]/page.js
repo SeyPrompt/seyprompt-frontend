@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
+import { RecordPromptView } from "@/components/record-prompt-view";
+import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import {
   absoluteUrl,
@@ -158,6 +161,7 @@ export default async function PromptDetailPage({ params }) {
 
   return (
     <main className="section">
+      <RecordPromptView prompt={prompt} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(promptSchema(prompt)) }}
@@ -208,6 +212,7 @@ export default async function PromptDetailPage({ params }) {
             title={prompt.title}
             url={absoluteUrl(`/prompts/${prompt.slug}`)}
           />
+          <SavedPromptButton className="copy-button-primary" prompt={prompt} />
         </article>
 
         <aside className="panel sidebar-card stack">
@@ -261,6 +266,7 @@ export default async function PromptDetailPage({ params }) {
               ) : null}
             </div>
           </div>
+          <RecentlyViewedPrompts excludeSlug={prompt.slug} />
         </aside>
       </div>
     </main>

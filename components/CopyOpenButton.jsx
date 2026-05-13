@@ -75,7 +75,14 @@ export function CopyOpenButton({ description, text, title, url }) {
           className="button-secondary"
           href={tool.url}
           key={tool.name}
-          onClick={() => handleOpenTool(tool.event)}
+          onClick={() => {
+            handleOpenTool(tool.event);
+            trackEvent("cta_click", {
+              event_category: "Prompt",
+              event_label: title || "prompt",
+              cta_name: `open_in_${tool.name.toLowerCase()}`
+            });
+          }}
           rel="noopener noreferrer"
           target="_blank"
         >

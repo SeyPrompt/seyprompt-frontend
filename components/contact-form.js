@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiUrl } from "@/utils/api";
+import { trackEvent } from "@/lib/analytics";
 import { getStoredUTMParams } from "@/utils/utm";
 
 export function ContactForm() {
@@ -58,6 +59,10 @@ export function ContactForm() {
         data?.message ||
           "Thanks — your message has been sent. We’ll get back to you soon."
       );
+      trackEvent("contact_form_submit", {
+        event_category: "Contact",
+        topic: payload.topic
+      });
       form.reset();
     } catch (error) {
       setStatus("error");

@@ -4,7 +4,11 @@ import { getAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
 
 export const metadata = {
-  title: "Admin Login"
+  title: "Admin Login",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 export default async function AdminLoginPage() {

@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptLibraryView } from "@/components/prompt-library-view";
+import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
 import { createPageMetadata } from "@/lib/seo";
 
 const categoryDescriptions = {
@@ -82,6 +84,11 @@ export default async function PromptsPage({ searchParams }) {
     loadFailed: true,
     pagination: { total: 0, page: 1, pages: 0 }
   }));
+
+  if (category && !response.loadFailed && !response.data?.length && !categoryDescriptions[category]) {
+    notFound();
+  }
+
   const visiblePrompts = tool
     ? (response.data || []).filter((prompt) => (prompt.tools || []).includes(tool))
     : response.data || [];
@@ -147,6 +154,7 @@ export default async function PromptsPage({ searchParams }) {
             </Link>
           </nav>
         </PromptLibraryView>
+        <RecentlyViewedPrompts />
       </div>
     </main>
   );

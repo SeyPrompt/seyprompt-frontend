@@ -10,6 +10,7 @@ const quickLinks = [
   { href: "/use-cases", label: "Use Cases" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/saved", label: "Saved Prompts" },
 ];
 
 const categories = [
@@ -96,7 +97,7 @@ export function Footer() {
             <nav>
               {tools.map((tool) => (
                 <Link
-                  href={{ pathname: "/prompts", query: { tag: tool } }}
+                  href={{ pathname: "/prompts", query: { tool } }}
                   key={tool}
                 >
                   {tool}

@@ -3,6 +3,13 @@ import { requireAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false
+  }
+};
+
 export default async function AdminDashboardLayout({ children }) {
   const token = await requireAdminToken();
   const currentUser = await fetchCurrentAdmin(token).catch(() => null);

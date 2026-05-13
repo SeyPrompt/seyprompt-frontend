@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
+import { TrackedLink } from "@/components/tracked-link";
+import { TrackedSearchForm } from "@/components/tracked-search-form";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
 
@@ -71,19 +73,30 @@ export default async function HomePage() {
               Discover, copy, and use high-quality AI prompts built for better
               writing, sharper ideas, faster coding, and clearer daily work.
             </p>
-            <form className="hero-search" action="/prompts">
-              <input name="q" placeholder="Search prompts, tags, tools..." />
-              <button className="button" type="submit">
-                Search
-              </button>
-            </form>
+            <TrackedSearchForm className="hero-search" />
             <div className="home-hero-actions">
-              <Link className="button" href="/prompts">
+              <TrackedLink
+                className="button"
+                eventParams={{
+                  event_category: "CTA",
+                  event_label: "Browse Prompts",
+                  cta_name: "home_browse_prompts"
+                }}
+                href="/prompts"
+              >
                 Browse Prompts
-              </Link>
-              <Link className="button-secondary" href="/ai-prompt-guide">
+              </TrackedLink>
+              <TrackedLink
+                className="button-secondary"
+                eventParams={{
+                  event_category: "CTA",
+                  event_label: "Learn Guide",
+                  cta_name: "home_learn_guide"
+                }}
+                href="/ai-prompt-guide"
+              >
                 Learn Guide
-              </Link>
+              </TrackedLink>
             </div>
           </div>
         </div>

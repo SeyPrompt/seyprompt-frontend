@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
+import { trackEvent } from "@/lib/analytics";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 
 export function PromptCard({ prompt }) {
@@ -37,8 +41,20 @@ export function PromptCard({ prompt }) {
           ) : null}
         </div>
         <div className="prompt-actions">
+          <SavedPromptButton className="compact" prompt={prompt} />
           <CopyButton className="compact" text={prompt.prompt} trackingLabel={prompt.slug || prompt.title} />
-          <Link className="button compact" href={`/prompts/${prompt.slug}`}>
+          <Link
+            className="button compact"
+            href={`/prompts/${prompt.slug}`}
+            onClick={() =>
+              trackEvent("prompt_card_click", {
+                event_category: "Prompt",
+                event_label: prompt.slug || prompt.title,
+                prompt_slug: prompt.slug,
+                prompt_category: prompt.category || "General"
+              })
+            }
+          >
             View
           </Link>
         </div>

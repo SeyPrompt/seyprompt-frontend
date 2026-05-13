@@ -216,7 +216,7 @@ export function PromptLibraryView({
         onSubmit={(event) => {
           const formData = new FormData(event.currentTarget);
 
-          trackEvent("search_usage", {
+          trackEvent("prompt_search", {
             event_category: "Search",
             search_term: formData.get("q") || "",
             category: formData.get("category") || "",
@@ -235,7 +235,13 @@ export function PromptLibraryView({
           className="library-filter-select"
           disabled={filterOptionsLoading}
           name="category"
-          onChange={(event) => setSelectedCategory(event.target.value)}
+          onChange={(event) => {
+            setSelectedCategory(event.target.value);
+            trackEvent("category_filter_click", {
+              event_category: "Filter",
+              event_label: event.target.value || "All Categories"
+            });
+          }}
           value={selectedCategory}
         >
           <option value="">{filterOptionRequests.categories.label}</option>
@@ -249,7 +255,13 @@ export function PromptLibraryView({
           className="library-filter-select"
           disabled={filterOptionsLoading}
           name="tool"
-          onChange={(event) => setSelectedTool(event.target.value)}
+          onChange={(event) => {
+            setSelectedTool(event.target.value);
+            trackEvent("tool_filter_click", {
+              event_category: "Filter",
+              event_label: event.target.value || "All Tools"
+            });
+          }}
           value={selectedTool}
         >
           <option value="">{filterOptionRequests.tools.label}</option>
@@ -279,6 +291,13 @@ export function PromptLibraryView({
             aria-label="Reset filters"
             className="button-secondary library-icon-button library-reset-button"
             href="/prompts"
+            onClick={() =>
+              trackEvent("cta_click", {
+                event_category: "Filter",
+                event_label: "Reset prompt filters",
+                cta_name: "reset_filters"
+              })
+            }
             title="Reset"
           >
             <RotateCcw size={20} aria-hidden="true" />
