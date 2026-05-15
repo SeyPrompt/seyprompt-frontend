@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { CopyButton } from "@/components/CopyButton";
-import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { trackEvent } from "@/lib/analytics";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 
@@ -41,8 +39,6 @@ export function PromptCard({ prompt }) {
           ) : null}
         </div>
         <div className="prompt-actions">
-          <SavedPromptButton className="compact" prompt={prompt} />
-          <CopyButton className="compact" text={prompt.prompt} trackingLabel={prompt.slug || prompt.title} />
           <Link
             className="button compact"
             href={`/prompts/${prompt.slug}`}

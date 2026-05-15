@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
-import { CopyButton } from "@/components/CopyButton";
 import { PromptCard } from "@/components/prompt-card";
 import { trackEvent } from "@/lib/analytics";
 import { apiUrl } from "@/utils/api";
@@ -96,11 +95,6 @@ function PromptTable({ prompts }) {
               </td>
               <td>
                 <div className="prompt-actions">
-                  <CopyButton
-                    className="compact"
-                    text={prompt.prompt}
-                    trackingLabel={prompt.slug || prompt.title}
-                  />
                   <Link className="button compact" href={`/prompts/${prompt.slug}`}>
                     View
                   </Link>
