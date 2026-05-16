@@ -4,7 +4,15 @@ import { requireAdminToken } from "@/lib/auth";
 import { DeletePromptButton } from "@/components/delete-prompt-button";
 
 export const metadata = {
-  title: "Admin Prompts"
+  title: "Admin Prompts",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  }
 };
 
 export default async function AdminPromptsPage({ searchParams }) {

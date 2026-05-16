@@ -1,7 +1,15 @@
 import { PromptForm } from "@/components/prompt-form";
 
 export const metadata = {
-  title: "Create Prompt"
+  title: "Create Prompt",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  }
 };
 
 export default function NewPromptPage() {

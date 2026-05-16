@@ -2,8 +2,11 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
+Disallow: /admin/*
 Disallow: /login
+Disallow: /login/
 Disallow: /dashboard
+Disallow: /dashboard/
 Disallow: /api/
 
 Sitemap: https://www.seyprompt.com/sitemap.xml

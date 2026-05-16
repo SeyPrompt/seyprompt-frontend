@@ -4,7 +4,15 @@ import { fetchAdminPromptById } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 
 export const metadata = {
-  title: "Edit Prompt"
+  title: "Edit Prompt",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  }
 };
 
 export default async function EditPromptPage({ params }) {

@@ -59,7 +59,7 @@ module.exports = {
   sitemapSize: 5000,
   changefreq: "weekly",
   priority: 0.7,
-  exclude: ["/admin", "/admin/*", "/api/*", "/login", "/dashboard"],
+  exclude: ["/admin", "/admin/*", "/api/*", "/login", "/login/*", "/dashboard", "/dashboard/*"],
   additionalPaths: async (config) => {
     const promptPaths = await getPromptPaths();
     const paths = [...staticPaths, ...categoryPaths, ...promptPaths];
