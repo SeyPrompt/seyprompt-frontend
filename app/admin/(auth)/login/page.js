@@ -7,7 +7,11 @@ export const metadata = {
   title: "Admin Login",
   robots: {
     index: false,
-    follow: false
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
   }
 };
 

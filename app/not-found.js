@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BriefcaseBusiness, Code2, Home, Library, Megaphone, Palette } from "lucide-react";
 
 export const metadata = {
-  title: "Page Not Found | SeyPrompt",
+  title: "Page Not Found",
   description:
     "The page you are looking for could not be found. Browse SeyPrompt prompts, read the prompt guide, or contact support.",
   robots: {
@@ -54,11 +54,11 @@ export default function NotFound() {
           <div className="not-found-actions">
             <Link className="button" href="/">
               <Home size={18} aria-hidden="true" />
-              Back to Home
+              Go Home
             </Link>
             <Link className="button-secondary" href="/prompts">
               <Library size={18} aria-hidden="true" />
-              Go to Prompt Library
+              Browse Prompt Library
             </Link>
           </div>
         </div>

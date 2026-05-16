@@ -3,9 +3,11 @@
 import { ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { Share2 } from "lucide-react";
+import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
 export function CopyOpenButton({ description, text, title, url }) {
+  const [copied, setCopied] = useState(false);
   const encodedPrompt = encodeURIComponent(text || "");
   const aiTools = [
     {
@@ -62,43 +64,52 @@ export function CopyOpenButton({ description, text, title, url }) {
   };
 
   return (
-    <div className="copy-open-group">
-      <CopyButton
-        className="copy-button-primary"
-        copiedLabel="Copied!"
-        label="Copy Prompt"
-        text={text}
-        trackingLabel={title || "prompt"}
-      />
-      {aiTools.map((tool) => (
-        <a
-          className="button-secondary"
-          href={tool.url}
-          key={tool.name}
-          onClick={() => {
-            handleOpenTool(tool.event);
-            trackEvent("cta_click", {
-              event_category: "Prompt",
-              event_label: title || "prompt",
-              cta_name: `open_in_${tool.name.toLowerCase()}`
-            });
+    <div className="copy-action-panel">
+      <div className="copy-open-group">
+        <CopyButton
+          className="copy-button-primary"
+          copiedLabel="Copied!"
+          label="Copy Prompt"
+          onCopied={() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 7000);
           }}
-          rel="noopener noreferrer"
-          target="_blank"
+          text={text}
+          trackingLabel={title || "prompt"}
+        />
+        {aiTools.map((tool) => (
+          <a
+            className="button-secondary"
+            href={tool.url}
+            key={tool.name}
+            onClick={() => {
+              handleOpenTool(tool.event);
+              trackEvent("cta_click", {
+                event_category: "Prompt",
+                event_label: title || "prompt",
+                cta_name: `open_in_${tool.name.toLowerCase()}`
+              });
+            }}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Open in {tool.name}
+            <ExternalLink aria-hidden="true" size={16} />
+          </a>
+        ))}
+        <button
+          aria-label={`Share ${title || "prompt"}`}
+          className="share-prompt-button"
+          onClick={handleShare}
+          type="button"
         >
-          Open in {tool.name}
-          <ExternalLink aria-hidden="true" size={16} />
-        </a>
-      ))}
-      <button
-        aria-label={`Share ${title || "prompt"}`}
-        className="share-prompt-button"
-        onClick={handleShare}
-        type="button"
-      >
-        Share
-        <Share2 aria-hidden="true" size={16} />
-      </button>
+          Share
+          <Share2 aria-hidden="true" size={16} />
+        </button>
+      </div>
+      <p className={`copy-next-action${copied ? " visible" : ""}`} aria-live="polite">
+        Prompt copied. Open it in your AI tool, save it for later, or share it with your team.
+      </p>
     </div>
   );
 }

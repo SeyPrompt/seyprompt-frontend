@@ -9,6 +9,7 @@ export function CopyButton({
   label = "Copy",
   copiedLabel = "Copied!",
   className = "",
+  onCopied,
   trackingLabel = "prompt"
 }) {
   const [status, setStatus] = useState("idle");
@@ -20,6 +21,7 @@ export function CopyButton({
         event_category: "Prompt",
         event_label: trackingLabel
       });
+      onCopied?.();
       setStatus("copied");
       window.setTimeout(() => setStatus("idle"), 2000);
     } catch (_error) {
