@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
@@ -53,6 +54,7 @@ export function PromptCard({ prompt }) {
           >
             View
           </Link>
+          <SavedPromptButton prompt={prompt} />
         </div>
       </div>
     </article>

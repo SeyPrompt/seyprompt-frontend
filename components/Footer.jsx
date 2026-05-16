@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
+import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -13,37 +14,27 @@ const quickLinks = [
   { href: "/saved", label: "Saved Prompts" },
 ];
 
-const categories = [
-  {
-    href: { pathname: "/prompts", query: { category: "Marketing" } },
-    label: "Marketing Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Coding" } },
-    label: "Coding Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Resume" } },
-    label: "Resume Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Business" } },
-    label: "Business Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Social Media" } },
-    label: "Social Media Prompts",
-  },
-];
-
-const tools = ["ChatGPT", "Claude", "Midjourney", "Canva"];
+const fallbackCategories = ["Marketing", "Coding", "Resume", "Business", "Social Media", "Design"];
+const fallbackTools = ["ChatGPT", "Claude", "Midjourney", "Canva", "Gemini", "Perplexity"];
 
 const legalLinks = [
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms-of-use", label: "Terms of Use" },
 ];
 
-export function Footer() {
+function toFooterItems(items, fallbackItems) {
+  const uniqueItems = Array.from(new Set([...items, ...fallbackItems]));
+  return uniqueItems.slice(0, 6);
+}
+
+export async function Footer() {
+  const [categoryItems, toolItems] = await Promise.all([
+    fetchPromptCategories(6).catch(() => []),
+    fetchPromptTools(6).catch(() => [])
+  ]);
+  const categories = toFooterItems(categoryItems, fallbackCategories);
+  const tools = toFooterItems(toolItems, fallbackTools);
+
   return (
     <footer className="footer">
       <div className="container footer-inner">
@@ -85,8 +76,11 @@ export function Footer() {
             <h3>Categories</h3>
             <nav>
               {categories.map((category) => (
-                <Link href={category.href} key={category.label}>
-                  {category.label}
+                <Link
+                  href={{ pathname: "/prompts", query: { category } }}
+                  key={category}
+                >
+                  {category} Prompts
                 </Link>
               ))}
             </nav>

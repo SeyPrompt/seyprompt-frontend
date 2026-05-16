@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { PromptCard } from "@/components/prompt-card";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { trackEvent } from "@/lib/analytics";
 import { apiUrl } from "@/utils/api";
 
@@ -98,6 +99,7 @@ function PromptTable({ prompts }) {
                   <Link className="button compact" href={`/prompts/${prompt.slug}`}>
                     View
                   </Link>
+                  <SavedPromptButton prompt={prompt} />
                 </div>
               </td>
             </tr>
