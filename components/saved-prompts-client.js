@@ -8,6 +8,7 @@ import {
   isAuthError,
   unsavePrompt
 } from "@/lib/saved-prompts";
+import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { trackEvent } from "@/lib/analytics";
 import { useUserAuth } from "@/components/user-auth-provider";
 
@@ -164,19 +165,28 @@ export function SavedPromptsClient() {
           return null;
         }
 
+        const categories = getPromptCategories(prompt);
+        const primaryCategory = getPrimaryPromptCategory(prompt);
+        const description = prompt.description || prompt.prompt || "";
+
         return (
           <article className="card saved-prompt-card" key={item.id || prompt._id || prompt.slug}>
             <div>
-              <div className="eyebrow">{prompt.category || "General"}</div>
+              <div className="eyebrow">{primaryCategory || "General"}</div>
               <h2>{prompt.title}</h2>
               <p className="muted">
-                {prompt.prompt.slice(0, 170)}
-                {prompt.prompt.length > 170 ? "..." : ""}
+                {description.slice(0, 170)}
+                {description.length > 170 ? "..." : ""}
               </p>
             </div>
             <div className="pill-row">
+              {categories.map((category) => (
+                <span className="pill" key={`category-${category}`}>
+                  {category}
+                </span>
+              ))}
               {(prompt.tools || []).slice(0, 3).map((tool) => (
-                <span className="pill pill-alt" key={tool}>
+                <span className="pill pill-alt" key={`tool-${tool}`}>
                   {tool}
                 </span>
               ))}

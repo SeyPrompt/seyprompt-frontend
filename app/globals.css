@@ -1533,6 +1533,60 @@ h2 {
   resize: vertical;
 }
 
+.category-multiselect {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.category-multiselect select {
+  min-height: 116px;
+}
+
+.category-actions {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.category-tag-input {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.category-tag-input input {
+  min-width: 0;
+  flex: 1;
+}
+
+.category-tag-input .button-secondary {
+  flex: 0 0 auto;
+}
+
+.category-tag {
+  gap: 7px;
+}
+
+.category-tag button {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.12);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: 0;
+}
+
+.category-tag button:hover {
+  background: rgba(31, 41, 55, 0.2);
+}
+
 .field-hint,
 .error-text,
 .success-text {

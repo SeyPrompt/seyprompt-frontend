@@ -6,6 +6,7 @@ import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { PromptCard } from "@/components/prompt-card";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { trackEvent } from "@/lib/analytics";
+import { getPromptCategories } from "@/lib/prompt-metadata";
 import { apiUrl } from "@/utils/api";
 
 const views = [
@@ -45,6 +46,21 @@ function mergeSelectedOption(options, selectedValue) {
   return [selectedValue, ...options];
 }
 
+function normalizeFilterOptions(data, key) {
+  const values = Array.isArray(data)
+    ? data
+    : data?.[key] || data?.data || data?.items || data?.results || [];
+
+  return values
+    .map((item) =>
+      typeof item === "string"
+        ? item
+        : item?.name || item?.label || item?.title || item?.value || ""
+    )
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+}
+
 function ToolBadges({ tools = [] }) {
   const [firstTool, ...remainingTools] = tools;
 
@@ -76,34 +92,49 @@ function PromptTable({ prompts }) {
           </tr>
         </thead>
         <tbody>
-          {prompts.map((prompt) => (
-            <tr key={prompt._id || prompt.id || prompt.slug}>
-              <td>
-                <strong>{prompt.title}</strong>
-                <div className="muted">
-                  {prompt.prompt.slice(0, 90)}
-                  {prompt.prompt.length > 90 ? "..." : ""}
-                </div>
-              </td>
-              <td>
-                <span className="pill">{prompt.category || "General"}</span>
-              </td>
-              <td>
-                <ToolBadges tools={prompt.tools || []} />
-              </td>
-              <td>
-                <span className="status-badge">Published</span>
-              </td>
-              <td>
-                <div className="prompt-actions">
-                  <Link className="button compact" href={`/prompts/${prompt.slug}`}>
-                    View
-                  </Link>
-                  <SavedPromptButton prompt={prompt} />
-                </div>
-              </td>
-            </tr>
-          ))}
+          {prompts.map((prompt) => {
+            const categories = getPromptCategories(prompt);
+            const description = prompt.description || prompt.prompt || "";
+
+            return (
+              <tr key={prompt._id || prompt.id || prompt.slug}>
+                <td>
+                  <strong>{prompt.title}</strong>
+                  <div className="muted">
+                    {description.slice(0, 90)}
+                    {description.length > 90 ? "..." : ""}
+                  </div>
+                </td>
+                <td>
+                  <div className="pill-row">
+                    {categories.length ? (
+                      categories.map((category) => (
+                        <span className="pill" key={category}>
+                          {category}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="pill">General</span>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <ToolBadges tools={prompt.tools || []} />
+                </td>
+                <td>
+                  <span className="status-badge">Published</span>
+                </td>
+                <td>
+                  <div className="prompt-actions">
+                    <Link className="button compact" href={`/prompts/${prompt.slug}`}>
+                      View
+                    </Link>
+                    <SavedPromptButton prompt={prompt} />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -152,7 +183,7 @@ export function PromptLibraryView({
             }
 
             const data = await response.json();
-            return [key, Array.isArray(data?.[key]) ? data[key] : []];
+            return [key, normalizeFilterOptions(data, key)];
           } catch {
             return [key, []];
           }

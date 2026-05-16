@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
+import { getPromptCategories } from "@/lib/prompt-metadata";
 import { DeletePromptButton } from "@/components/delete-prompt-button";
 
 export const metadata = {
@@ -78,65 +79,93 @@ export default async function AdminPromptsPage({ searchParams }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {response.data.map((prompt) => (
-                    <tr key={prompt._id || prompt.id}>
-                      <td>
-                        <strong>{prompt.title}</strong>
-                        <div className="muted">{prompt.slug}</div>
-                      </td>
-                      <td>{prompt.category || "General"}</td>
-                      <td>
-                        <div className="pill-row">
-                          {(prompt.tools || []).slice(0, 2).map((tool) => (
-                            <span className="pill pill-alt" key={tool}>
-                              {tool}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="status-badge">{prompt.status}</span>
-                      </td>
-                      <td>{prompt.visibility}</td>
-                      <td>
-                        <div className="toolbar">
-                          <Link
-                            className="button-secondary"
-                            href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
-                          >
-                            Edit
-                          </Link>
-                          <DeletePromptButton id={prompt._id || prompt.id} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {response.data.map((prompt) => {
+                    const categories = getPromptCategories(prompt);
+
+                    return (
+                      <tr key={prompt._id || prompt.id}>
+                        <td>
+                          <strong>{prompt.title}</strong>
+                          <div className="muted">{prompt.slug}</div>
+                          {prompt.description ? (
+                            <div className="muted">{prompt.description}</div>
+                          ) : null}
+                        </td>
+                        <td>
+                          <div className="pill-row">
+                            {categories.length ? (
+                              categories.map((category) => (
+                                <span className="pill" key={category}>
+                                  {category}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="pill">General</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="pill-row">
+                            {(prompt.tools || []).slice(0, 2).map((tool) => (
+                              <span className="pill pill-alt" key={tool}>
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="status-badge">{prompt.status}</span>
+                        </td>
+                        <td>{prompt.visibility}</td>
+                        <td>
+                          <div className="toolbar">
+                            <Link
+                              className="button-secondary"
+                              href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                            >
+                              Edit
+                            </Link>
+                            <DeletePromptButton id={prompt._id || prompt.id} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
             <div className="admin-card-list">
-              {response.data.map((prompt) => (
-                <article className="admin-prompt-card" key={prompt._id || prompt.id}>
-                  <div>
-                    <strong>{prompt.title}</strong>
-                    <p className="muted">{prompt.slug}</p>
-                  </div>
-                  <div className="admin-card-meta">
-                    <span>{prompt.category || "General"}</span>
-                    <span className="status-badge">{prompt.status}</span>
-                    <span>{prompt.visibility}</span>
-                  </div>
-                  <div className="toolbar">
-                    <Link
-                      className="button-secondary"
-                      href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
-                    >
-                      Edit
-                    </Link>
-                    <DeletePromptButton id={prompt._id || prompt.id} />
-                  </div>
-                </article>
-              ))}
+              {response.data.map((prompt) => {
+                const categories = getPromptCategories(prompt);
+
+                return (
+                  <article className="admin-prompt-card" key={prompt._id || prompt.id}>
+                    <div>
+                      <strong>{prompt.title}</strong>
+                      <p className="muted">{prompt.slug}</p>
+                      {prompt.description ? <p className="muted">{prompt.description}</p> : null}
+                    </div>
+                    <div className="admin-card-meta">
+                      {categories.length ? (
+                        categories.map((category) => <span key={category}>{category}</span>)
+                      ) : (
+                        <span>General</span>
+                      )}
+                      <span className="status-badge">{prompt.status}</span>
+                      <span>{prompt.visibility}</span>
+                    </div>
+                    <div className="toolbar">
+                      <Link
+                        className="button-secondary"
+                        href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                      >
+                        Edit
+                      </Link>
+                      <DeletePromptButton id={prompt._id || prompt.id} />
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </>
         ) : (

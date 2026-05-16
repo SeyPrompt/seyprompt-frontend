@@ -5,6 +5,11 @@ import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { RecordPromptView } from "@/components/record-prompt-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
+import {
+  getPrimaryPromptCategory,
+  getPromptCategories,
+  getPromptCategoryLabel
+} from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import {
   absoluteUrl,
@@ -82,9 +87,10 @@ function hasSampleOutput(sampleOutput) {
 
 async function fetchRelatedPrompts(prompt) {
   const requests = [];
+  const primaryCategory = getPrimaryPromptCategory(prompt);
 
-  if (prompt.category) {
-    requests.push(fetchPublicPrompts({ category: prompt.category, limit: "6" }));
+  if (primaryCategory) {
+    requests.push(fetchPublicPrompts({ category: primaryCategory, limit: "6" }));
   }
 
   for (const tool of (prompt.tools || []).slice(0, 2)) {
@@ -130,7 +136,7 @@ export async function generateMetadata({ params }) {
       image,
       type: "article",
       keywords: [
-        prompt.category,
+        ...getPromptCategories(prompt),
         ...(prompt.tools || []),
         ...(prompt.tags || []),
         "AI prompts",
@@ -156,7 +162,13 @@ export default async function PromptDetailPage({ params }) {
     notFound();
   }
 
-  const CategoryIcon = getCategoryIcon(prompt.category);
+  const categories = getPromptCategories(prompt);
+  const primaryCategory = getPrimaryPromptCategory(prompt);
+  const categoryCountLabel =
+    categories.length > 1
+      ? `${primaryCategory || "General"} +${categories.length - 1}`
+      : primaryCategory || "General";
+  const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
 
   return (
@@ -176,34 +188,58 @@ export default async function PromptDetailPage({ params }) {
               <div className="category-icon prompt-icon" aria-hidden="true">
                 <CategoryIcon size={22} />
               </div>
-              <div className="eyebrow">{prompt.category || "General"}</div>
+              <div className="eyebrow">{primaryCategory || "General"}</div>
             </div>
             <h1 className="page-title">{prompt.title}</h1>
+            {prompt.description ? <p className="page-subtitle">{prompt.description}</p> : null}
           </div>
-          {(prompt.tools || []).length ? (
+          {categories.length ? (
             <div className="pill-row">
-              {(prompt.tools || []).map((tool) => (
-                <span className="pill pill-alt" key={tool}>
-                  {tool}
+              {categories.map((category) => (
+                <span className="pill" key={`category-${category}`}>
+                  {category}
                 </span>
               ))}
             </div>
           ) : null}
-          <div className="pill-row">
-            {(prompt.tags || []).map((tag) => (
-              <span className="pill" key={tag}>
-                #{tag}
-              </span>
-            ))}
-          </div>
           <section>
             <h2>Prompt</h2>
             <div className="prose content-box">{prompt.prompt}</div>
           </section>
+          {prompt.notes ? (
+            <section>
+              <h2>Notes</h2>
+              <div className="prose content-box">{prompt.notes}</div>
+            </section>
+          ) : null}
+          {(prompt.tools || []).length ? (
+            <section>
+              <h2>Tools</h2>
+              <div className="pill-row">
+                {(prompt.tools || []).map((tool) => (
+                  <span className="pill pill-alt" key={tool}>
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </section>
+          ) : null}
           {hasSampleOutput(prompt.sampleOutput) ? (
             <section>
               <h2>Sample Output</h2>
               <SampleOutputDisplay prompt={prompt} />
+            </section>
+          ) : null}
+          {(prompt.tags || []).length ? (
+            <section>
+              <h2>Tags</h2>
+              <div className="pill-row">
+                {(prompt.tags || []).map((tag) => (
+                  <span className="pill" key={tag}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
             </section>
           ) : null}
           <CopyOpenButton
@@ -221,7 +257,7 @@ export default async function PromptDetailPage({ params }) {
             <dl className="metadata-list">
               <div>
                 <dt>Category</dt>
-                <dd>{prompt.category || "General"}</dd>
+                <dd>{categoryCountLabel}</dd>
               </div>
               <div>
                 <dt>Created</dt>
@@ -243,15 +279,18 @@ export default async function PromptDetailPage({ params }) {
                   <span>
                     {relatedPrompt.title}
                     <small>
-                      {relatedPrompt.category || (relatedPrompt.tools || [])[0] || "Prompt"}
+                      {getPromptCategoryLabel(
+                        relatedPrompt,
+                        (relatedPrompt.tools || [])[0] || "Prompt"
+                      )}
                     </small>
                   </span>
                   <span>&gt;</span>
                 </Link>
               ))}
-              {!relatedPrompts.length && prompt.category ? (
-                <Link href={{ pathname: "/prompts", query: { category: prompt.category } }}>
-                  More {prompt.category} prompts
+              {!relatedPrompts.length && primaryCategory ? (
+                <Link href={{ pathname: "/prompts", query: { category: primaryCategory } }}>
+                  More {primaryCategory} prompts
                   <span>&gt;</span>
                 </Link>
               ) : null}
@@ -261,7 +300,7 @@ export default async function PromptDetailPage({ params }) {
                   <span>&gt;</span>
                 </Link>
               ) : null}
-              {!relatedPrompts.length && !prompt.category && !(prompt.tools || []).length ? (
+              {!relatedPrompts.length && !primaryCategory && !(prompt.tools || []).length ? (
                 <p className="muted">Browse the full library for more prompts.</p>
               ) : null}
             </div>
