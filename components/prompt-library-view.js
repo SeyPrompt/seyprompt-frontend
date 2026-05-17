@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
+import { ArrowUpRight, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { PromptCard } from "@/components/prompt-card";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { trackEvent } from "@/lib/analytics";
-import { getPromptCategories } from "@/lib/prompt-metadata";
+import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { apiUrl } from "@/utils/api";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 const views = [
   { label: "Card", title: "Card view", icon: LayoutGrid },
@@ -78,45 +79,92 @@ function ToolBadges({ tools = [] }) {
   );
 }
 
+function PromptMetaPills({ prompt, compact = false }) {
+  const categories = getPromptCategories(prompt);
+  const tags = prompt.tags || [];
+  const pills = tags.length
+    ? tags.slice(0, compact ? 1 : 2).map((tag) => ({ label: `#${tag}`, key: `tag-${tag}` }))
+    : (categories.length ? categories : ["General"])
+        .slice(0, compact ? 1 : 2)
+        .map((category) => ({ label: category, key: `category-${category}` }));
+
+  return (
+    <div className="pill-row library-meta-pills">
+      {pills.map((pill) => (
+        <span className="pill" key={pill.key}>
+          {pill.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PromptListItem({ prompt }) {
+  const primaryCategory = getPrimaryPromptCategory(prompt);
+  const CategoryIcon = getCategoryIcon(primaryCategory);
+  const description = prompt.description || prompt.prompt || "";
+
+  return (
+    <article className="library-list-item">
+      <div className="prompt-icon library-list-icon" aria-hidden="true">
+        <CategoryIcon size={21} />
+      </div>
+      <div className="library-list-copy">
+        <div className="library-list-heading">
+          <div>
+            <div className="eyebrow">{primaryCategory || "General"}</div>
+            <h3>{prompt.title}</h3>
+          </div>
+        </div>
+        <p className="muted library-list-description">
+          {description.slice(0, 180)}
+          {description.length > 180 ? "..." : ""}
+        </p>
+        <div className="library-list-meta">
+          <PromptMetaPills prompt={prompt} />
+          <ToolBadges tools={prompt.tools || []} />
+        </div>
+      </div>
+      <div className="library-list-actions">
+        <SavedPromptButton className="library-list-save" iconOnly prompt={prompt} />
+        <Link className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
+          View <ArrowUpRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+    </article>
+  );
+}
+
 function PromptTable({ prompts }) {
   return (
-    <div className="panel library-table-wrap">
+    <div className="library-table-wrap">
       <table className="table library-table">
         <thead>
           <tr>
             <th>Title</th>
-            <th>Category</th>
+            <th>Tags</th>
             <th>Tools</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th aria-label="Actions"></th>
           </tr>
         </thead>
         <tbody>
           {prompts.map((prompt) => {
-            const categories = getPromptCategories(prompt);
             const description = prompt.description || prompt.prompt || "";
 
             return (
               <tr key={prompt._id || prompt.id || prompt.slug}>
-                <td>
-                  <strong>{prompt.title}</strong>
-                  <div className="muted">
+                <td className="library-table-title-cell">
+                  <Link className="library-table-title" href={`/prompts/${prompt.slug}`}>
+                    {prompt.title}
+                  </Link>
+                  <div className="muted library-table-description">
                     {description.slice(0, 90)}
                     {description.length > 90 ? "..." : ""}
                   </div>
                 </td>
                 <td>
-                  <div className="pill-row">
-                    {categories.length ? (
-                      categories.map((category) => (
-                        <span className="pill" key={category}>
-                          {category}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="pill">General</span>
-                    )}
-                  </div>
+                  <PromptMetaPills prompt={prompt} compact />
                 </td>
                 <td>
                   <ToolBadges tools={prompt.tools || []} />
@@ -125,11 +173,15 @@ function PromptTable({ prompts }) {
                   <span className="status-badge">Published</span>
                 </td>
                 <td>
-                  <div className="prompt-actions">
-                    <Link className="button compact" href={`/prompts/${prompt.slug}`}>
-                      View
+                  <div className="library-table-actions">
+                    <SavedPromptButton iconOnly prompt={prompt} />
+                    <Link
+                      aria-label={`View ${prompt.title}`}
+                      className="library-table-view"
+                      href={`/prompts/${prompt.slug}`}
+                    >
+                      <ArrowUpRight size={18} aria-hidden="true" />
                     </Link>
-                    <SavedPromptButton prompt={prompt} />
                   </div>
                 </td>
               </tr>
@@ -366,7 +418,7 @@ export function PromptLibraryView({
           {view === "List" ? (
             <div className="prompt-list library-list-view">
               {prompts.map((prompt) => (
-                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
+                <PromptListItem key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
               ))}
             </div>
           ) : null}

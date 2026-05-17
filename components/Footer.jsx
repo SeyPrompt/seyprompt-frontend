@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
+import { appVersionLabel } from "@/lib/app-version";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -14,7 +15,18 @@ const quickLinks = [
   { href: "/saved", label: "Saved Prompts" },
 ];
 
-const fallbackCategories = ["Marketing", "Coding", "Resume", "Business", "Social Media", "Design"];
+const footerCategoryLimit = 8;
+
+const fallbackCategories = [
+  "Marketing",
+  "Coding",
+  "Resume",
+  "Business",
+  "Social Media",
+  "Design",
+  "Image Prompts",
+  "Productivity"
+];
 const fallbackTools = ["ChatGPT", "Claude", "Midjourney", "Canva", "Gemini", "Perplexity"];
 
 const legalLinks = [
@@ -22,17 +34,17 @@ const legalLinks = [
   { href: "/terms-of-use", label: "Terms of Use" },
 ];
 
-function toFooterItems(items, fallbackItems) {
+function toFooterItems(items, fallbackItems, limit = 6) {
   const uniqueItems = Array.from(new Set([...items, ...fallbackItems]));
-  return uniqueItems.slice(0, 6);
+  return uniqueItems.slice(0, limit);
 }
 
 export async function Footer() {
   const [categoryItems, toolItems] = await Promise.all([
-    fetchPromptCategories(6).catch(() => []),
+    fetchPromptCategories(footerCategoryLimit).catch(() => []),
     fetchPromptTools(6).catch(() => [])
   ]);
-  const categories = toFooterItems(categoryItems, fallbackCategories);
+  const categories = toFooterItems(categoryItems, fallbackCategories, footerCategoryLimit);
   const tools = toFooterItems(toolItems, fallbackTools);
 
   return (
@@ -102,7 +114,7 @@ export async function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>© 2026 SeyPrompt. All rights reserved.</p>
+          <p>© 2026 SeyPrompt. All rights reserved. | {appVersionLabel} </p>
           <nav className="footer-legal-links" aria-label="Legal links">
             {legalLinks.map((link) => (
               <Link href={link.href} key={link.href}>

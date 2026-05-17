@@ -1,8 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
-import { Share2 } from "lucide-react";
+import { ExternalLink, Share2 } from "lucide-react";
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
@@ -12,21 +11,25 @@ export function CopyOpenButton({ description, text, title, url }) {
   const aiTools = [
     {
       name: "ChatGPT",
+      logo: "/icons/chatgpt.svg",
       url: `https://chat.openai.com/?q=${encodedPrompt}`,
       event: "open_in_chatgpt_click"
     },
     {
       name: "Claude",
+      logo: "/icons/claude.svg",
       url: `https://claude.ai/new?q=${encodedPrompt}`,
       event: "open_in_claude_click"
     },
     {
       name: "Gemini",
+      logo: "/icons/gemini.svg",
       url: `https://gemini.google.com/app?text=${encodedPrompt}`,
       event: "open_in_gemini_click"
     },
     {
       name: "Perplexity",
+      logo: "/icons/perplexity-ai-icon.svg",
       url: `https://www.perplexity.ai/search?q=${encodedPrompt}`,
       event: "open_in_perplexity_click"
     }
@@ -93,7 +96,10 @@ export function CopyOpenButton({ description, text, title, url }) {
             rel="noopener noreferrer"
             target="_blank"
           >
-            Open in {tool.name}
+            <img alt="" aria-hidden="true" className="ai-tool-logo" src={tool.logo} />
+            <span>
+              Open in <strong>{tool.name}</strong>
+            </span>
             <ExternalLink aria-hidden="true" size={16} />
           </a>
         ))}

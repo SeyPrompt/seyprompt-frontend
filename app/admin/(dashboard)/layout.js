@@ -1,6 +1,7 @@
 import { LogoutButton } from "@/components/logout-button";
 import { requireAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
+import { appVersionLabel } from "@/lib/app-version";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -25,9 +26,12 @@ export default async function AdminDashboardLayout({ children }) {
   return (
     <main className="admin-shell">
       <div className="admin-bar">
-        <p className="admin-user">
-          {currentUser?.user?.email || "Authenticated admin"}
-        </p>
+        <div className="admin-session">
+          <p className="admin-user">
+            {currentUser?.user?.email || "Authenticated admin"}
+          </p>
+          <p className="admin-version">{appVersionLabel}</p>
+        </div>
         <LogoutButton />
       </div>
       <section className="admin-main">

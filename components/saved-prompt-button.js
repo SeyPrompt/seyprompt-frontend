@@ -14,7 +14,7 @@ import {
 import { trackEvent } from "@/lib/analytics";
 import { useUserAuth } from "@/components/user-auth-provider";
 
-export function SavedPromptButton({ prompt, className = "" }) {
+export function SavedPromptButton({ prompt, className = "", iconOnly = false }) {
   const auth = useUserAuth();
   const alertOwnerId = useId();
   const [saved, setSaved] = useState(false);
@@ -163,8 +163,9 @@ export function SavedPromptButton({ prompt, className = "" }) {
   return (
     <>
       <button
+        aria-label={saved ? "Remove saved prompt" : "Save prompt"}
         aria-pressed={saved}
-        className={`save-prompt-button${saved ? " saved" : ""}${className ? ` ${className}` : ""}`}
+        className={`save-prompt-button${saved ? " saved" : ""}${iconOnly ? " icon-only" : ""}${className ? ` ${className}` : ""}`}
         disabled={loading || !auth.ready}
         onClick={toggleSaved}
         title={saved ? "Saved prompt" : "Save prompt"}
@@ -175,7 +176,9 @@ export function SavedPromptButton({ prompt, className = "" }) {
         ) : (
           <Bookmark aria-hidden="true" size={16} />
         )}
-        <span>{loading ? "Saving..." : saved ? "Saved" : "Save"}</span>
+        <span className={iconOnly ? "visually-hidden" : ""}>
+          {loading ? "Saving..." : saved ? "Saved" : "Save"}
+        </span>
       </button>
       {mounted && alert ? createPortal(alert, document.body) : null}
     </>

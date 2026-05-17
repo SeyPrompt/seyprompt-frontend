@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
+import { CopyButton } from "@/components/CopyButton";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { RecordPromptView } from "@/components/record-prompt-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
@@ -180,8 +182,9 @@ export default async function PromptDetailPage({ params }) {
       />
       <div className="container split">
         <article className="panel content-card stack">
-          <Link className="back-link" href="/prompts">
-            &lt;- Back to library
+          <Link className="back-link" href="/prompts" aria-label="Back to library">
+            <ArrowLeft size={20} />
+            <span>Back to library</span>
           </Link>
           <div>
             <div className="detail-title-row">
@@ -204,7 +207,18 @@ export default async function PromptDetailPage({ params }) {
           ) : null}
           <section>
             <h2>Prompt</h2>
-            <div className="prose content-box">{prompt.prompt}</div>
+            <div className="prompt-copy-box">
+              <CopyButton
+                ariaLabel="Copy prompt"
+                className="prompt-inline-copy"
+                copiedLabel="Copied!"
+                iconOnly
+                label="Copy prompt"
+                text={prompt.prompt}
+                trackingLabel={prompt.title || "prompt"}
+              />
+              <div className="prose content-box prompt-content-box">{prompt.prompt}</div>
+            </div>
           </section>
           {prompt.notes ? (
             <section>
@@ -242,13 +256,18 @@ export default async function PromptDetailPage({ params }) {
               </div>
             </section>
           ) : null}
-          <CopyOpenButton
-            description={descriptionFromPrompt(prompt)}
-            text={prompt.prompt}
-            title={prompt.title}
-            url={absoluteUrl(`/prompts/${prompt.slug}`)}
-          />
-          <SavedPromptButton className="copy-button-primary" prompt={prompt} />
+          <section className="prompt-actions-section" aria-label="Prompt actions">
+            <div className="prompt-actions-heading">
+              <h2>Actions</h2>
+              <SavedPromptButton className="prompt-save-action" prompt={prompt} />
+            </div>
+            <CopyOpenButton
+              description={descriptionFromPrompt(prompt)}
+              text={prompt.prompt}
+              title={prompt.title}
+              url={absoluteUrl(`/prompts/${prompt.slug}`)}
+            />
+          </section>
         </article>
 
         <aside className="panel sidebar-card stack">
