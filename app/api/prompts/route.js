@@ -53,7 +53,7 @@ export async function POST(request) {
 
   const backendRequest = await buildBackendRequest(request, token);
 
-  const response = await fetch(apiUrl("/api/prompts"), {
+  const response = await fetch(apiUrl("/api/admin/prompts"), {
     method: "POST",
     ...backendRequest
   });

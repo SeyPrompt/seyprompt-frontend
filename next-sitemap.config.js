@@ -17,7 +17,7 @@ const staticPaths = [
   "/terms-of-use"
 ];
 
-const categoryPaths = [
+const fallbackCategories = [
   "Marketing",
   "Coding",
   "Business",
@@ -25,7 +25,7 @@ const categoryPaths = [
   "Design",
   "Image Prompts",
   "Social Media"
-].map((category) => `/categories/${slugify(category)}`);
+];
 
 function slugify(value) {
   return String(value)
@@ -36,13 +36,97 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "");
 }
 
-async function getPromptPaths() {
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function firstList(...values) {
+  return values.find((value) => Array.isArray(value) && value.length) || [];
+}
+
+function pathFromUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  const stringValue = String(value);
+
+  if (stringValue.startsWith("/")) {
+    return stringValue;
+  }
+
+  try {
+    return new URL(stringValue, siteUrl).pathname;
+  } catch {
+    return "";
+  }
+}
+
+function normalizeSitemapData(payload) {
+  const data = payload?.data || payload || {};
+  const rootList = Array.isArray(payload) ? payload : [];
+  const promptItems = firstList(
+    rootList,
+    toArray(data.prompts),
+    toArray(data.promptSlugs),
+    toArray(data.promptUrls),
+    toArray(data.items),
+    toArray(data.results)
+  );
+  const categoryItems = firstList(
+    toArray(data.categories),
+    toArray(data.categorySlugs),
+    toArray(data.categoryUrls)
+  );
+
+  const promptPaths = promptItems
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.startsWith("/") ? item : `/prompts/${item}`;
+      }
+
+      const path = item?.path || item?.url;
+      const slug = item?.slug;
+
+      if (path) {
+        return pathFromUrl(path);
+      }
+
+      return slug ? `/prompts/${slug}` : "";
+    })
+    .filter((path) => path.startsWith("/prompts/"));
+
+  const categoryPaths = categoryItems
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.startsWith("/") ? item : `/categories/${slugify(item)}`;
+      }
+
+      const path = item?.path || item?.url;
+      const slug = item?.slug || item?.categorySlug;
+      const name = item?.name || item?.label || item?.title || item?.category;
+
+      if (path) {
+        return pathFromUrl(path);
+      }
+
+      return slug || name ? `/categories/${slug || slugify(name)}` : "";
+    })
+    .filter((path) => path.startsWith("/categories/"));
+
+  return {
+    promptPaths: [...new Set(promptPaths)],
+    categoryPaths: [...new Set(categoryPaths)]
+  };
+}
+
+async function getPublicSitemapPaths() {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const response = await fetch(`${apiBaseUrl}/api/prompts?limit=1000`, {
+    const response = await fetch(`${apiBaseUrl}/api/public/sitemap-data`, {
       signal: controller.signal
     });
 
@@ -51,15 +135,12 @@ async function getPromptPaths() {
     }
 
     const payload = await response.json();
-    const prompts = Array.isArray(payload)
-      ? payload
-      : payload.data || payload.prompts || payload.items || payload.results || [];
-
-    return prompts
-      .filter((prompt) => prompt?.slug && prompt.status === "published" && prompt.visibility === "public")
-      .map((prompt) => `/prompts/${prompt.slug}`);
+    return normalizeSitemapData(payload);
   } catch (_error) {
-    return [];
+    return {
+      promptPaths: [],
+      categoryPaths: fallbackCategories.map((category) => `/categories/${slugify(category)}`)
+    };
   } finally {
     clearTimeout(timeout);
   }
@@ -90,7 +171,7 @@ module.exports = {
     "/saved-prompts"
   ],
   additionalPaths: async (config) => {
-    const promptPaths = await getPromptPaths();
+    const { promptPaths, categoryPaths } = await getPublicSitemapPaths();
     const paths = [...staticPaths, ...categoryPaths, ...promptPaths];
 
     return Promise.all(

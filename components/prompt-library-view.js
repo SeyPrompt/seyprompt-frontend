@@ -20,17 +20,17 @@ const filterOptionRequests = {
   categories: {
     emptyLabel: "No Categories Found",
     label: "All Categories",
-    path: "/api/prompts/categories"
+    path: "/api/public/categories"
   },
   tags: {
     emptyLabel: "No Tags Found",
     label: "All Tags",
-    path: "/api/prompts/tags"
+    path: "/api/public/prompts?limit=1000"
   },
   tools: {
     emptyLabel: "No Tools Found",
     label: "All Tools",
-    path: "/api/prompts/tools"
+    path: "/api/public/prompts?limit=1000"
   }
 };
 
@@ -48,6 +48,25 @@ function mergeSelectedOption(options, selectedValue) {
 }
 
 function normalizeFilterOptions(data, key) {
+  if (key === "tags" || key === "tools") {
+    const prompts = Array.isArray(data)
+      ? data
+      : data?.data || data?.prompts || data?.items || data?.results || [];
+    const values = new Set();
+
+    for (const prompt of prompts) {
+      for (const item of Array.isArray(prompt?.[key]) ? prompt[key] : []) {
+        const value = String(item || "").trim();
+
+        if (value) {
+          values.add(value);
+        }
+      }
+    }
+
+    return [...values];
+  }
+
   const values = Array.isArray(data)
     ? data
     : data?.[key] || data?.data || data?.items || data?.results || [];
@@ -102,7 +121,7 @@ function PromptMetaPills({ prompt, compact = false }) {
 function PromptListItem({ prompt }) {
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
-  const description = prompt.description || prompt.prompt || "";
+  const description = prompt.description || "";
 
   return (
     <article className="library-list-item">
@@ -150,7 +169,7 @@ function PromptTable({ prompts }) {
         </thead>
         <tbody>
           {prompts.map((prompt) => {
-            const description = prompt.description || prompt.prompt || "";
+            const description = prompt.description || "";
 
             return (
               <tr key={prompt._id || prompt.id || prompt.slug}>

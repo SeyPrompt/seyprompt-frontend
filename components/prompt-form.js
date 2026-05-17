@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
-import { apiUrl } from "@/utils/api";
 
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
 const SAMPLE_OUTPUT_URL_TYPES = ["image", "pdf", "file"];
@@ -158,7 +157,7 @@ export function PromptForm({ mode, prompt }) {
 
     async function fetchCategoryOptions() {
       try {
-        const response = await fetch(apiUrl("/api/prompts/categories"), {
+        const response = await fetch("/api/admin/categories", {
           headers: {
             Accept: "application/json"
           }
@@ -266,7 +265,7 @@ export function PromptForm({ mode, prompt }) {
     }
 
     const endpoint =
-      mode === "create" ? "/api/prompts" : `/api/prompts/${prompt._id || prompt.id}`;
+      mode === "create" ? "/api/admin/prompts" : `/api/admin/prompts/${prompt._id || prompt.id}`;
     const method = mode === "create" ? "POST" : "PUT";
 
     const requestOptions = sampleOutputFile

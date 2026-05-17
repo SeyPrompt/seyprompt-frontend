@@ -18,7 +18,7 @@ export function DeletePromptButton({ id }) {
 
     setLoading(true);
 
-    const response = await fetch(`/api/prompts/${id}`, {
+    const response = await fetch(`/api/admin/prompts/${id}`, {
       method: "DELETE"
     });
     const data = await response.json().catch(() => ({}));

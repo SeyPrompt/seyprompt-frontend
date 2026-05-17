@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { fetchPublicPrompts } from "@/lib/api";
+import { fetchPublicCategories, fetchPublicPrompts } from "@/lib/api";
 import { PromptLibraryView } from "@/components/prompt-library-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
 import {
@@ -13,15 +13,49 @@ import {
   slugifyCategory
 } from "@/lib/seo";
 
-export function generateStaticParams() {
+async function getPublicCategories() {
+  const categories = await fetchPublicCategories(100).catch(() => []);
+
+  if (categories.length) {
+    return categories.map((category) => ({
+      name: category.name,
+      slug: category.slug
+    }));
+  }
+
   return PROMPT_CATEGORIES.map((category) => ({
-    categorySlug: slugifyCategory(category)
+    name: category,
+    slug: slugifyCategory(category)
+  }));
+}
+
+async function resolveCategory(categorySlug) {
+  const categories = await getPublicCategories();
+  const normalizedSlug = slugifyCategory(categorySlug);
+
+  return (
+    categories.find((category) => {
+      const candidateSlug = slugifyCategory(category.slug || category.name);
+      const compactCandidateSlug = candidateSlug.replace(/-and-/g, "-");
+      const compactSlug = normalizedSlug.replace(/-and-/g, "-");
+
+      return candidateSlug === normalizedSlug || compactCandidateSlug === compactSlug;
+    }) || null
+  );
+}
+
+export async function generateStaticParams() {
+  const categories = await getPublicCategories();
+
+  return categories.map((category) => ({
+    categorySlug: category.slug || slugifyCategory(category.name)
   }));
 }
 
 export async function generateMetadata({ params }) {
   const { categorySlug } = await params;
-  const category = getCategoryBySlug(categorySlug);
+  const categoryRecord = await resolveCategory(categorySlug);
+  const category = categoryRecord?.name || getCategoryBySlug(categorySlug);
 
   if (!category) {
     return {
@@ -33,13 +67,15 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  return createCategoryMetadata(category);
+  return createCategoryMetadata(category, categoryRecord?.slug || slugifyCategory(categorySlug));
 }
 
 export default async function CategoryPage({ params, searchParams }) {
   const { categorySlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const category = getCategoryBySlug(categorySlug);
+  const categoryRecord = await resolveCategory(categorySlug);
+  const category = categoryRecord?.name || getCategoryBySlug(categorySlug);
+  const canonicalSlug = categoryRecord?.slug || slugifyCategory(categorySlug);
 
   if (!category) {
     notFound();
@@ -67,11 +103,11 @@ export default async function CategoryPage({ params, searchParams }) {
   const currentPage = Number(response.pagination?.page || page || 1);
   const totalPages = Number(response.pagination?.pages || 1);
   const schemas = [
-    categorySchema(category),
+    categorySchema(category, canonicalSlug),
     breadcrumbSchema([
       { name: "Home", path: "/" },
       { name: "Prompts", path: "/prompts" },
-      { name: category, path: getCategoryPath(category) }
+      { name: category, path: getCategoryPath(canonicalSlug) }
     ])
   ];
 

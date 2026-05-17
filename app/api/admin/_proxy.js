@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { apiUrl } from "@/utils/api";
 import { authCookieName } from "@/lib/auth";
+import { apiUrl } from "@/utils/api";
 
-async function getToken() {
+export async function getAdminToken() {
   return (await cookies()).get(authCookieName)?.value;
 }
 
-async function readBackendResponse(response) {
+export async function readBackendResponse(response) {
   const text = await response.text();
 
   if (!text) {
@@ -25,7 +25,7 @@ async function readBackendResponse(response) {
   }
 }
 
-async function buildBackendRequest(request, token) {
+export async function buildBackendRequest(request, token) {
   const contentType = request.headers.get("content-type") || "";
   const headers = {
     "x-admin-key": token,
@@ -48,40 +48,22 @@ async function buildBackendRequest(request, token) {
   };
 }
 
-export async function PUT(request, { params }) {
-  const token = await getToken();
+export async function proxyAdminRequest(path, init = {}) {
+  const token = await getAdminToken();
 
   if (!token) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const { id } = await params;
-  const backendRequest = await buildBackendRequest(request, token);
+  const headers = {
+    "x-admin-key": token,
+    Authorization: `Bearer ${token}`,
+    ...(init.headers || {})
+  };
 
-  const response = await fetch(apiUrl(`/api/admin/prompts/${id}`), {
-    method: "PUT",
-    ...backendRequest
-  });
-
-  const result = await readBackendResponse(response);
-  return NextResponse.json(result, { status: response.status });
-}
-
-export async function DELETE(_request, { params }) {
-  const token = await getToken();
-
-  if (!token) {
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
-
-  const { id } = await params;
-
-  const response = await fetch(apiUrl(`/api/admin/prompts/${id}`), {
-    method: "DELETE",
-    headers: {
-      "x-admin-key": token,
-      Authorization: `Bearer ${token}`
-    }
+  const response = await fetch(apiUrl(path), {
+    ...init,
+    headers
   });
 
   const result = await readBackendResponse(response);

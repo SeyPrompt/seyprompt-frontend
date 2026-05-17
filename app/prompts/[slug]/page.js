@@ -213,12 +213,6 @@ export default async function PromptDetailPage({ params }) {
               <div className="prose content-box prompt-content-box">{prompt.prompt}</div>
             </div>
           </section>
-          {prompt.notes ? (
-            <section>
-              <h2>Notes</h2>
-              <div className="prose content-box">{prompt.notes}</div>
-            </section>
-          ) : null}
           {(prompt.tools || []).length ? (
             <section>
               <h2>Tools</h2>
