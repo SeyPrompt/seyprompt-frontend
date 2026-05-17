@@ -1,11 +1,7 @@
 import { ResetPasswordForm } from "@/components/user-auth-forms";
-import { createPageMetadata } from "@/lib/seo";
+import { createNoIndexMetadata } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  title: "Reset Password",
-  description: "Reset your SeyPrompt password with a 6-digit OTP.",
-  path: "/reset-password"
-});
+export const metadata = createNoIndexMetadata("Reset Password");
 
 export default function ResetPasswordPage() {
   return (

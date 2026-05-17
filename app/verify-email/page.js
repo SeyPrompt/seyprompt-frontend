@@ -1,11 +1,7 @@
 import { VerifyEmailForm } from "@/components/user-auth-forms";
-import { createPageMetadata } from "@/lib/seo";
+import { createNoIndexMetadata } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  title: "Verify Email",
-  description: "Verify your SeyPrompt account email with a 6-digit OTP.",
-  path: "/verify-email"
-});
+export const metadata = createNoIndexMetadata("Verify Email");
 
 export default function VerifyEmailPage() {
   return (

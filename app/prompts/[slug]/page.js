@@ -15,8 +15,9 @@ import {
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import {
   absoluteUrl,
-  createPageMetadata,
-  getPromptImage,
+  breadcrumbSchema,
+  createPromptMetadata,
+  getCategoryPath,
   promptSchema,
   truncateDescription
 } from "@/lib/seo";
@@ -127,24 +128,7 @@ export async function generateMetadata({ params }) {
   try {
     const { slug } = await params;
     const prompt = await fetchPromptBySlug(slug);
-    const description = descriptionFromPrompt(prompt);
-    const path = `/prompts/${prompt.slug}`;
-    const image = getPromptImage(prompt);
-
-    return createPageMetadata({
-      title: prompt.title,
-      description,
-      path,
-      image,
-      type: "article",
-      keywords: [
-        ...getPromptCategories(prompt),
-        ...(prompt.tools || []),
-        ...(prompt.tags || []),
-        "AI prompts",
-        "prompt engineering"
-      ].filter(Boolean)
-    });
+    return createPromptMetadata(prompt);
   } catch (_error) {
     return {
       title: "Prompt Not Found",
@@ -172,13 +156,22 @@ export default async function PromptDetailPage({ params }) {
       : primaryCategory || "General";
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
+  const schemas = [
+    promptSchema(prompt),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Prompts", path: "/prompts" },
+      ...(primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
+      { name: prompt.title, path: `/prompts/${prompt.slug}` }
+    ])
+  ];
 
   return (
     <main className="section">
       <RecordPromptView prompt={prompt} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(promptSchema(prompt)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
       />
       <div className="container split">
         <article className="panel content-card stack">
@@ -308,7 +301,7 @@ export default async function PromptDetailPage({ params }) {
                 </Link>
               ))}
               {!relatedPrompts.length && primaryCategory ? (
-                <Link href={{ pathname: "/prompts", query: { category: primaryCategory } }}>
+                <Link href={getCategoryPath(primaryCategory)}>
                   More {primaryCategory} prompts
                   <span>&gt;</span>
                 </Link>

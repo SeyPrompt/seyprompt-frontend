@@ -6,6 +6,7 @@ import { UTMTracker } from "@/components/UTMTracker";
 import { UserAuthProvider } from "@/components/user-auth-provider";
 import {
   DEFAULT_OG_IMAGE_URL,
+  DEFAULT_TITLE,
   SEO_KEYWORDS,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    default: DEFAULT_TITLE,
     template: `%s | ${SITE_NAME}`
   },
   applicationName: SITE_NAME,
@@ -46,7 +47,7 @@ export const metadata = {
     }
   },
   openGraph: {
-    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: SITE_NAME,
@@ -63,7 +64,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE_URL],
     creator: "@seyprompt"

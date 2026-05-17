@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCategoryIcon } from "@/utils/categoryIcons";
-import { createPageMetadata } from "@/lib/seo";
+import { createPageMetadata, getCategoryPath } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: "AI Prompt Use Cases - Marketing, Coding, Resume",
@@ -132,7 +132,7 @@ export default function UseCasesPage() {
                     </ul>
                     <Link
                       className="button-secondary compact"
-                      href={{ pathname: "/prompts", query: { category: category.title } }}
+                      href={getCategoryPath(category.title)}
                     >
                       View All
                     </Link>

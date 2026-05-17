@@ -1,11 +1,7 @@
 import { ForgotPasswordForm } from "@/components/user-auth-forms";
-import { createPageMetadata } from "@/lib/seo";
+import { createNoIndexMetadata } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  title: "Forgot Password",
-  description: "Request a SeyPrompt password reset OTP.",
-  path: "/forgot-password"
-});
+export const metadata = createNoIndexMetadata("Forgot Password");
 
 export default function ForgotPasswordPage() {
   return (

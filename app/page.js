@@ -5,10 +5,16 @@ import { PromptCard } from "@/components/prompt-card";
 import { TrackedLink } from "@/components/tracked-link";
 import { TrackedSearchForm } from "@/components/tracked-search-form";
 import { getCategoryIcon } from "@/utils/categoryIcons";
-import { createPageMetadata, getPromptImage, SITE_DESCRIPTION } from "@/lib/seo";
+import {
+  createPageMetadata,
+  DEFAULT_TITLE,
+  getCategoryPath,
+  getPromptImage,
+  SITE_DESCRIPTION
+} from "@/lib/seo";
 
 export const metadata = createPageMetadata({
-  title: "Smart Prompts. Better Results.",
+  absoluteTitle: DEFAULT_TITLE,
   description: SITE_DESCRIPTION,
   path: "/"
 });
@@ -42,7 +48,7 @@ function ImagePromptCarousel({ prompts }) {
           </div>
           <Link
             className="button-secondary"
-            href={{ pathname: "/prompts", query: { category: "Image Prompts" } }}
+            href={getCategoryPath("Image Prompts")}
           >
             View image prompts
           </Link>
@@ -183,7 +189,7 @@ export default async function HomePage() {
                 return (
                   <Link
                     className="category-pill"
-                    href={{ pathname: "/prompts", query: { category } }}
+                    href={getCategoryPath(category)}
                     key={category}
                   >
                     <CategoryIcon size={15} />

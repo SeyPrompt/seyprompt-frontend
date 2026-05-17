@@ -1,11 +1,7 @@
 import { RegisterForm } from "@/components/user-auth-forms";
-import { createPageMetadata } from "@/lib/seo";
+import { createNoIndexMetadata } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  title: "Create Account",
-  description: "Create your SeyPrompt account with email OTP verification.",
-  path: "/register"
-});
+export const metadata = createNoIndexMetadata("Create Account");
 
 export default function RegisterPage() {
   return (

@@ -1,4 +1,9 @@
-const siteUrl = "https://www.seyprompt.com";
+const siteUrl = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  process.env.SITE_URL ||
+  "https://www.seyprompt.com"
+).replace(/\/$/, "");
 
 const staticPaths = [
   "/",
@@ -8,7 +13,6 @@ const staticPaths = [
   "/use-cases",
   "/about",
   "/contact",
-  "/saved",
   "/privacy-policy",
   "/terms-of-use"
 ];
@@ -21,7 +25,16 @@ const categoryPaths = [
   "Design",
   "Image Prompts",
   "Social Media"
-].map((category) => `/prompts?category=${encodeURIComponent(category)}`);
+].map((category) => `/categories/${slugify(category)}`);
+
+function slugify(value) {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 async function getPromptPaths() {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -59,7 +72,23 @@ module.exports = {
   sitemapSize: 5000,
   changefreq: "weekly",
   priority: 0.7,
-  exclude: ["/admin", "/admin/*", "/api/*", "/login", "/login/*", "/dashboard", "/dashboard/*"],
+  exclude: [
+    "/admin",
+    "/admin/*",
+    "/api/*",
+    "/login",
+    "/login/*",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
+    "/dashboard",
+    "/dashboard/*",
+    "/profile",
+    "/profile/*",
+    "/saved",
+    "/saved-prompts"
+  ],
   additionalPaths: async (config) => {
     const promptPaths = await getPromptPaths();
     const paths = [...staticPaths, ...categoryPaths, ...promptPaths];
@@ -73,7 +102,7 @@ module.exports = {
   transform: async (config, path) => ({
     loc: path,
     changefreq: path.startsWith("/prompts/") ? "monthly" : config.changefreq,
-    priority: path === "/" ? 1 : path.startsWith("/prompts") ? 0.8 : config.priority,
+    priority: path === "/" ? 1 : path.startsWith("/prompts") || path.startsWith("/categories") ? 0.8 : config.priority,
     lastmod: new Date().toISOString()
   })
 };

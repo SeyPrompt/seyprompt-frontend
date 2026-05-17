@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
 import { appVersionLabel } from "@/lib/app-version";
+import { getCategoryPath } from "@/lib/seo";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -12,7 +13,6 @@ const quickLinks = [
   { href: "/use-cases", label: "Use Cases" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
-  { href: "/saved", label: "Saved Prompts" },
 ];
 
 const footerCategoryLimit = 8;
@@ -89,7 +89,7 @@ export async function Footer() {
             <nav>
               {categories.map((category) => (
                 <Link
-                  href={{ pathname: "/prompts", query: { category } }}
+                  href={getCategoryPath(category)}
                   key={category}
                 >
                   {category} Prompts
