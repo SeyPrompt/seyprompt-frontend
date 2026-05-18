@@ -1,12 +1,15 @@
 User-agent: *
 Allow: /
-Disallow: /admin
 Disallow: /admin/
-Disallow: /admin/*
+Disallow: /admin
 Disallow: /login
-Disallow: /login/
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
 Disallow: /dashboard
-Disallow: /dashboard/
+Disallow: /profile
+Disallow: /saved-prompts
+Disallow: /saved
 Disallow: /api/
 
 Sitemap: https://www.seyprompt.com/sitemap.xml

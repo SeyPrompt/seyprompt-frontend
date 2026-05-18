@@ -16,23 +16,23 @@ const nextConfig = {
     ];
 
     return [
-      {
-        source: "/admin",
-        headers: privateSeoHeaders
-      },
-      {
-        source: "/admin/:path*",
-        headers: privateSeoHeaders
-      },
-      {
-        source: "/login",
-        headers: privateSeoHeaders
-      },
-      {
-        source: "/dashboard",
-        headers: privateSeoHeaders
-      }
-    ];
+      "/admin",
+      "/admin/:path*",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/reset-password",
+      "/verify-email",
+      "/dashboard",
+      "/dashboard/:path*",
+      "/profile",
+      "/profile/:path*",
+      "/saved",
+      "/saved-prompts"
+    ].map((source) => ({
+      source,
+      headers: privateSeoHeaders
+    }));
   }
 };
 

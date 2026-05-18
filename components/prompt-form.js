@@ -1,16 +1,45 @@
 "use client";
 
+import { Lightbulb } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
 
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
 const SAMPLE_OUTPUT_URL_TYPES = ["image", "pdf", "file"];
 
 function normalizeList(value) {
-  return value
+  return String(value || "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeCategoryInput(value) {
+  if (Array.isArray(value)) {
+    return normalizeCategories(value);
+  }
+
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return normalizeCategories(parsed);
+  } catch {
+    return normalizeCategories(normalizeList(value));
+  }
+}
+
+function normalizeTaxonomyResponse(data) {
+  const values = Array.isArray(data)
+    ? data
+    : data?.categories || data?.data || data?.items || data?.results || [];
+
+  return normalizeCategories(
+    values.map((item) =>
+      typeof item === "string"
+        ? item
+        : item?.name || item?.label || item?.title || item?.value || ""
+    )
+  );
 }
 
 function slugify(value) {
@@ -43,6 +72,26 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Category must be 80 characters or fewer.";
   }
 
+  if (payload.description.length > 1000) {
+    return "Description must be 1,000 characters or fewer.";
+  }
+
+  if (payload.tips.length > 5000) {
+    return "Tips must be 5,000 characters or fewer.";
+  }
+
+  if (payload.notes.length > 5000) {
+    return "Internal notes must be 5,000 characters or fewer.";
+  }
+
+  if (!Array.isArray(payload.categories)) {
+    return "Categories must be a list.";
+  }
+
+  if (payload.categories.some((category) => !category || category.length > 80)) {
+    return "Each category must be a non-empty value of 80 characters or fewer.";
+  }
+
   if (payload.sampleOutput?.value?.length > 10000) {
     return "Sample output must be 10,000 characters or fewer.";
   }
@@ -72,21 +121,36 @@ function validatePrompt(payload, sampleOutputFile) {
 
 function getInitialSampleOutput(prompt) {
   const sampleOutput = prompt?.sampleOutput;
+  const topLevelType = String(prompt?.sampleOutputType || "").trim();
+  const topLevelFileName = String(prompt?.sampleOutputFileName || "").trim();
+  const validTopLevelType = ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(topLevelType)
+    ? topLevelType
+    : "";
 
   if (sampleOutput && typeof sampleOutput === "object") {
     return {
       type: ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(sampleOutput.type)
         ? sampleOutput.type
-        : "text",
+        : validTopLevelType || "text",
       value: sampleOutput.value || "",
-      fileName: sampleOutput.fileName || ""
+      fileName: sampleOutput.fileName || topLevelFileName,
+      provider: sampleOutput.provider || "",
+      publicId: sampleOutput.publicId || "",
+      resourceType: sampleOutput.resourceType || "",
+      format: sampleOutput.format || "",
+      bytes: sampleOutput.bytes || ""
     };
   }
 
   return {
-    type: "text",
+    type: validTopLevelType || "text",
     value: typeof sampleOutput === "string" ? sampleOutput : "",
-    fileName: ""
+    fileName: topLevelFileName,
+    provider: "",
+    publicId: "",
+    resourceType: "",
+    format: "",
+    bytes: ""
   };
 }
 
@@ -94,6 +158,11 @@ export function PromptForm({ mode, prompt }) {
   const router = useRouter();
   const slugEditedRef = useRef(Boolean(prompt?.slug));
   const initialSampleOutput = getInitialSampleOutput(prompt);
+  const initialCategories = getPromptCategories(prompt);
+  const [categories, setCategories] = useState(initialCategories);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [categorySelectValues, setCategorySelectValues] = useState([]);
   const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
   const [sampleOutputMode, setSampleOutputMode] = useState(
     SAMPLE_OUTPUT_URL_TYPES.includes(initialSampleOutput.type) && initialSampleOutput.value
@@ -102,6 +171,74 @@ export function PromptForm({ mode, prompt }) {
   );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchCategoryOptions() {
+      try {
+        const response = await fetch("/api/admin/categories", {
+          headers: {
+            Accept: "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load categories.");
+        }
+
+        const data = await response.json();
+
+        if (active) {
+          setCategoryOptions(normalizeTaxonomyResponse(data));
+        }
+      } catch {
+        if (active) {
+          setCategoryOptions([]);
+        }
+      }
+    }
+
+    fetchCategoryOptions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function addCategories(values) {
+    const nextCategories = normalizeCategories(Array.isArray(values) ? values : [values]);
+
+    if (!nextCategories.length) {
+      return;
+    }
+
+    setCategories((currentCategories) =>
+      normalizeCategories([...currentCategories, ...nextCategories])
+    );
+  }
+
+  function addCustomCategory() {
+    addCategories(categoryInput);
+    setCategoryInput("");
+  }
+
+  function removeCategories(values) {
+    const removalKeys = new Set(
+      normalizeCategories(Array.isArray(values) ? values : [values]).map((category) =>
+        category.toLowerCase()
+      )
+    );
+
+    if (!removalKeys.size) {
+      return;
+    }
+
+    setCategories((currentCategories) =>
+      currentCategories.filter((currentCategory) => !removalKeys.has(currentCategory.toLowerCase()))
+    );
+    setCategorySelectValues([]);
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -113,10 +250,27 @@ export function PromptForm({ mode, prompt }) {
     const sampleOutputType = String(formData.get("sampleOutputType") || "text");
     const sampleOutputUrl = String(formData.get("sampleOutputUrl") || "").trim();
     const sampleOutputFileName = String(formData.get("sampleOutputFileName") || "").trim();
+    const sampleOutputMetadata = {
+      provider: String(formData.get("sampleOutputProvider") || "").trim(),
+      publicId: String(formData.get("sampleOutputPublicId") || "").trim(),
+      resourceType: String(formData.get("sampleOutputResourceType") || "").trim(),
+      format: String(formData.get("sampleOutputFormat") || "").trim(),
+      bytes: Number(formData.get("sampleOutputBytes") || 0) || undefined
+    };
+    const selectedCategories = normalizeCategories([
+      ...normalizeCategoryInput(formData.get("categories") || "[]"),
+      categoryInput
+    ]);
     const payload = {
       title: String(formData.get("title") || "").trim(),
       slug: String(formData.get("slug") || "").trim(),
-      category: String(formData.get("category") || "").trim(),
+      description: String(formData.get("description") || "").trim(),
+      tips: String(formData.get("tips") || "").trim(),
+      notes: String(formData.get("notes") || "").trim(),
+      image: String(formData.get("image") || "").trim(),
+      thumbnail: String(formData.get("thumbnail") || "").trim(),
+      category: selectedCategories[0] || String(formData.get("category") || "").trim(),
+      categories: selectedCategories,
       tags: normalizeList(formData.get("tags") || ""),
       tools: normalizeList(formData.get("tools") || ""),
       prompt: String(formData.get("prompt") || "").trim(),
@@ -126,7 +280,8 @@ export function PromptForm({ mode, prompt }) {
       sampleOutput: {
         type: sampleOutputType,
         value: String(formData.get("sampleOutputText") || "").trim(),
-        fileName: sampleOutputFileName
+        fileName: sampleOutputFileName,
+        ...sampleOutputMetadata
       },
       visibility: String(formData.get("visibility") || "public"),
       status: String(formData.get("status") || "published")
@@ -141,7 +296,7 @@ export function PromptForm({ mode, prompt }) {
     }
 
     const endpoint =
-      mode === "create" ? "/api/prompts" : `/api/prompts/${prompt._id || prompt.id}`;
+      mode === "create" ? "/api/admin/prompts" : `/api/admin/prompts/${prompt._id || prompt.id}`;
     const method = mode === "create" ? "POST" : "PUT";
 
     const requestOptions = sampleOutputFile
@@ -192,7 +347,13 @@ export function PromptForm({ mode, prompt }) {
     const jsonPayload = {
       title: payload.title,
       slug: payload.slug,
+      description: payload.description,
+      tips: payload.tips,
+      notes: payload.notes,
+      image: payload.image,
+      thumbnail: payload.thumbnail,
       category: payload.category,
+      categories: payload.categories,
       prompt: payload.prompt,
       tags: payload.tags,
       tools: payload.tools,
@@ -202,12 +363,18 @@ export function PromptForm({ mode, prompt }) {
 
     if (payload.sampleOutputType === "text") {
       jsonPayload.sampleOutput = payload.sampleOutput;
+      jsonPayload.sampleOutputType = payload.sampleOutputType;
+      jsonPayload.sampleOutputFileName = payload.sampleOutputFileName;
       return jsonPayload;
     }
 
     if (payload.sampleOutputUrl) {
       jsonPayload.sampleOutputUrl = payload.sampleOutputUrl;
       jsonPayload.sampleOutputType = payload.sampleOutputType;
+      jsonPayload.sampleOutput = {
+        ...payload.sampleOutput,
+        value: payload.sampleOutputUrl
+      };
 
       if (payload.sampleOutputFileName) {
         jsonPayload.sampleOutputFileName = payload.sampleOutputFileName;
@@ -222,19 +389,120 @@ export function PromptForm({ mode, prompt }) {
 
     uploadFormData.append("title", payload.title);
     uploadFormData.append("slug", payload.slug);
+    uploadFormData.append("description", payload.description);
+    uploadFormData.append("tips", payload.tips);
+    uploadFormData.append("notes", payload.notes);
+    uploadFormData.append("image", payload.image);
+    uploadFormData.append("thumbnail", payload.thumbnail);
     uploadFormData.append("category", payload.category);
+    uploadFormData.append("categories", JSON.stringify(payload.categories));
     uploadFormData.append("prompt", payload.prompt);
     uploadFormData.append("tags", JSON.stringify(payload.tags));
     uploadFormData.append("tools", JSON.stringify(payload.tools));
     uploadFormData.append("visibility", payload.visibility);
     uploadFormData.append("status", payload.status);
+    uploadFormData.append("sampleOutputType", payload.sampleOutputType);
+    uploadFormData.append("sampleOutputFileName", payload.sampleOutputFileName);
     uploadFormData.append("sampleOutputFile", sampleOutputFile);
 
     return uploadFormData;
   }
 
+  const categorySelectOptions = normalizeCategories([...categoryOptions, ...categories]);
+
   return (
     <form className="panel form-card stack" onSubmit={handleSubmit}>
+      <div className="field">
+        <label htmlFor="categorySelect">Category</label>
+        <input name="category" readOnly type="hidden" value={categories[0] || ""} />
+        <input name="categories" readOnly type="hidden" value={JSON.stringify(categories)} />
+        <div className="category-multiselect">
+          <select
+            id="categorySelect"
+            multiple
+            onChange={(event) =>
+              setCategorySelectValues(
+                Array.from(event.target.selectedOptions).map((option) => option.value)
+              )
+            }
+            value={categorySelectValues}
+          >
+            {categorySelectOptions.length ? (
+              categorySelectOptions.map((categoryOption) => (
+                <option key={categoryOption} value={categoryOption}>
+                  {categoryOption}
+                </option>
+              ))
+            ) : (
+              <option disabled value="">
+                No categories found
+              </option>
+            )}
+          </select>
+          <div className="category-actions">
+            <button
+              className="button-secondary compact"
+              disabled={!categorySelectValues.length}
+              onClick={() => addCategories(categorySelectValues)}
+              type="button"
+            >
+              Add
+            </button>
+            <button
+              className="button-secondary compact"
+              disabled={!categorySelectValues.length}
+              onClick={() => removeCategories(categorySelectValues)}
+              type="button"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+        <div className="category-tag-input">
+          <input
+            id="categoryInput"
+            maxLength={80}
+            onChange={(event) => setCategoryInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== ",") {
+                return;
+              }
+
+              event.preventDefault();
+              addCustomCategory();
+            }}
+            placeholder="Enter a new category"
+            value={categoryInput}
+          />
+          <button
+            className="button-secondary compact"
+            disabled={!categoryInput.trim()}
+            onClick={addCustomCategory}
+            type="button"
+          >
+            Add New
+          </button>
+        </div>
+        {categories.length ? (
+          <div className="pill-row">
+            {categories.map((category) => (
+              <span className="pill category-tag" key={category}>
+                {category}
+                <button
+                  aria-label={`Remove ${category}`}
+                  onClick={() => removeCategories(category)}
+                  type="button"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <span className="field-hint muted">
+          The first category is also saved to the legacy category field.
+        </span>
+      </div>
       <div className="field">
         <label htmlFor="title">Title</label>
         <input
@@ -271,32 +539,40 @@ export function PromptForm({ mode, prompt }) {
         </span>
       </div>
       <div className="field">
-        <label htmlFor="category">Category</label>
-        <input
-          defaultValue={prompt?.category || ""}
-          id="category"
-          maxLength={80}
-          name="category"
+        <label htmlFor="description">Description</label>
+        <textarea
+          defaultValue={prompt?.description || ""}
+          id="description"
+          maxLength={1000}
+          name="description"
+          placeholder="Short public summary for prompt cards and detail pages."
         />
+        <span className="field-hint muted">Shown publicly. Up to 1,000 characters.</span>
       </div>
       <div className="field">
-        <label htmlFor="tags">Tags</label>
-        <input
-          defaultValue={(prompt?.tags || []).join(", ")}
-          id="tags"
-          name="tags"
-          placeholder="instagram, hooks, copywriting"
+        <label className="field-label-with-icon" htmlFor="tips">
+          <Lightbulb aria-hidden="true" size={16} />
+          Tips
+        </label>
+        <textarea
+          defaultValue={prompt?.tips || prompt?.notes || ""}
+          id="tips"
+          maxLength={5000}
+          name="tips"
+          placeholder="Helpful tips, usage notes, or extra context for customers."
         />
-        <span className="field-hint muted">Comma-separated values.</span>
+        <span className="field-hint muted">Shown on the public prompt page. Up to 5,000 characters.</span>
       </div>
       <div className="field">
-        <label htmlFor="tools">Tools</label>
-        <input
-          defaultValue={(prompt?.tools || []).join(", ")}
-          id="tools"
-          name="tools"
-          placeholder="ChatGPT, Canva, Notion"
+        <label htmlFor="notes">Internal notes</label>
+        <textarea
+          defaultValue={prompt?.notes || ""}
+          id="notes"
+          maxLength={5000}
+          name="notes"
+          placeholder="Private admin notes or migration context."
         />
+        <span className="field-hint muted">Saved with the prompt record for admin use.</span>
       </div>
       <div className="field">
         <label htmlFor="prompt">Prompt</label>
@@ -309,7 +585,35 @@ export function PromptForm({ mode, prompt }) {
           required
         />
       </div>
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="image">Image URL</label>
+          <input
+            defaultValue={prompt?.image || ""}
+            id="image"
+            name="image"
+            placeholder="https://example.com/prompt-image.png"
+            type="url"
+          />
+          <span className="field-hint muted">Used for public previews and SEO when available.</span>
+        </div>
+        <div className="field">
+          <label htmlFor="thumbnail">Thumbnail URL</label>
+          <input
+            defaultValue={prompt?.thumbnail || ""}
+            id="thumbnail"
+            name="thumbnail"
+            placeholder="https://example.com/prompt-thumbnail.png"
+            type="url"
+          />
+        </div>
+      </div>
       <div className="sample-output-fields">
+        <input name="sampleOutputProvider" readOnly type="hidden" value={initialSampleOutput.provider} />
+        <input name="sampleOutputPublicId" readOnly type="hidden" value={initialSampleOutput.publicId} />
+        <input name="sampleOutputResourceType" readOnly type="hidden" value={initialSampleOutput.resourceType} />
+        <input name="sampleOutputFormat" readOnly type="hidden" value={initialSampleOutput.format} />
+        <input name="sampleOutputBytes" readOnly type="hidden" value={initialSampleOutput.bytes} />
         <div className="field">
           <label htmlFor="sampleOutputType">Sample output type</label>
           <select
@@ -432,7 +736,34 @@ export function PromptForm({ mode, prompt }) {
           </>
         )}
       </div>
+      <div className="field">
+        <label htmlFor="tools">Tools</label>
+        <input
+          defaultValue={(prompt?.tools || []).join(", ")}
+          id="tools"
+          name="tools"
+          placeholder="ChatGPT, Canva, Notion"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="tags">Tags</label>
+        <input
+          defaultValue={(prompt?.tags || []).join(", ")}
+          id="tags"
+          name="tags"
+          placeholder="instagram, hooks, copywriting"
+        />
+        <span className="field-hint muted">Comma-separated values.</span>
+      </div>
       <div className="toolbar">
+        <div className="field" style={{ flex: 1 }}>
+          <label htmlFor="status">Status</label>
+          <select defaultValue={prompt?.status || "published"} id="status" name="status">
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
         <div className="field" style={{ flex: 1 }}>
           <label htmlFor="visibility">Visibility</label>
           <select
@@ -442,14 +773,6 @@ export function PromptForm({ mode, prompt }) {
           >
             <option value="public">Public</option>
             <option value="private">Private</option>
-          </select>
-        </div>
-        <div className="field" style={{ flex: 1 }}>
-          <label htmlFor="status">Status</label>
-          <select defaultValue={prompt?.status || "published"} id="status" name="status">
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
           </select>
         </div>
       </div>

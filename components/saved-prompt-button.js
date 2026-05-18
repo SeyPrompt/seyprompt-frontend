@@ -1,56 +1,186 @@
 "use client";
 
 import { Bookmark, BookmarkCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import {
-  SAVED_PROMPTS_KEY,
-  promptStorageItem,
-  readPromptList,
-  writePromptList
-} from "@/lib/prompt-storage";
+  getSavedPromptIds,
+  isAuthError,
+  savePrompt,
+  savedPromptId,
+  unsavePrompt
+} from "@/lib/saved-prompts";
 import { trackEvent } from "@/lib/analytics";
+import { useUserAuth } from "@/components/user-auth-provider";
 
-export function SavedPromptButton({ prompt, className = "" }) {
+export function SavedPromptButton({ prompt, className = "", iconOnly = false }) {
+  const auth = useUserAuth();
+  const alertOwnerId = useId();
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const promptId = savedPromptId(prompt);
 
   useEffect(() => {
-    setSaved(readPromptList(SAVED_PROMPTS_KEY).some((item) => item.slug === prompt?.slug));
-  }, [prompt?.slug]);
+    setMounted(true);
+  }, []);
 
-  function toggleSaved() {
-    if (!prompt?.slug) {
+  useEffect(() => {
+    function closeCompetingAlert(event) {
+      if (event.detail?.ownerId !== alertOwnerId) {
+        setMessage("");
+      }
+    }
+
+    window.addEventListener("saved-prompt-alert-open", closeCompetingAlert);
+    return () => window.removeEventListener("saved-prompt-alert-open", closeCompetingAlert);
+  }, [alertOwnerId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSavedState() {
+      if (!auth.ready) {
+        return;
+      }
+
+      if (!auth.isAuthenticated || !promptId) {
+        setSaved(false);
+        return;
+      }
+
+      try {
+        const savedPromptIds = await getSavedPromptIds(auth.token);
+
+        if (active) {
+          setSaved(savedPromptIds.has(promptId) || savedPromptIds.has(prompt?.slug));
+        }
+      } catch (error) {
+        if (active && isAuthError(error)) {
+          setSaved(false);
+        }
+      }
+    }
+
+    loadSavedState();
+
+    return () => {
+      active = false;
+    };
+  }, [auth.isAuthenticated, auth.ready, auth.token, prompt?.slug, promptId]);
+
+  async function toggleSaved() {
+    if (!promptId) {
       return;
     }
 
-    const storedPrompts = readPromptList(SAVED_PROMPTS_KEY);
-    const isSaved = storedPrompts.some((item) => item.slug === prompt.slug);
-    const next = isSaved
-      ? storedPrompts.filter((item) => item.slug !== prompt.slug)
-      : [promptStorageItem(prompt), ...storedPrompts].slice(0, 100);
+    if (!auth.isAuthenticated) {
+      showAlert("Please log in to save prompts.");
+      trackEvent("cta_click", {
+        event_category: "Retention",
+        event_label: prompt.title || prompt.slug,
+        cta_name: "save_prompt_login_required"
+      });
+      return;
+    }
 
-    writePromptList(SAVED_PROMPTS_KEY, next);
-    setSaved(!isSaved);
-    trackEvent("cta_click", {
-      event_category: "Retention",
-      event_label: prompt.title || prompt.slug,
-      cta_name: isSaved ? "remove_saved_prompt" : "save_prompt"
-    });
+    const wasSaved = saved;
+    setSaved(!wasSaved);
+    setLoading(true);
+    setMessage("");
+
+    try {
+      if (wasSaved) {
+        await unsavePrompt(auth.token, promptId, [prompt?.slug]);
+      } else {
+        await savePrompt(auth.token, promptId, [prompt?.slug]);
+      }
+
+      trackEvent("cta_click", {
+        event_category: "Retention",
+        event_label: prompt.title || prompt.slug,
+        cta_name: wasSaved ? "remove_saved_prompt" : "save_prompt"
+      });
+    } catch (error) {
+      setSaved(wasSaved);
+
+      if (isAuthError(error)) {
+        showAlert("Please log in to save prompts.");
+      } else {
+        showAlert("Could not update saved prompt. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  return (
-    <button
-      aria-pressed={saved}
-      className={`save-prompt-button${saved ? " saved" : ""}${className ? ` ${className}` : ""}`}
-      onClick={toggleSaved}
-      title={saved ? "Saved prompt" : "Save prompt"}
-      type="button"
+  function showAlert(nextMessage) {
+    window.dispatchEvent(
+      new CustomEvent("saved-prompt-alert-open", {
+        detail: { ownerId: alertOwnerId }
+      })
+    );
+    setMessage(nextMessage);
+  }
+
+  const alert = message ? (
+    <div
+      className="save-prompt-alert-backdrop"
+      onClick={() => setMessage("")}
+      role="presentation"
     >
-      {saved ? (
-        <BookmarkCheck aria-hidden="true" size={16} />
-      ) : (
-        <Bookmark aria-hidden="true" size={16} />
-      )}
-      <span>{saved ? "Saved" : "Save"}</span>
-    </button>
+      <div
+        aria-live="polite"
+        className="save-prompt-alert"
+        onClick={(event) => event.stopPropagation()}
+        role={message.includes("log in") ? "dialog" : "alert"}
+      >
+        <Bookmark aria-hidden="true" size={20} />
+        <div>
+          <h2>{message.includes("log in") ? "Login required" : "Save prompt"}</h2>
+          <p>{message}</p>
+        </div>
+        <div className="save-prompt-alert-actions">
+          {message.includes("log in") ? (
+            <Link className="button compact" href="/login">
+              Login
+            </Link>
+          ) : null}
+          <button
+            className="button-secondary compact"
+            onClick={() => setMessage("")}
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <button
+        aria-label={saved ? "Remove saved prompt" : "Save prompt"}
+        aria-pressed={saved}
+        className={`save-prompt-button${saved ? " saved" : ""}${iconOnly ? " icon-only" : ""}${className ? ` ${className}` : ""}`}
+        disabled={loading || !auth.ready}
+        onClick={toggleSaved}
+        title={saved ? "Saved prompt" : "Save prompt"}
+        type="button"
+      >
+        {saved ? (
+          <BookmarkCheck aria-hidden="true" size={16} />
+        ) : (
+          <Bookmark aria-hidden="true" size={16} />
+        )}
+        <span className={iconOnly ? "visually-hidden" : ""}>
+          {loading ? "Saving..." : saved ? "Saved" : "Save"}
+        </span>
+      </button>
+      {mounted && alert ? createPortal(alert, document.body) : null}
+    </>
   );
 }

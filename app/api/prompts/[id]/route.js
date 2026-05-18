@@ -58,7 +58,7 @@ export async function PUT(request, { params }) {
   const { id } = await params;
   const backendRequest = await buildBackendRequest(request, token);
 
-  const response = await fetch(apiUrl(`/api/prompts/${id}`), {
+  const response = await fetch(apiUrl(`/api/admin/prompts/${id}`), {
     method: "PUT",
     ...backendRequest
   });
@@ -76,7 +76,7 @@ export async function DELETE(_request, { params }) {
 
   const { id } = await params;
 
-  const response = await fetch(apiUrl(`/api/prompts/${id}`), {
+  const response = await fetch(apiUrl(`/api/admin/prompts/${id}`), {
     method: "DELETE",
     headers: {
       "x-admin-key": token,

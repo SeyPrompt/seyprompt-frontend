@@ -9,8 +9,10 @@ export function CopyButton({
   label = "Copy",
   copiedLabel = "Copied!",
   className = "",
+  iconOnly = false,
   onCopied,
-  trackingLabel = "prompt"
+  trackingLabel = "prompt",
+  ariaLabel
 }) {
   const [status, setStatus] = useState("idle");
 
@@ -35,14 +37,20 @@ export function CopyButton({
 
   return (
     <button
+      aria-label={ariaLabel || label}
       className={`copy-button${copied ? " copied" : ""}${error ? " error" : ""}${
+        iconOnly ? " icon-only" : ""
+      }${
         className ? ` ${className}` : ""
       }`}
       onClick={handleCopy}
+      title={ariaLabel || label}
       type="button"
     >
       {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
-      {error ? "Copy failed" : copied ? copiedLabel : label}
+      <span className={iconOnly ? "visually-hidden" : ""}>
+        {error ? "Copy failed" : copied ? copiedLabel : label}
+      </span>
     </button>
   );
 }

@@ -2,30 +2,43 @@
 
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
   const [firstTool, ...remainingTools] = tools;
-  const CategoryIcon = getCategoryIcon(prompt.category);
+  const categories = getPromptCategories(prompt);
+  const primaryCategory = getPrimaryPromptCategory(prompt);
+  const CategoryIcon = getCategoryIcon(primaryCategory);
+  const description = prompt.description || prompt.prompt || "";
+  const promptTags = prompt.tags || [];
+  const tagPills = promptTags.length
+    ? promptTags.slice(0, 1).map((tag) => ({ label: `#${tag}`, key: `tag-${tag}` }))
+    : (categories.length ? categories.slice(0, 2) : ["General"]).map((category) => ({
+        label: category,
+        key: `category-${category}`
+      }));
 
   return (
     <article className="card prompt-card">
+      <SavedPromptButton className="prompt-card-save" iconOnly prompt={prompt} />
       <div className="prompt-card-main">
         <div className="prompt-icon category-icon" aria-hidden="true">
           <CategoryIcon size={22} />
         </div>
         <div className="prompt-card-copy">
-          <div className="eyebrow">{prompt.category || "General"}</div>
+          <div className="eyebrow">{primaryCategory || "General"}</div>
           <h3>{prompt.title}</h3>
           <p className="muted prompt-card-description">
-            {prompt.prompt.slice(0, 150)}
-            {prompt.prompt.length > 150 ? "..." : ""}
+            {description.slice(0, 150)}
+            {description.length > 150 ? "..." : ""}
           </p>
           <div className="pill-row prompt-card-tags">
-            {(prompt.tags || []).slice(0, 3).map((tag) => (
-              <span className="pill" key={tag}>
-                #{tag}
+            {tagPills.map((tag) => (
+              <span className="pill" key={tag.key}>
+                {tag.label}
               </span>
             ))}
           </div>
@@ -47,7 +60,7 @@ export function PromptCard({ prompt }) {
                 event_category: "Prompt",
                 event_label: prompt.slug || prompt.title,
                 prompt_slug: prompt.slug,
-                prompt_category: prompt.category || "General"
+                prompt_category: primaryCategory || "General"
               })
             }
           >

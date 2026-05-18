@@ -5,21 +5,95 @@ import { PromptCard } from "@/components/prompt-card";
 import { TrackedLink } from "@/components/tracked-link";
 import { TrackedSearchForm } from "@/components/tracked-search-form";
 import { getCategoryIcon } from "@/utils/categoryIcons";
-import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
+import {
+  createPageMetadata,
+  DEFAULT_TITLE,
+  getCategoryPath,
+  getPromptImage,
+  SITE_DESCRIPTION
+} from "@/lib/seo";
 
 export const metadata = createPageMetadata({
-  title: "Smart Prompts. Better Results.",
+  absoluteTitle: DEFAULT_TITLE,
   description: SITE_DESCRIPTION,
   path: "/"
 });
 
+function getPromptOutputType(prompt) {
+  return String(
+    prompt?.outputType ||
+      prompt?.output_type ||
+      prompt?.sampleOutputType ||
+      prompt?.sampleOutput?.type ||
+      ""
+  ).toLowerCase();
+}
+
+function isImagePrompt(prompt) {
+  return getPromptOutputType(prompt) === "image";
+}
+
+function ImagePromptCarousel({ prompts }) {
+  if (!prompts.length) {
+    return null;
+  }
+
+  return (
+    <section className="section image-prompts-section">
+      <div className="container">
+        <div className="section-header">
+          <div>
+            <div className="eyebrow">Visual ideas</div>
+            <h2>Image Prompts</h2>
+          </div>
+          <Link
+            className="button-secondary"
+            href={getCategoryPath("Image Prompts")}
+          >
+            View image prompts
+          </Link>
+        </div>
+        <div className="image-prompt-carousel" aria-label="Image prompt carousel">
+          {prompts.map((prompt) => (
+            <Link
+              className="card image-prompt-card"
+              href={`/prompts/${prompt.slug}`}
+              key={prompt._id || prompt.id || prompt.slug}
+            >
+              <span className="image-prompt-media">
+                <img
+                  alt={prompt.sampleOutput?.fileName || `${prompt.title} image prompt`}
+                  height="180"
+                  loading="lazy"
+                  src={getPromptImage(prompt)}
+                  width="280"
+                />
+              </span>
+              <span className="image-prompt-copy">
+                <span className="pill">Image</span>
+                <strong>{prompt.title}</strong>
+                <span className="muted">
+                  {(prompt.prompt || "").slice(0, 105)}
+                  {(prompt.prompt || "").length > 105 ? "..." : ""}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function HomePage() {
-  const promptResponse = await fetchPublicPrompts({ limit: "6" }).catch(() => ({
+  const promptResponse = await fetchPublicPrompts({ limit: "24" }).catch(() => ({
     data: [],
     pagination: { total: 0 },
   }));
 
-  const prompts = promptResponse.data || [];
+  const allPrompts = promptResponse.data || [];
+  const prompts = allPrompts.slice(0, 6);
+  const imagePrompts = allPrompts.filter(isImagePrompt).slice(0, 8);
   const categories = ["Marketing", "Coding", "Resume", "Business", "Design"];
   const steps = [
     {
@@ -115,7 +189,7 @@ export default async function HomePage() {
                 return (
                   <Link
                     className="category-pill"
-                    href={{ pathname: "/prompts", query: { category } }}
+                    href={getCategoryPath(category)}
                     key={category}
                   >
                     <CategoryIcon size={15} />
@@ -181,6 +255,8 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      <ImagePromptCarousel prompts={imagePrompts} />
 
       <section className="section home-soft-section">
         <div className="container home-stack">
