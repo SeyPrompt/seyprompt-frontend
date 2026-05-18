@@ -1,4 +1,6 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
@@ -117,6 +119,8 @@ export default function RootLayout({ children }) {
         {process.env.NEXT_PUBLIC_GA_ID ? (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         ) : null}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
