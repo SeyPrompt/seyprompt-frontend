@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
+import { ArrowUpRight, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { PromptCard } from "@/components/prompt-card";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { trackEvent } from "@/lib/analytics";
+import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { apiUrl } from "@/utils/api";
+import { getCategoryIcon } from "@/utils/categoryIcons";
 
 const views = [
   { label: "Card", title: "Card view", icon: LayoutGrid },
@@ -17,17 +20,17 @@ const filterOptionRequests = {
   categories: {
     emptyLabel: "No Categories Found",
     label: "All Categories",
-    path: "/api/prompts/categories"
+    path: "/api/public/categories"
   },
   tags: {
     emptyLabel: "No Tags Found",
     label: "All Tags",
-    path: "/api/prompts/tags"
+    path: "/api/public/prompts?limit=1000"
   },
   tools: {
     emptyLabel: "No Tools Found",
     label: "All Tools",
-    path: "/api/prompts/tools"
+    path: "/api/public/prompts?limit=1000"
   }
 };
 
@@ -42,6 +45,40 @@ function mergeSelectedOption(options, selectedValue) {
   }
 
   return [selectedValue, ...options];
+}
+
+function normalizeFilterOptions(data, key) {
+  if (key === "tags" || key === "tools") {
+    const prompts = Array.isArray(data)
+      ? data
+      : data?.data || data?.prompts || data?.items || data?.results || [];
+    const values = new Set();
+
+    for (const prompt of prompts) {
+      for (const item of Array.isArray(prompt?.[key]) ? prompt[key] : []) {
+        const value = String(item || "").trim();
+
+        if (value) {
+          values.add(value);
+        }
+      }
+    }
+
+    return [...values];
+  }
+
+  const values = Array.isArray(data)
+    ? data
+    : data?.[key] || data?.data || data?.items || data?.results || [];
+
+  return values
+    .map((item) =>
+      typeof item === "string"
+        ? item
+        : item?.name || item?.label || item?.title || item?.value || ""
+    )
+    .map((item) => String(item).trim())
+    .filter(Boolean);
 }
 
 function ToolBadges({ tools = [] }) {
@@ -61,47 +98,114 @@ function ToolBadges({ tools = [] }) {
   );
 }
 
+function PromptMetaPills({ prompt, compact = false }) {
+  const categories = getPromptCategories(prompt);
+  const tags = prompt.tags || [];
+  const pills = tags.length
+    ? tags.slice(0, compact ? 1 : 2).map((tag) => ({ label: `#${tag}`, key: `tag-${tag}` }))
+    : (categories.length ? categories : ["General"])
+        .slice(0, compact ? 1 : 2)
+        .map((category) => ({ label: category, key: `category-${category}` }));
+
+  return (
+    <div className="pill-row library-meta-pills">
+      {pills.map((pill) => (
+        <span className="pill" key={pill.key}>
+          {pill.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PromptListItem({ prompt }) {
+  const primaryCategory = getPrimaryPromptCategory(prompt);
+  const CategoryIcon = getCategoryIcon(primaryCategory);
+  const description = prompt.description || "";
+
+  return (
+    <article className="library-list-item">
+      <div className="prompt-icon library-list-icon" aria-hidden="true">
+        <CategoryIcon size={21} />
+      </div>
+      <div className="library-list-copy">
+        <div className="library-list-heading">
+          <div>
+            <div className="eyebrow">{primaryCategory || "General"}</div>
+            <h3>{prompt.title}</h3>
+          </div>
+        </div>
+        <p className="muted library-list-description">
+          {description.slice(0, 180)}
+          {description.length > 180 ? "..." : ""}
+        </p>
+        <div className="library-list-meta">
+          <PromptMetaPills prompt={prompt} />
+          <ToolBadges tools={prompt.tools || []} />
+        </div>
+      </div>
+      <div className="library-list-actions">
+        <SavedPromptButton className="library-list-save" iconOnly prompt={prompt} />
+        <Link className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
+          View <ArrowUpRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+    </article>
+  );
+}
+
 function PromptTable({ prompts }) {
   return (
-    <div className="panel library-table-wrap">
+    <div className="library-table-wrap">
       <table className="table library-table">
         <thead>
           <tr>
             <th>Title</th>
-            <th>Category</th>
+            <th>Tags</th>
             <th>Tools</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th aria-label="Actions"></th>
           </tr>
         </thead>
         <tbody>
-          {prompts.map((prompt) => (
-            <tr key={prompt._id || prompt.id || prompt.slug}>
-              <td>
-                <strong>{prompt.title}</strong>
-                <div className="muted">
-                  {prompt.prompt.slice(0, 90)}
-                  {prompt.prompt.length > 90 ? "..." : ""}
-                </div>
-              </td>
-              <td>
-                <span className="pill">{prompt.category || "General"}</span>
-              </td>
-              <td>
-                <ToolBadges tools={prompt.tools || []} />
-              </td>
-              <td>
-                <span className="status-badge">Published</span>
-              </td>
-              <td>
-                <div className="prompt-actions">
-                  <Link className="button compact" href={`/prompts/${prompt.slug}`}>
-                    View
+          {prompts.map((prompt) => {
+            const description = prompt.description || "";
+
+            return (
+              <tr key={prompt._id || prompt.id || prompt.slug}>
+                <td className="library-table-title-cell">
+                  <Link className="library-table-title" href={`/prompts/${prompt.slug}`}>
+                    {prompt.title}
                   </Link>
-                </div>
-              </td>
-            </tr>
-          ))}
+                  <div className="muted library-table-description">
+                    {description.slice(0, 90)}
+                    {description.length > 90 ? "..." : ""}
+                  </div>
+                </td>
+                <td>
+                  <PromptMetaPills prompt={prompt} compact />
+                </td>
+                <td>
+                  <ToolBadges tools={prompt.tools || []} />
+                </td>
+                <td>
+                  <span className="status-badge">Published</span>
+                </td>
+                <td>
+                  <div className="library-table-actions">
+                    <SavedPromptButton iconOnly prompt={prompt} />
+                    <Link
+                      aria-label={`View ${prompt.title}`}
+                      className="library-table-view"
+                      href={`/prompts/${prompt.slug}`}
+                    >
+                      <ArrowUpRight size={18} aria-hidden="true" />
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -150,7 +254,7 @@ export function PromptLibraryView({
             }
 
             const data = await response.json();
-            return [key, Array.isArray(data?.[key]) ? data[key] : []];
+            return [key, normalizeFilterOptions(data, key)];
           } catch {
             return [key, []];
           }
@@ -333,7 +437,7 @@ export function PromptLibraryView({
           {view === "List" ? (
             <div className="prompt-list library-list-view">
               {prompts.map((prompt) => (
-                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
+                <PromptListItem key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
               ))}
             </div>
           ) : null}

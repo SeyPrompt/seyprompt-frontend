@@ -1,11 +1,7 @@
 import { SavedPromptsClient } from "@/components/saved-prompts-client";
-import { createPageMetadata } from "@/lib/seo";
+import { createNoIndexMetadata } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  title: "Saved Prompts",
-  description: "Save your favorite prompts and reuse them anytime.",
-  path: "/saved"
-});
+export const metadata = createNoIndexMetadata("Saved Prompts");
 
 export default function SavedPromptsPage() {
   return (

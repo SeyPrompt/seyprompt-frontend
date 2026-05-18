@@ -1,15 +1,22 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Lightbulb } from "lucide-react";
 import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
+import { CopyButton } from "@/components/CopyButton";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { RecordPromptView } from "@/components/record-prompt-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
-import { SavedPromptButton } from "@/components/saved-prompt-button";
+import {
+  getPrimaryPromptCategory,
+  getPromptCategories,
+  getPromptCategoryLabel
+} from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import {
   absoluteUrl,
-  createPageMetadata,
-  getPromptImage,
+  breadcrumbSchema,
+  createPromptMetadata,
+  getCategoryPath,
   promptSchema,
   truncateDescription
 } from "@/lib/seo";
@@ -17,6 +24,14 @@ import {
 function descriptionFromPrompt(prompt) {
   const source = prompt.description || prompt.prompt || prompt.title;
   return truncateDescription(source);
+}
+
+function getPromptTips(prompt) {
+  return String(prompt?.tips || prompt?.notes || "").trim();
+}
+
+function getPromptDetailImage(prompt) {
+  return String(prompt?.image || prompt?.thumbnail || "").trim();
 }
 
 function SampleOutputDisplay({ prompt }) {
@@ -82,9 +97,10 @@ function hasSampleOutput(sampleOutput) {
 
 async function fetchRelatedPrompts(prompt) {
   const requests = [];
+  const primaryCategory = getPrimaryPromptCategory(prompt);
 
-  if (prompt.category) {
-    requests.push(fetchPublicPrompts({ category: prompt.category, limit: "6" }));
+  if (primaryCategory) {
+    requests.push(fetchPublicPrompts({ category: primaryCategory, limit: "6" }));
   }
 
   for (const tool of (prompt.tools || []).slice(0, 2)) {
@@ -119,24 +135,7 @@ export async function generateMetadata({ params }) {
   try {
     const { slug } = await params;
     const prompt = await fetchPromptBySlug(slug);
-    const description = descriptionFromPrompt(prompt);
-    const path = `/prompts/${prompt.slug}`;
-    const image = getPromptImage(prompt);
-
-    return createPageMetadata({
-      title: prompt.title,
-      description,
-      path,
-      image,
-      type: "article",
-      keywords: [
-        prompt.category,
-        ...(prompt.tools || []),
-        ...(prompt.tags || []),
-        "AI prompts",
-        "prompt engineering"
-      ].filter(Boolean)
-    });
+    return createPromptMetadata(prompt);
   } catch (_error) {
     return {
       title: "Prompt Not Found",
@@ -156,63 +155,124 @@ export default async function PromptDetailPage({ params }) {
     notFound();
   }
 
-  const CategoryIcon = getCategoryIcon(prompt.category);
+  const categories = getPromptCategories(prompt);
+  const primaryCategory = getPrimaryPromptCategory(prompt);
+  const categoryCountLabel =
+    categories.length > 1
+      ? `${primaryCategory || "General"} +${categories.length - 1}`
+      : primaryCategory || "General";
+  const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
+  const promptTips = getPromptTips(prompt);
+  const promptDetailImage = getPromptDetailImage(prompt);
+  const schemas = [
+    promptSchema(prompt),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Prompts", path: "/prompts" },
+      ...(primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
+      { name: prompt.title, path: `/prompts/${prompt.slug}` }
+    ])
+  ];
 
   return (
     <main className="section">
       <RecordPromptView prompt={prompt} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(promptSchema(prompt)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
       />
       <div className="container split">
         <article className="panel content-card stack">
-          <Link className="back-link" href="/prompts">
-            &lt;- Back to library
+          <Link className="back-link" href="/prompts" aria-label="Back to library">
+            <ArrowLeft size={20} />
+            <span>Back to library</span>
           </Link>
           <div>
             <div className="detail-title-row">
               <div className="category-icon prompt-icon" aria-hidden="true">
                 <CategoryIcon size={22} />
               </div>
-              <div className="eyebrow">{prompt.category || "General"}</div>
+              <div className="eyebrow">{primaryCategory || "General"}</div>
             </div>
             <h1 className="page-title">{prompt.title}</h1>
+            {prompt.description ? <p className="page-subtitle">{prompt.description}</p> : null}
           </div>
-          {(prompt.tools || []).length ? (
+          {categories.length ? (
             <div className="pill-row">
-              {(prompt.tools || []).map((tool) => (
-                <span className="pill pill-alt" key={tool}>
-                  {tool}
+              {categories.map((category) => (
+                <span className="pill" key={`category-${category}`}>
+                  {category}
                 </span>
               ))}
             </div>
           ) : null}
-          <div className="pill-row">
-            {(prompt.tags || []).map((tag) => (
-              <span className="pill" key={tag}>
-                #{tag}
-              </span>
-            ))}
-          </div>
           <section>
             <h2>Prompt</h2>
-            <div className="prose content-box">{prompt.prompt}</div>
+            <div className="prompt-copy-box">
+              <CopyButton
+                ariaLabel="Copy prompt"
+                className="prompt-inline-copy"
+                copiedLabel="Copied!"
+                iconOnly
+                label="Copy prompt"
+                text={prompt.prompt}
+                trackingLabel={prompt.title || "prompt"}
+              />
+              <div className="prose content-box prompt-content-box">{prompt.prompt}</div>
+            </div>
+            {promptTips ? (
+              <aside className="prompt-tips-box" aria-label="Prompt tips">
+                <div className="prompt-tips-icon" aria-hidden="true">
+                  <Lightbulb size={18} />
+                </div>
+                <div>
+                  <h3>Tips</h3>
+                  <div className="prose">{promptTips}</div>
+                </div>
+              </aside>
+            ) : null}
           </section>
+          {(prompt.tools || []).length ? (
+            <section>
+              <div className="pill-row">
+                {(prompt.tools || []).map((tool) => (
+                  <span className="pill pill-alt" key={tool}>
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </section>
+          ) : null}
           {hasSampleOutput(prompt.sampleOutput) ? (
             <section>
               <h2>Sample Output</h2>
               <SampleOutputDisplay prompt={prompt} />
             </section>
           ) : null}
-          <CopyOpenButton
-            description={descriptionFromPrompt(prompt)}
-            text={prompt.prompt}
-            title={prompt.title}
-            url={absoluteUrl(`/prompts/${prompt.slug}`)}
-          />
-          <SavedPromptButton className="copy-button-primary" prompt={prompt} />
+          {(prompt.tags || []).length ? (
+            <section>
+              <div className="pill-row">
+                {(prompt.tags || []).map((tag) => (
+                  <span className="pill" key={tag}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          <section className="prompt-actions-section" aria-label="Prompt actions">
+            <div className="prompt-actions-heading">
+              <h2>Actions</h2>
+             
+            </div>
+            <CopyOpenButton
+              description={descriptionFromPrompt(prompt)}
+              text={prompt.prompt}
+              title={prompt.title}
+              url={absoluteUrl(`/prompts/${prompt.slug}`)}
+            />
+          </section>
         </article>
 
         <aside className="panel sidebar-card stack">
@@ -221,7 +281,7 @@ export default async function PromptDetailPage({ params }) {
             <dl className="metadata-list">
               <div>
                 <dt>Category</dt>
-                <dd>{prompt.category || "General"}</dd>
+                <dd>{categoryCountLabel}</dd>
               </div>
               <div>
                 <dt>Created</dt>
@@ -243,15 +303,18 @@ export default async function PromptDetailPage({ params }) {
                   <span>
                     {relatedPrompt.title}
                     <small>
-                      {relatedPrompt.category || (relatedPrompt.tools || [])[0] || "Prompt"}
+                      {getPromptCategoryLabel(
+                        relatedPrompt,
+                        (relatedPrompt.tools || [])[0] || "Prompt"
+                      )}
                     </small>
                   </span>
                   <span>&gt;</span>
                 </Link>
               ))}
-              {!relatedPrompts.length && prompt.category ? (
-                <Link href={{ pathname: "/prompts", query: { category: prompt.category } }}>
-                  More {prompt.category} prompts
+              {!relatedPrompts.length && primaryCategory ? (
+                <Link href={getCategoryPath(primaryCategory)}>
+                  More {primaryCategory} prompts
                   <span>&gt;</span>
                 </Link>
               ) : null}
@@ -261,7 +324,7 @@ export default async function PromptDetailPage({ params }) {
                   <span>&gt;</span>
                 </Link>
               ) : null}
-              {!relatedPrompts.length && !prompt.category && !(prompt.tools || []).length ? (
+              {!relatedPrompts.length && !primaryCategory && !(prompt.tools || []).length ? (
                 <p className="muted">Browse the full library for more prompts.</p>
               ) : null}
             </div>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { fetchPublicPrompts } from "@/lib/api";
 import { PromptLibraryView } from "@/components/prompt-library-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
-import { createPageMetadata } from "@/lib/seo";
+import { createCategoryMetadata, createPageMetadata } from "@/lib/seo";
 
 const categoryDescriptions = {
   Marketing: "Discover the best AI marketing prompts for ChatGPT, Claude, and more.",
@@ -23,13 +23,7 @@ export async function generateMetadata({ searchParams }) {
   const q = resolvedSearchParams?.q || "";
 
   if (category) {
-    const title = `${category} AI Prompts`;
-    const description =
-      categoryDescriptions[category] ||
-      `Discover the best ${category.toLowerCase()} AI prompts for ChatGPT, Claude, and more.`;
-    const path = `/prompts?category=${encodeURIComponent(category)}`;
-
-    return createPageMetadata({ title, description, path });
+    return createCategoryMetadata(category);
   }
 
   if (tag) {

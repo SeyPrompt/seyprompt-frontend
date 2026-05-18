@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
+import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
+import { appVersionLabel } from "@/lib/app-version";
+import { getCategoryPath } from "@/lib/seo";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -10,40 +13,40 @@ const quickLinks = [
   { href: "/use-cases", label: "Use Cases" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
-  { href: "/saved", label: "Saved Prompts" },
 ];
 
-const categories = [
-  {
-    href: { pathname: "/prompts", query: { category: "Marketing" } },
-    label: "Marketing Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Coding" } },
-    label: "Coding Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Resume" } },
-    label: "Resume Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Business" } },
-    label: "Business Prompts",
-  },
-  {
-    href: { pathname: "/prompts", query: { category: "Social Media" } },
-    label: "Social Media Prompts",
-  },
-];
+const footerCategoryLimit = 8;
 
-const tools = ["ChatGPT", "Claude", "Midjourney", "Canva"];
+const fallbackCategories = [
+  "Marketing",
+  "Coding",
+  "Resume",
+  "Business",
+  "Social Media",
+  "Design",
+  "Image Prompts",
+  "Productivity"
+];
+const fallbackTools = ["ChatGPT", "Claude", "Midjourney", "Canva", "Gemini", "Perplexity"];
 
 const legalLinks = [
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms-of-use", label: "Terms of Use" },
 ];
 
-export function Footer() {
+function toFooterItems(items, fallbackItems, limit = 6) {
+  const uniqueItems = Array.from(new Set([...items, ...fallbackItems]));
+  return uniqueItems.slice(0, limit);
+}
+
+export async function Footer() {
+  const [categoryItems, toolItems] = await Promise.all([
+    fetchPromptCategories(footerCategoryLimit).catch(() => []),
+    fetchPromptTools(6).catch(() => [])
+  ]);
+  const categories = toFooterItems(categoryItems, fallbackCategories, footerCategoryLimit);
+  const tools = toFooterItems(toolItems, fallbackTools);
+
   return (
     <footer className="footer">
       <div className="container footer-inner">
@@ -85,8 +88,11 @@ export function Footer() {
             <h3>Categories</h3>
             <nav>
               {categories.map((category) => (
-                <Link href={category.href} key={category.label}>
-                  {category.label}
+                <Link
+                  href={getCategoryPath(category)}
+                  key={category}
+                >
+                  {category} Prompts
                 </Link>
               ))}
             </nav>
@@ -108,7 +114,7 @@ export function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>© 2026 SeyPrompt. All rights reserved.</p>
+          <p>© 2026 SeyPrompt. All rights reserved. | {appVersionLabel} </p>
           <nav className="footer-legal-links" aria-label="Legal links">
             {legalLinks.map((link) => (
               <Link href={link.href} key={link.href}>

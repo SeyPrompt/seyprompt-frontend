@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { UserDashboard } from "@/components/user-dashboard";
 
 export const metadata = {
   title: "Dashboard",
@@ -13,5 +13,11 @@ export const metadata = {
 };
 
 export default function DashboardPage() {
-  redirect("/admin/prompts");
+  return (
+    <main className="section login-section">
+      <div className="container login-container">
+        <UserDashboard />
+      </div>
+    </main>
+  );
 }
