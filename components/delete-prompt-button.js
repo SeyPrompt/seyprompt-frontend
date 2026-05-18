@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 
-export function DeletePromptButton({ id }) {
+export function DeletePromptButton({ id, iconOnly = false }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -36,8 +37,24 @@ export function DeletePromptButton({ id }) {
     router.refresh();
   }
 
+  if (iconOnly) {
+    return (
+      <button
+        aria-label={loading ? "Deleting prompt" : "Delete prompt"}
+        className="icon-button icon-button-danger"
+        disabled={loading}
+        onClick={handleDelete}
+        title={loading ? "Deleting..." : "Delete"}
+        type="button"
+      >
+        <Trash2 aria-hidden="true" size={18} />
+      </button>
+    );
+  }
+
   return (
-    <button className="button-danger" disabled={loading} onClick={handleDelete}>
+    <button className="button-danger" disabled={loading} onClick={handleDelete} type="button">
+      <Trash2 aria-hidden="true" size={18} />
       {loading ? "Deleting..." : "Delete"}
     </button>
   );

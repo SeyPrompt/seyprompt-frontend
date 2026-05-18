@@ -1,4 +1,5 @@
 import { LogoutButton } from "@/components/logout-button";
+import AdminTabs from "@/components/admin-tabs";
 import { requireAdminToken } from "@/lib/auth";
 import { fetchCurrentAdmin } from "@/lib/api";
 import { appVersionLabel } from "@/lib/app-version";
@@ -37,9 +38,10 @@ export default async function AdminDashboardLayout({ children }) {
       <section className="admin-main">
         <div className="admin-header">
           <div>
-            <h1>Prompts</h1>
-            <p className="muted">Manage all prompts in your library.</p>
+            <h1>Admin</h1>
+            <p className="muted">Manage prompts, users, and library controls.</p>
           </div>
+          <AdminTabs />
         </div>
         {children}
       </section>

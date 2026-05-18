@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lightbulb } from "lucide-react";
 import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
 import { CopyButton } from "@/components/CopyButton";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { RecordPromptView } from "@/components/record-prompt-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
-import { SavedPromptButton } from "@/components/saved-prompt-button";
 import {
   getPrimaryPromptCategory,
   getPromptCategories,
@@ -25,6 +24,14 @@ import {
 function descriptionFromPrompt(prompt) {
   const source = prompt.description || prompt.prompt || prompt.title;
   return truncateDescription(source);
+}
+
+function getPromptTips(prompt) {
+  return String(prompt?.tips || prompt?.notes || "").trim();
+}
+
+function getPromptDetailImage(prompt) {
+  return String(prompt?.image || prompt?.thumbnail || "").trim();
 }
 
 function SampleOutputDisplay({ prompt }) {
@@ -156,6 +163,8 @@ export default async function PromptDetailPage({ params }) {
       : primaryCategory || "General";
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
+  const promptTips = getPromptTips(prompt);
+  const promptDetailImage = getPromptDetailImage(prompt);
   const schemas = [
     promptSchema(prompt),
     breadcrumbSchema([
@@ -212,10 +221,20 @@ export default async function PromptDetailPage({ params }) {
               />
               <div className="prose content-box prompt-content-box">{prompt.prompt}</div>
             </div>
+            {promptTips ? (
+              <aside className="prompt-tips-box" aria-label="Prompt tips">
+                <div className="prompt-tips-icon" aria-hidden="true">
+                  <Lightbulb size={18} />
+                </div>
+                <div>
+                  <h3>Tips</h3>
+                  <div className="prose">{promptTips}</div>
+                </div>
+              </aside>
+            ) : null}
           </section>
           {(prompt.tools || []).length ? (
             <section>
-              <h2>Tools</h2>
               <div className="pill-row">
                 {(prompt.tools || []).map((tool) => (
                   <span className="pill pill-alt" key={tool}>
@@ -233,7 +252,6 @@ export default async function PromptDetailPage({ params }) {
           ) : null}
           {(prompt.tags || []).length ? (
             <section>
-              <h2>Tags</h2>
               <div className="pill-row">
                 {(prompt.tags || []).map((tag) => (
                   <span className="pill" key={tag}>
@@ -246,7 +264,7 @@ export default async function PromptDetailPage({ params }) {
           <section className="prompt-actions-section" aria-label="Prompt actions">
             <div className="prompt-actions-heading">
               <h2>Actions</h2>
-              <SavedPromptButton className="prompt-save-action" prompt={prompt} />
+             
             </div>
             <CopyOpenButton
               description={descriptionFromPrompt(prompt)}

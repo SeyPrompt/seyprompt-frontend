@@ -14,6 +14,8 @@ import { useUserAuth } from "@/components/user-auth-provider";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const otpPattern = /^\d{6}$/;
+const emailVerificationLoginMessage = "Please verify your email before logging in.";
+const inactiveAccountLoginMessage = "Account is not active.";
 
 function getFieldErrors(details = []) {
   return details.reduce((errors, detail) => {
@@ -60,6 +62,39 @@ function validateOtp(value) {
   }
 
   return "";
+}
+
+function isEmailVerificationLoginError(error) {
+  return error.status === 403 && error.message === emailVerificationLoginMessage;
+}
+
+function handleLoginError(form, error) {
+  if (error.status === 400) {
+    form.handleError(error);
+    return;
+  }
+
+  if (error.status === 401) {
+    form.setFormError("Invalid email or password.");
+    return;
+  }
+
+  if (isEmailVerificationLoginError(error)) {
+    form.setFormError(emailVerificationLoginMessage);
+    return;
+  }
+
+  if (error.status === 403 && error.message === inactiveAccountLoginMessage) {
+    form.setFormError("Your account is inactive. Please contact support.");
+    return;
+  }
+
+  if (error.status >= 500) {
+    form.setFormError("Something went wrong. Please try again later.");
+    return;
+  }
+
+  form.handleError(error);
 }
 
 function useEmailFromRoute() {
@@ -335,11 +370,7 @@ export function LoginForm() {
       auth.login(result);
       router.replace("/saved");
     } catch (error) {
-      if (error.status === 403) {
-        form.setFormError("Please verify your email before logging in.");
-      } else {
-        form.handleError(error);
-      }
+      handleLoginError(form, error);
     } finally {
       form.setLoading(false);
     }
@@ -381,7 +412,7 @@ export function LoginForm() {
         error={form.formError}
         success={form.success}
       />
-      {form.formError === "Please verify your email before logging in." ? (
+      {form.formError === emailVerificationLoginMessage ? (
         <Link className="button-secondary auth-inline-action" href={verifyHref}>
           Verify email
         </Link>

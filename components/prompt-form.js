@@ -1,5 +1,6 @@
 "use client";
 
+import { Lightbulb } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
@@ -75,8 +76,12 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Description must be 1,000 characters or fewer.";
   }
 
+  if (payload.tips.length > 5000) {
+    return "Tips must be 5,000 characters or fewer.";
+  }
+
   if (payload.notes.length > 5000) {
-    return "Notes must be 5,000 characters or fewer.";
+    return "Internal notes must be 5,000 characters or fewer.";
   }
 
   if (!Array.isArray(payload.categories)) {
@@ -116,21 +121,36 @@ function validatePrompt(payload, sampleOutputFile) {
 
 function getInitialSampleOutput(prompt) {
   const sampleOutput = prompt?.sampleOutput;
+  const topLevelType = String(prompt?.sampleOutputType || "").trim();
+  const topLevelFileName = String(prompt?.sampleOutputFileName || "").trim();
+  const validTopLevelType = ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(topLevelType)
+    ? topLevelType
+    : "";
 
   if (sampleOutput && typeof sampleOutput === "object") {
     return {
       type: ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(sampleOutput.type)
         ? sampleOutput.type
-        : "text",
+        : validTopLevelType || "text",
       value: sampleOutput.value || "",
-      fileName: sampleOutput.fileName || ""
+      fileName: sampleOutput.fileName || topLevelFileName,
+      provider: sampleOutput.provider || "",
+      publicId: sampleOutput.publicId || "",
+      resourceType: sampleOutput.resourceType || "",
+      format: sampleOutput.format || "",
+      bytes: sampleOutput.bytes || ""
     };
   }
 
   return {
-    type: "text",
+    type: validTopLevelType || "text",
     value: typeof sampleOutput === "string" ? sampleOutput : "",
-    fileName: ""
+    fileName: topLevelFileName,
+    provider: "",
+    publicId: "",
+    resourceType: "",
+    format: "",
+    bytes: ""
   };
 }
 
@@ -230,6 +250,13 @@ export function PromptForm({ mode, prompt }) {
     const sampleOutputType = String(formData.get("sampleOutputType") || "text");
     const sampleOutputUrl = String(formData.get("sampleOutputUrl") || "").trim();
     const sampleOutputFileName = String(formData.get("sampleOutputFileName") || "").trim();
+    const sampleOutputMetadata = {
+      provider: String(formData.get("sampleOutputProvider") || "").trim(),
+      publicId: String(formData.get("sampleOutputPublicId") || "").trim(),
+      resourceType: String(formData.get("sampleOutputResourceType") || "").trim(),
+      format: String(formData.get("sampleOutputFormat") || "").trim(),
+      bytes: Number(formData.get("sampleOutputBytes") || 0) || undefined
+    };
     const selectedCategories = normalizeCategories([
       ...normalizeCategoryInput(formData.get("categories") || "[]"),
       categoryInput
@@ -238,7 +265,10 @@ export function PromptForm({ mode, prompt }) {
       title: String(formData.get("title") || "").trim(),
       slug: String(formData.get("slug") || "").trim(),
       description: String(formData.get("description") || "").trim(),
+      tips: String(formData.get("tips") || "").trim(),
       notes: String(formData.get("notes") || "").trim(),
+      image: String(formData.get("image") || "").trim(),
+      thumbnail: String(formData.get("thumbnail") || "").trim(),
       category: selectedCategories[0] || String(formData.get("category") || "").trim(),
       categories: selectedCategories,
       tags: normalizeList(formData.get("tags") || ""),
@@ -250,7 +280,8 @@ export function PromptForm({ mode, prompt }) {
       sampleOutput: {
         type: sampleOutputType,
         value: String(formData.get("sampleOutputText") || "").trim(),
-        fileName: sampleOutputFileName
+        fileName: sampleOutputFileName,
+        ...sampleOutputMetadata
       },
       visibility: String(formData.get("visibility") || "public"),
       status: String(formData.get("status") || "published")
@@ -317,7 +348,10 @@ export function PromptForm({ mode, prompt }) {
       title: payload.title,
       slug: payload.slug,
       description: payload.description,
+      tips: payload.tips,
       notes: payload.notes,
+      image: payload.image,
+      thumbnail: payload.thumbnail,
       category: payload.category,
       categories: payload.categories,
       prompt: payload.prompt,
@@ -329,12 +363,18 @@ export function PromptForm({ mode, prompt }) {
 
     if (payload.sampleOutputType === "text") {
       jsonPayload.sampleOutput = payload.sampleOutput;
+      jsonPayload.sampleOutputType = payload.sampleOutputType;
+      jsonPayload.sampleOutputFileName = payload.sampleOutputFileName;
       return jsonPayload;
     }
 
     if (payload.sampleOutputUrl) {
       jsonPayload.sampleOutputUrl = payload.sampleOutputUrl;
       jsonPayload.sampleOutputType = payload.sampleOutputType;
+      jsonPayload.sampleOutput = {
+        ...payload.sampleOutput,
+        value: payload.sampleOutputUrl
+      };
 
       if (payload.sampleOutputFileName) {
         jsonPayload.sampleOutputFileName = payload.sampleOutputFileName;
@@ -350,7 +390,10 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("title", payload.title);
     uploadFormData.append("slug", payload.slug);
     uploadFormData.append("description", payload.description);
+    uploadFormData.append("tips", payload.tips);
     uploadFormData.append("notes", payload.notes);
+    uploadFormData.append("image", payload.image);
+    uploadFormData.append("thumbnail", payload.thumbnail);
     uploadFormData.append("category", payload.category);
     uploadFormData.append("categories", JSON.stringify(payload.categories));
     uploadFormData.append("prompt", payload.prompt);
@@ -358,6 +401,8 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("tools", JSON.stringify(payload.tools));
     uploadFormData.append("visibility", payload.visibility);
     uploadFormData.append("status", payload.status);
+    uploadFormData.append("sampleOutputType", payload.sampleOutputType);
+    uploadFormData.append("sampleOutputFileName", payload.sampleOutputFileName);
     uploadFormData.append("sampleOutputFile", sampleOutputFile);
 
     return uploadFormData;
@@ -505,15 +550,29 @@ export function PromptForm({ mode, prompt }) {
         <span className="field-hint muted">Shown publicly. Up to 1,000 characters.</span>
       </div>
       <div className="field">
-        <label htmlFor="notes">Notes</label>
+        <label className="field-label-with-icon" htmlFor="tips">
+          <Lightbulb aria-hidden="true" size={16} />
+          Tips
+        </label>
+        <textarea
+          defaultValue={prompt?.tips || prompt?.notes || ""}
+          id="tips"
+          maxLength={5000}
+          name="tips"
+          placeholder="Helpful tips, usage notes, or extra context for customers."
+        />
+        <span className="field-hint muted">Shown on the public prompt page. Up to 5,000 characters.</span>
+      </div>
+      <div className="field">
+        <label htmlFor="notes">Internal notes</label>
         <textarea
           defaultValue={prompt?.notes || ""}
           id="notes"
           maxLength={5000}
           name="notes"
-          placeholder="Helpful tips, usage notes, or extra context for customers."
+          placeholder="Private admin notes or migration context."
         />
-        <span className="field-hint muted">Shown on the public prompt page. Up to 5,000 characters.</span>
+        <span className="field-hint muted">Saved with the prompt record for admin use.</span>
       </div>
       <div className="field">
         <label htmlFor="prompt">Prompt</label>
@@ -526,7 +585,35 @@ export function PromptForm({ mode, prompt }) {
           required
         />
       </div>
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="image">Image URL</label>
+          <input
+            defaultValue={prompt?.image || ""}
+            id="image"
+            name="image"
+            placeholder="https://example.com/prompt-image.png"
+            type="url"
+          />
+          <span className="field-hint muted">Used for public previews and SEO when available.</span>
+        </div>
+        <div className="field">
+          <label htmlFor="thumbnail">Thumbnail URL</label>
+          <input
+            defaultValue={prompt?.thumbnail || ""}
+            id="thumbnail"
+            name="thumbnail"
+            placeholder="https://example.com/prompt-thumbnail.png"
+            type="url"
+          />
+        </div>
+      </div>
       <div className="sample-output-fields">
+        <input name="sampleOutputProvider" readOnly type="hidden" value={initialSampleOutput.provider} />
+        <input name="sampleOutputPublicId" readOnly type="hidden" value={initialSampleOutput.publicId} />
+        <input name="sampleOutputResourceType" readOnly type="hidden" value={initialSampleOutput.resourceType} />
+        <input name="sampleOutputFormat" readOnly type="hidden" value={initialSampleOutput.format} />
+        <input name="sampleOutputBytes" readOnly type="hidden" value={initialSampleOutput.bytes} />
         <div className="field">
           <label htmlFor="sampleOutputType">Sample output type</label>
           <select

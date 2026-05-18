@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
@@ -16,17 +17,25 @@ export const metadata = {
   }
 };
 
+function truncateDescription(description = "") {
+  const cleanDescription = String(description).trim();
+
+  if (cleanDescription.length <= 92) {
+    return cleanDescription;
+  }
+
+  return `${cleanDescription.slice(0, 89).trimEnd()}...`;
+}
+
 export default async function AdminPromptsPage({ searchParams }) {
   const token = await requireAdminToken();
   const resolvedSearchParams = await searchParams;
   const q = resolvedSearchParams?.q || "";
   const status = resolvedSearchParams?.status || "";
-  const visibility = resolvedSearchParams?.visibility || "";
 
   const response = await fetchAdminPrompts(token, {
     q,
     status,
-    visibility,
     limit: "50"
   }).catch(() => ({
     data: [],
@@ -42,11 +51,6 @@ export default async function AdminPromptsPage({ searchParams }) {
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
-        </select>
-        <select defaultValue={visibility} name="visibility">
-          <option value="">All visibility</option>
-          <option value="public">Public</option>
-          <option value="private">Private</option>
         </select>
         <button className="button" type="submit">
           Filter
@@ -74,13 +78,14 @@ export default async function AdminPromptsPage({ searchParams }) {
                     <th>Category</th>
                     <th>Tools</th>
                     <th>Status</th>
-                    <th>Visibility</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {response.data.map((prompt) => {
                     const categories = getPromptCategories(prompt);
+                    const [primaryCategory, ...remainingCategories] = categories;
+                    const [firstTool, ...remainingTools] = prompt.tools || [];
 
                     return (
                       <tr key={prompt._id || prompt.id}>
@@ -88,44 +93,41 @@ export default async function AdminPromptsPage({ searchParams }) {
                           <strong>{prompt.title}</strong>
                           <div className="muted">{prompt.slug}</div>
                           {prompt.description ? (
-                            <div className="muted">{prompt.description}</div>
+                            <div className="muted admin-prompt-description">
+                              {truncateDescription(prompt.description)}
+                            </div>
                           ) : null}
                         </td>
                         <td>
                           <div className="pill-row">
-                            {categories.length ? (
-                              categories.map((category) => (
-                                <span className="pill" key={category}>
-                                  {category}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="pill">General</span>
-                            )}
+                            <span className="pill">{primaryCategory || "General"}</span>
+                            {remainingCategories.length ? (
+                              <span className="pill pill-count">+{remainingCategories.length}</span>
+                            ) : null}
                           </div>
                         </td>
                         <td>
                           <div className="pill-row">
-                            {(prompt.tools || []).slice(0, 2).map((tool) => (
-                              <span className="pill pill-alt" key={tool}>
-                                {tool}
-                              </span>
-                            ))}
+                            {firstTool ? <span className="pill pill-alt">{firstTool}</span> : null}
+                            {remainingTools.length ? (
+                              <span className="pill pill-alt pill-count">+{remainingTools.length}</span>
+                            ) : null}
                           </div>
                         </td>
                         <td>
                           <span className="status-badge">{prompt.status}</span>
                         </td>
-                        <td>{prompt.visibility}</td>
                         <td>
-                          <div className="toolbar">
+                          <div className="admin-icon-actions">
                             <Link
-                              className="button-secondary"
+                              aria-label={`Edit ${prompt.title}`}
+                              className="icon-button"
                               href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                              title="Edit"
                             >
-                              Edit
+                              <Pencil aria-hidden="true" size={18} />
                             </Link>
-                            <DeletePromptButton id={prompt._id || prompt.id} />
+                            <DeletePromptButton iconOnly id={prompt._id || prompt.id} />
                           </div>
                         </td>
                       </tr>
@@ -137,31 +139,37 @@ export default async function AdminPromptsPage({ searchParams }) {
             <div className="admin-card-list">
               {response.data.map((prompt) => {
                 const categories = getPromptCategories(prompt);
+                const [primaryCategory, ...remainingCategories] = categories;
+                const [firstTool, ...remainingTools] = prompt.tools || [];
 
                 return (
                   <article className="admin-prompt-card" key={prompt._id || prompt.id}>
                     <div>
                       <strong>{prompt.title}</strong>
                       <p className="muted">{prompt.slug}</p>
-                      {prompt.description ? <p className="muted">{prompt.description}</p> : null}
+                      {prompt.description ? (
+                        <p className="muted admin-prompt-description">
+                          {truncateDescription(prompt.description)}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="admin-card-meta">
-                      {categories.length ? (
-                        categories.map((category) => <span key={category}>{category}</span>)
-                      ) : (
-                        <span>General</span>
-                      )}
+                      <span>{primaryCategory || "General"}</span>
+                      {remainingCategories.length ? <span>+{remainingCategories.length}</span> : null}
+                      {firstTool ? <span>{firstTool}</span> : null}
+                      {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
-                      <span>{prompt.visibility}</span>
                     </div>
-                    <div className="toolbar">
+                    <div className="admin-icon-actions">
                       <Link
-                        className="button-secondary"
+                        aria-label={`Edit ${prompt.title}`}
+                        className="icon-button"
                         href={`/admin/prompts/${prompt._id || prompt.id}/edit`}
+                        title="Edit"
                       >
-                        Edit
+                        <Pencil aria-hidden="true" size={18} />
                       </Link>
-                      <DeletePromptButton id={prompt._id || prompt.id} />
+                      <DeletePromptButton iconOnly id={prompt._id || prompt.id} />
                     </div>
                   </article>
                 );
