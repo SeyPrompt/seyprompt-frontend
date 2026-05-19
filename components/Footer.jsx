@@ -4,6 +4,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
 import { appVersionLabel } from "@/lib/app-version";
 import { getCategoryPath } from "@/lib/seo";
+import { apiUrl } from "@/utils/api";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -39,6 +40,29 @@ function toFooterItems(items, fallbackItems, limit = 6) {
   return uniqueItems.slice(0, limit);
 }
 
+function normalizeVersionLabel(version) {
+  if (!version) return "unknown";
+  const raw = String(version).trim();
+  return raw.toLowerCase().startsWith("v") ? raw : `v${raw}`;
+}
+
+async function fetchBackendVersion() {
+  try {
+    const response = await fetch(apiUrl("/api/version"), {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data?.version || null;
+  } catch (_error) {
+    return null;
+  }
+}
+
 export async function Footer() {
   const [categoryItems, toolItems] = await Promise.all([
     fetchPromptCategories(footerCategoryLimit).catch(() => []),
@@ -46,6 +70,7 @@ export async function Footer() {
   ]);
   const categories = toFooterItems(categoryItems, fallbackCategories, footerCategoryLimit);
   const tools = toFooterItems(toolItems, fallbackTools);
+  const backendVersionLabel = normalizeVersionLabel(await fetchBackendVersion());
 
   return (
     <footer className="footer">
@@ -114,7 +139,9 @@ export async function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>© 2026 SeyPrompt. All rights reserved. | {appVersionLabel} </p>
+          <p>
+            © 2026 SeyPrompt. All rights reserved.
+          </p>
           <nav className="footer-legal-links" aria-label="Legal links">
             {legalLinks.map((link) => (
               <Link href={link.href} key={link.href}>
@@ -123,6 +150,7 @@ export async function Footer() {
             ))}
           </nav>
           <p>Built for creators, developers, and businesses using AI.</p>
+          <p>UI - {appVersionLabel} | API - {backendVersionLabel}</p>
         </div>
       </div>
     </footer>
