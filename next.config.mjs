@@ -5,20 +5,42 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function getAppVersion() {
-  if (process.env.NEXT_PUBLIC_APP_VERSION) {
-    return process.env.NEXT_PUBLIC_APP_VERSION;
-  }
-
+function getGitTagVersion() {
   try {
     return execSync("git describe --tags --abbrev=0", {
       cwd: __dirname,
       stdio: ["ignore", "pipe", "ignore"]
     }).toString().trim();
   } catch (_error) {
-    const packageJson = JSON.parse(readFileSync(path.join(__dirname, "package.json"), "utf8"));
-    return packageJson.version;
+    try {
+      execSync("git fetch --tags --force", {
+        cwd: __dirname,
+        stdio: "ignore"
+      });
+
+      return execSync("git describe --tags --abbrev=0", {
+        cwd: __dirname,
+        stdio: ["ignore", "pipe", "ignore"]
+      }).toString().trim();
+    } catch (_fetchError) {
+      return null;
+    }
   }
+}
+
+function getAppVersion() {
+  const gitTagVersion = getGitTagVersion();
+
+  if (gitTagVersion) {
+    return gitTagVersion;
+  }
+
+  if (process.env.NEXT_PUBLIC_APP_VERSION) {
+    return process.env.NEXT_PUBLIC_APP_VERSION;
+  }
+
+  const packageJson = JSON.parse(readFileSync(path.join(__dirname, "package.json"), "utf8"));
+  return packageJson.version;
 }
 
 const appVersion = getAppVersion();
