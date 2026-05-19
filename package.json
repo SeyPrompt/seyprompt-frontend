@@ -1,8 +1,12 @@
 {
   "name": "seyprompt-frontend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
+    "sync-version": "node ./scripts/sync-version.js",
+    "predev": "npm run sync-version",
+    "prebuild": "npm run sync-version",
+    "prestart": "npm run sync-version",
     "dev": "next dev",
     "build": "next build",
     "postbuild": "next-sitemap",
