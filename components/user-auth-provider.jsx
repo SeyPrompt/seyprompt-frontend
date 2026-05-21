@@ -7,7 +7,7 @@ import {
   getStoredUserAuth,
   saveUserAuth
 } from "@/lib/user-auth";
-import { setAnalyticsUserIdFromHash, clearAnalyticsUserId } from "@/lib/analytics";
+import { setAnalyticsUserIdFromHash, clearAnalyticsUserId, setAnalyticsUserProperty, clearAnalyticsUserProperty } from "@/lib/analytics";
 
 const UserAuthContext = createContext(null);
 
@@ -32,6 +32,7 @@ export function UserAuthProvider({ children }) {
     // if backend provided a hashed user id, set it in analytics
     if (authResponse.hashedUserId) {
       setAnalyticsUserIdFromHash(authResponse.hashedUserId);
+      setAnalyticsUserProperty(authResponse.hashedUserId);
     }
   }
 
@@ -41,6 +42,7 @@ export function UserAuthProvider({ children }) {
     router.replace("/login");
     // clear analytics user id when logging out
     clearAnalyticsUserId();
+    clearAnalyticsUserProperty();
   }
 
   const value = useMemo(
