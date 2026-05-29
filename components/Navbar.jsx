@@ -18,6 +18,7 @@ import { useUserAuth } from "@/components/user-auth-provider";
 const primaryLinks = [
   { href: "/", label: "Home" },
   { href: "/prompts", label: "Prompts" },
+  { href: "/image-video-prompts", label: "Visuals" },
   { href: "/ai-prompt-guide", label: "Guide" },
   { href: "/ai-tools", label: "Tools" },
   { href: "/use-cases", label: "Use Cases" },

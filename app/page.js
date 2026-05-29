@@ -46,6 +46,17 @@ function isImagePrompt(prompt) {
 }
 
 function categoryHref(category) {
+  const name = String(category?.name || category || "").toLowerCase();
+  const slug = String(category?.slug || "").toLowerCase();
+
+  if (name === "image prompts" || slug === "image-prompts") {
+    return "/image-video-prompts";
+  }
+
+  if (name === "video prompts" || slug === "video-prompts") {
+    return "/image-video-prompts?tab=video";
+  }
+
   return category?.slug ? `/categories/${category.slug}` : getCategoryPath(category?.name || category);
 }
 
@@ -153,9 +164,9 @@ function ImagePromptCarousel({ prompts }) {
           </div>
           <Link
             className="button-secondary"
-            href={getCategoryPath("Image Prompts")}
+            href="/image-video-prompts"
           >
-            View image prompts
+            View visual prompts
           </Link>
         </div>
         <div className="image-prompt-carousel" aria-label="Image prompt carousel">

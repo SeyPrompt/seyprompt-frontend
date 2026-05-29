@@ -8,6 +8,7 @@ const siteUrl = (
 const staticPaths = [
   "/",
   "/prompts",
+  "/image-video-prompts",
   "/ai-prompt-guide",
   "/ai-tools",
   "/use-cases",
