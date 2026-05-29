@@ -1,6 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
-import { fetchPublicFeaturedPrompts, fetchPublicPrompts } from "@/lib/api";
+import {
+  BarChart3,
+  FileCheck2,
+  MousePointerClick,
+  RefreshCw,
+  Search
+} from "lucide-react";
+import {
+  fetchPublicCategories,
+  fetchPublicFeaturedPrompts,
+  fetchPublicPrompts
+} from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
 import { TrackedLink } from "@/components/tracked-link";
 import { TrackedSearchForm } from "@/components/tracked-search-form";
@@ -32,6 +43,26 @@ function getPromptOutputType(prompt) {
 
 function isImagePrompt(prompt) {
   return getPromptOutputType(prompt) === "image";
+}
+
+function categoryHref(category) {
+  return category?.slug ? `/categories/${category.slug}` : getCategoryPath(category?.name || category);
+}
+
+function formatPromptCount(count) {
+  const value = Number(count);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return "Prompts";
+  }
+
+  return `${value} ${value === 1 ? "Prompt" : "Prompts"}`;
+}
+
+function getRandomCategories(categories = [], limit = 10) {
+  return [...categories]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, limit);
 }
 
 function FeaturedPromptsSection({ prompts }) {
@@ -163,7 +194,7 @@ function ImagePromptCarousel({ prompts }) {
 }
 
 export default async function HomePage() {
-  const [promptResponse, featuredPromptResponse] = await Promise.all([
+  const [promptResponse, featuredPromptResponse, categoryResponse] = await Promise.all([
     fetchPublicPrompts({ limit: "24" }).catch(() => ({
       data: [],
       pagination: { total: 0 },
@@ -171,32 +202,45 @@ export default async function HomePage() {
     fetchPublicFeaturedPrompts().catch(() => ({
       data: [],
       pagination: { total: 0 }
-    }))
+    })),
+    fetchPublicCategories(100).catch(() => [])
   ]);
 
   const allPrompts = promptResponse.data || [];
   const prompts = allPrompts.slice(0, 6);
   const featuredPrompts = featuredPromptResponse.data || [];
   const imagePrompts = allPrompts.filter(isImagePrompt).slice(0, 8);
-  const categories = ["Marketing", "Coding", "Resume", "Business", "Design"];
+  const categories = getRandomCategories(categoryResponse, 10);
   const steps = [
     {
-      icon: "1",
-      title: "Find a prompt",
+      icon: Search,
+      title: "Find",
       description:
-        "Search by use case, category, tag, or tool to discover the right starting point.",
+        "Search or browse prompts for any tool or use case.",
     },
     {
-      icon: "2",
-      title: "Copy it",
+      icon: FileCheck2,
+      title: "Choose",
       description:
-        "Grab a polished prompt that is structured, specific, and ready to customize.",
+        "Pick the perfect prompt that fits your goal.",
     },
     {
-      icon: "3",
-      title: "Use in AI",
+      icon: MousePointerClick,
+      title: "Use",
       description:
-        "Paste it into ChatGPT, Claude, Gemini, or your favorite AI workspace.",
+        "Copy the prompt and use it in your favorite AI tool.",
+    },
+    {
+      icon: BarChart3,
+      title: "Get Results",
+      description:
+        "Receive better, faster, and more accurate outputs.",
+    },
+    {
+      icon: RefreshCw,
+      title: "Iterate",
+      description:
+        "Refine, tweak, and get even better results every time.",
     },
   ];
   const tools = [
@@ -233,21 +277,28 @@ export default async function HomePage() {
             </p>
             <TrackedSearchForm className="hero-search" />
             <div
-              className="category-pills home-category-pills"
+              className="home-category-cards"
               aria-label="Popular categories"
             >
               {categories.map((category) =>
                 (() => {
-                  const CategoryIcon = getCategoryIcon(category);
+                  const CategoryIcon = getCategoryIcon(category.name);
 
                   return (
                     <Link
-                      className="category-pill"
-                      href={getCategoryPath(category)}
-                      key={category}
+                      className="home-category-card"
+                      href={categoryHref(category)}
+                      key={category.slug || category.name}
                     >
-                      <CategoryIcon size={15} />
-                      {category}
+                      <span className="home-category-card-icon" aria-hidden="true">
+                        <CategoryIcon size={22} strokeWidth={1.9} />
+                      </span>
+                      <span className="home-category-card-copy">
+                        <span className="home-category-card-name">{category.name}</span>
+                        <span className="home-category-card-count">
+                          {formatPromptCount(category.promptCount)}
+                        </span>
+                      </span>
                     </Link>
                   );
                 })(),
@@ -281,9 +332,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <FeaturedPromptsSection prompts={featuredPrompts} />
-
-      <section className="section">
+      <section className="section how-it-works-section">
         <div className="container home-stack">
           <div className="home-section-heading">
             <h2>How It Works</h2>
@@ -292,19 +341,28 @@ export default async function HomePage() {
               copy it, and use it wherever you already work with AI.
             </p>
           </div>
-          <div className="home-info-grid">
-            {steps.map((step) => (
-              <article className="card home-info-card" key={step.title}>
-                <div className="home-info-icon" aria-hidden="true">
-                  {step.icon}
-                </div>
-                <h3>{step.title}</h3>
-                <p className="muted">{step.description}</p>
-              </article>
-            ))}
+          <div className="how-it-works-flow" aria-label="How SeyPrompt works">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+
+              return (
+                <article className="how-it-works-step" key={step.title}>
+                  <div className="how-step-icon" aria-hidden="true">
+                    <StepIcon size={42} strokeWidth={1.9} />
+                  </div>
+                  <div className="how-step-kicker">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    {step.title}
+                  </div>
+                  <p>{step.description}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
+
+      <FeaturedPromptsSection prompts={featuredPrompts} />
 
       <section className="section">
         <div className="container">
