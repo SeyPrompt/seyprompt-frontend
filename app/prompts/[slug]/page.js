@@ -279,6 +279,7 @@ export default async function PromptDetailPage({ params }) {
             </div>
             <CopyOpenButton
               description={descriptionFromPrompt(prompt)}
+              prompt={prompt}
               text={prompt.prompt}
               title={prompt.title}
               url={absoluteUrl(`/prompts/${prompt.slug}`)}

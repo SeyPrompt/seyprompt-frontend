@@ -6,7 +6,7 @@ import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 
-export function CopyOpenButton({ description, text, title, url }) {
+export function CopyOpenButton({ description, prompt, text, title, url }) {
   const [copied, setCopied] = useState(false);
   const encodedPrompt = encodeURIComponent(text || "");
   const aiTools = [
@@ -91,7 +91,9 @@ export function CopyOpenButton({ description, text, title, url }) {
             Share
             <Share2 aria-hidden="true" size={16} />
           </button>
-           <SavedPromptButton className="prompt-save-action" prompt={prompt} />
+          {prompt ? (
+            <SavedPromptButton className="prompt-save-action" prompt={prompt} />
+          ) : null}
         </div>
 
         <div className="ai-tool-group" aria-label="Open prompt in AI tools">
