@@ -62,6 +62,17 @@ function SampleOutputDisplay({ prompt }) {
     );
   }
 
+  if (sampleOutput.type === "video") {
+    return (
+      <div className="sample-media-box">
+        <video className="sample-output-video" controls preload="metadata" src={sampleOutput.value}>
+          <a href={sampleOutput.value}>Open video</a>
+        </video>
+        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
+      </div>
+    );
+  }
+
   if (sampleOutput.type === "pdf" || sampleOutput.type === "file") {
     const label = sampleOutput.type === "pdf" ? "Open PDF" : "Open File";
 

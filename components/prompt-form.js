@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
 
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
-const SAMPLE_OUTPUT_URL_TYPES = ["image", "pdf", "file"];
+const SAMPLE_OUTPUT_URL_TYPES = ["image", "video", "pdf", "file"];
+const SAMPLE_OUTPUT_TYPES = ["text", ...SAMPLE_OUTPUT_URL_TYPES];
 
 function normalizeList(value) {
   return String(value || "")
@@ -96,12 +97,12 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Sample output must be 10,000 characters or fewer.";
   }
 
-  if (!["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(payload.sampleOutputType)) {
-    return "Sample output type must be text, image, PDF, or file.";
+  if (!SAMPLE_OUTPUT_TYPES.includes(payload.sampleOutputType)) {
+    return "Sample output type must be text, image, video, PDF, or file.";
   }
 
   if (payload.sampleOutputUrl && !SAMPLE_OUTPUT_URL_TYPES.includes(payload.sampleOutputType)) {
-    return "Direct sample output URL type must be image, PDF, or file.";
+    return "Direct sample output URL type must be image, video, PDF, or file.";
   }
 
   if (sampleOutputFile && sampleOutputFile.size > MAX_SAMPLE_OUTPUT_FILE_SIZE) {
@@ -116,6 +117,13 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Status must be draft, published, or archived.";
   }
 
+  if (
+    payload.featuredOrder !== undefined &&
+    (!Number.isFinite(payload.featuredOrder) || payload.featuredOrder < 0)
+  ) {
+    return "Featured order must be 0 or greater.";
+  }
+
   return "";
 }
 
@@ -123,13 +131,13 @@ function getInitialSampleOutput(prompt) {
   const sampleOutput = prompt?.sampleOutput;
   const topLevelType = String(prompt?.sampleOutputType || "").trim();
   const topLevelFileName = String(prompt?.sampleOutputFileName || "").trim();
-  const validTopLevelType = ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(topLevelType)
+  const validTopLevelType = SAMPLE_OUTPUT_TYPES.includes(topLevelType)
     ? topLevelType
     : "";
 
   if (sampleOutput && typeof sampleOutput === "object") {
     return {
-      type: ["text", ...SAMPLE_OUTPUT_URL_TYPES].includes(sampleOutput.type)
+      type: SAMPLE_OUTPUT_TYPES.includes(sampleOutput.type)
         ? sampleOutput.type
         : validTopLevelType || "text",
       value: sampleOutput.value || "",
@@ -169,6 +177,7 @@ export function PromptForm({ mode, prompt }) {
       ? "direct-url"
       : "upload"
   );
+  const [isFeatured, setIsFeatured] = useState(Boolean(prompt?.isFeatured));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -250,6 +259,9 @@ export function PromptForm({ mode, prompt }) {
     const sampleOutputType = String(formData.get("sampleOutputType") || "text");
     const sampleOutputUrl = String(formData.get("sampleOutputUrl") || "").trim();
     const sampleOutputFileName = String(formData.get("sampleOutputFileName") || "").trim();
+    const featuredOrderValue = String(formData.get("featuredOrder") || "").trim();
+    const featuredOrder =
+      featuredOrderValue === "" ? undefined : Number(featuredOrderValue);
     const sampleOutputMetadata = {
       provider: String(formData.get("sampleOutputProvider") || "").trim(),
       publicId: String(formData.get("sampleOutputPublicId") || "").trim(),
@@ -284,7 +296,9 @@ export function PromptForm({ mode, prompt }) {
         ...sampleOutputMetadata
       },
       visibility: String(formData.get("visibility") || "public"),
-      status: String(formData.get("status") || "published")
+      status: String(formData.get("status") || "published"),
+      isFeatured,
+      featuredOrder
     };
 
     const validationError = validatePrompt(payload, sampleOutputFile);
@@ -358,8 +372,13 @@ export function PromptForm({ mode, prompt }) {
       tags: payload.tags,
       tools: payload.tools,
       visibility: payload.visibility,
-      status: payload.status
+      status: payload.status,
+      isFeatured: payload.isFeatured
     };
+
+    if (payload.featuredOrder !== undefined) {
+      jsonPayload.featuredOrder = payload.featuredOrder;
+    }
 
     if (payload.sampleOutputType === "text") {
       jsonPayload.sampleOutput = payload.sampleOutput;
@@ -401,6 +420,10 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("tools", JSON.stringify(payload.tools));
     uploadFormData.append("visibility", payload.visibility);
     uploadFormData.append("status", payload.status);
+    uploadFormData.append("isFeatured", String(payload.isFeatured));
+    if (payload.featuredOrder !== undefined) {
+      uploadFormData.append("featuredOrder", String(payload.featuredOrder));
+    }
     uploadFormData.append("sampleOutputType", payload.sampleOutputType);
     uploadFormData.append("sampleOutputFileName", payload.sampleOutputFileName);
     uploadFormData.append("sampleOutputFile", sampleOutputFile);
@@ -636,6 +659,7 @@ export function PromptForm({ mode, prompt }) {
           >
             <option value="text">Text</option>
             <option value="image">Image</option>
+            <option value="video">Video</option>
             <option value="pdf">PDF</option>
             <option value="file">File</option>
           </select>
@@ -674,6 +698,8 @@ export function PromptForm({ mode, prompt }) {
                   accept={
                     sampleOutputType === "image"
                       ? "image/*"
+                      : sampleOutputType === "video"
+                        ? "video/mp4,video/webm,video/quicktime,video/*"
                       : sampleOutputType === "pdf"
                         ? "application/pdf"
                         : undefined
@@ -690,6 +716,8 @@ export function PromptForm({ mode, prompt }) {
                 <label htmlFor="sampleOutputUrl">
                   {sampleOutputType === "image"
                     ? "Image URL"
+                    : sampleOutputType === "video"
+                      ? "Video URL"
                     : sampleOutputType === "pdf"
                       ? "PDF URL"
                       : "File URL"}
@@ -704,6 +732,8 @@ export function PromptForm({ mode, prompt }) {
                   placeholder={
                     sampleOutputType === "image"
                       ? "https://example.com/sample-output.png"
+                      : sampleOutputType === "video"
+                        ? "https://example.com/sample-output.mp4"
                       : sampleOutputType === "pdf"
                         ? "https://example.com/sample-output.pdf"
                         : "https://example.com/sample-output.zip"
@@ -727,6 +757,8 @@ export function PromptForm({ mode, prompt }) {
                 placeholder={
                   sampleOutputType === "image"
                     ? "sample-output.png"
+                    : sampleOutputType === "video"
+                      ? "sample-output.mp4"
                     : sampleOutputType === "pdf"
                       ? "sample-output.pdf"
                       : "sample-output.zip"
@@ -775,6 +807,38 @@ export function PromptForm({ mode, prompt }) {
             <option value="private">Private</option>
           </select>
         </div>
+      </div>
+      <div className="featured-fieldset">
+        <label className="admin-checkbox" htmlFor="isFeatured">
+          <input
+            checked={isFeatured}
+            id="isFeatured"
+            name="isFeatured"
+            onChange={(event) => setIsFeatured(event.target.checked)}
+            type="checkbox"
+          />
+          Featured on homepage
+        </label>
+        {isFeatured ? (
+          <div className="field">
+            <label htmlFor="featuredOrder">Featured order</label>
+            <input
+              defaultValue={
+                prompt?.featuredOrder === undefined || prompt?.featuredOrder === null
+                  ? ""
+                  : prompt.featuredOrder
+              }
+              id="featuredOrder"
+              min="0"
+              name="featuredOrder"
+              placeholder="0"
+              type="number"
+            />
+            <span className="field-hint muted">
+              Optional. Lower numbers appear earlier when the backend sorts featured prompts.
+            </span>
+          </div>
+        ) : null}
       </div>
       {error ? <p className="error-text">{error}</p> : null}
       <button className="button" disabled={loading} type="submit">

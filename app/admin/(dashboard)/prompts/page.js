@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
@@ -25,6 +25,35 @@ function truncateDescription(description = "") {
   }
 
   return `${cleanDescription.slice(0, 89).trimEnd()}...`;
+}
+
+function PromptViewLink({ prompt }) {
+  if (!prompt.slug) {
+    return (
+      <button
+        aria-label={`View ${prompt.title}`}
+        className="icon-button"
+        disabled
+        title="No public detail page"
+        type="button"
+      >
+        <Eye aria-hidden="true" size={18} />
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      aria-label={`View ${prompt.title}`}
+      className="icon-button"
+      href={`/prompts/${encodeURIComponent(prompt.slug)}`}
+      rel="noopener noreferrer"
+      target="_blank"
+      title="View"
+    >
+      <Eye aria-hidden="true" size={18} />
+    </Link>
+  );
 }
 
 export default async function AdminPromptsPage({ searchParams }) {
@@ -78,6 +107,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                     <th>Category</th>
                     <th>Tools</th>
                     <th>Status</th>
+                    <th>Featured</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -118,7 +148,20 @@ export default async function AdminPromptsPage({ searchParams }) {
                           <span className="status-badge">{prompt.status}</span>
                         </td>
                         <td>
+                          {prompt.isFeatured ? (
+                            <span className="status-badge featured-badge">
+                              Featured
+                              {prompt.featuredOrder !== undefined && prompt.featuredOrder !== null
+                                ? ` #${prompt.featuredOrder}`
+                                : ""}
+                            </span>
+                          ) : (
+                            <span className="muted">-</span>
+                          )}
+                        </td>
+                        <td>
                           <div className="admin-icon-actions">
+                            <PromptViewLink prompt={prompt} />
                             <Link
                               aria-label={`Edit ${prompt.title}`}
                               className="icon-button"
@@ -159,8 +202,17 @@ export default async function AdminPromptsPage({ searchParams }) {
                       {firstTool ? <span>{firstTool}</span> : null}
                       {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
+                      {prompt.isFeatured ? (
+                        <span className="status-badge featured-badge">
+                          Featured
+                          {prompt.featuredOrder !== undefined && prompt.featuredOrder !== null
+                            ? ` #${prompt.featuredOrder}`
+                            : ""}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="admin-icon-actions">
+                      <PromptViewLink prompt={prompt} />
                       <Link
                         aria-label={`Edit ${prompt.title}`}
                         className="icon-button"
