@@ -1,0 +1,98 @@
+name: Auto Tag Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-tag-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag-release:
+    name: Create release tag
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create next release tag
+        env:
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+
+          branch_version="$(printf '%s\n' "$RELEASE_BRANCH" | sed -nE 's#^release/v?([0-9]+)\.([0-9]+)(\.([0-9]+))?$#\1.\2.\4#p')"
+          branch_major=""
+          branch_minor=""
+          branch_patch=""
+
+          if [ -n "$branch_version" ]; then
+            branch_major="$(printf '%s\n' "$branch_version" | cut -d. -f1)"
+            branch_minor="$(printf '%s\n' "$branch_version" | cut -d. -f2)"
+            branch_patch="$(printf '%s\n' "$branch_version" | cut -d. -f3)"
+          fi
+
+          if [ -n "$branch_major" ] && [ -n "$branch_minor" ]; then
+            latest_tag="$(
+              git tag --list "v${branch_major}.${branch_minor}.*" --sort=-version:refname |
+                sed -nE 's/^v[0-9]+\.[0-9]+\.[0-9]+$/&/p' |
+                head -n 1
+            )"
+          else
+            latest_tag="$(
+              git tag --list "v*.*.*" --sort=-version:refname |
+                sed -nE 's/^v[0-9]+\.[0-9]+\.[0-9]+$/&/p' |
+                head -n 1
+            )"
+          fi
+
+          if [ -n "$latest_tag" ]; then
+            major="$(printf '%s\n' "$latest_tag" | sed -E 's/^v([0-9]+)\.([0-9]+)\.([0-9]+)$/\1/')"
+            minor="$(printf '%s\n' "$latest_tag" | sed -E 's/^v([0-9]+)\.([0-9]+)\.([0-9]+)$/\2/')"
+            patch="$(printf '%s\n' "$latest_tag" | sed -E 's/^v([0-9]+)\.([0-9]+)\.([0-9]+)$/\3/')"
+            next_patch=$((patch + 1))
+          elif [ -n "$branch_major" ] && [ -n "$branch_minor" ]; then
+            major="$branch_major"
+            minor="$branch_minor"
+            next_patch=0
+          else
+            major=1
+            minor=0
+            next_patch=0
+          fi
+
+          if [ -n "$branch_patch" ] && [ "$branch_patch" -gt "$next_patch" ]; then
+            next_patch="$branch_patch"
+          fi
+
+          next_tag="v${major}.${minor}.${next_patch}"
+
+          if git rev-parse "$next_tag" >/dev/null 2>&1; then
+            echo "Tag $next_tag already exists. Nothing to do."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$next_tag" "$MERGE_SHA" -m "Release $next_tag"
+          git push origin "$next_tag"
+
+          echo "Created $next_tag from $RELEASE_BRANCH at $MERGE_SHA"
