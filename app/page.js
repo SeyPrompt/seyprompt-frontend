@@ -1,10 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
-import { fetchPublicPrompts } from "@/lib/api";
+import {
+  BarChart3,
+  FileCheck2,
+  MousePointerClick,
+  RefreshCw,
+  Search
+} from "lucide-react";
+import {
+  fetchPublicCategories,
+  fetchPublicFeaturedPrompts,
+  fetchPublicPrompts
+} from "@/lib/api";
 import { PromptCard } from "@/components/prompt-card";
 import { TrackedLink } from "@/components/tracked-link";
 import { TrackedSearchForm } from "@/components/tracked-search-form";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import {
   createPageMetadata,
   DEFAULT_TITLE,
@@ -33,10 +45,103 @@ function isImagePrompt(prompt) {
   return getPromptOutputType(prompt) === "image";
 }
 
+function categoryHref(category) {
+  return category?.slug ? `/categories/${category.slug}` : getCategoryPath(category?.name || category);
+}
+
+function formatPromptCount(count) {
+  const value = Number(count);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return "Prompts";
+  }
+
+  return `${value} ${value === 1 ? "Prompt" : "Prompts"}`;
+}
+
+function getRandomCategories(categories = [], limit = 10) {
+  return [...categories]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, limit);
+}
+
+function FeaturedPromptsSection({ prompts }) {
+  const featuredPrompts = prompts.slice(0, 4);
+
+  if (!featuredPrompts.length) {
+    return null;
+  }
+
+  return (
+    <section className="section featured-prompts-section">
+      <div className="container">
+        <div className="featured-prompts-panel">
+          <div className="featured-prompts-copy">
+            <div className="eyebrow">Handpicked</div>
+            <h2>Editor&apos;s Picks</h2>
+            <p className="muted">
+              A short hand-picked set for fast wins before you browse the full
+              library.
+            </p>
+            <Link className="featured-prompts-link" href="/prompts">
+              Browse all prompts
+            </Link>
+          </div>
+          <div className="featured-prompt-grid">
+            {featuredPrompts.map((prompt, index) => {
+              const categories = getPromptCategories(prompt);
+              const primaryCategory = getPrimaryPromptCategory(prompt);
+              const CategoryIcon = getCategoryIcon(primaryCategory);
+              const description = prompt.description || prompt.prompt || "";
+              const featuredLabels = prompt.tags?.length
+                ? prompt.tags.slice(0, 1).map((tag) => `#${tag}`)
+                : categories.slice(0, 1);
+              const tools = prompt.tools || [];
+
+              return (
+                <Link
+                  className="featured-prompt-card"
+                  href={`/prompts/${prompt.slug}`}
+                  key={prompt._id || prompt.id || prompt.slug}
+                >
+                  <span className="featured-prompt-index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="featured-prompt-body">
+                    <span className="featured-prompt-topline">
+                      <span className="featured-prompt-icon" aria-hidden="true">
+                        <CategoryIcon size={16} />
+                      </span>
+                      <span>{primaryCategory || "General"}</span>
+                    </span>
+                    <strong>{prompt.title}</strong>
+                    <span className="muted">
+                      {description.slice(0, 86)}
+                      {description.length > 86 ? "..." : ""}
+                    </span>
+                    <span className="featured-prompt-meta">
+                      {featuredLabels.map((item) => (
+                        <span key={item}>{item}</span>
+                      ))}
+                      {tools[0] ? <span>{tools[0]}</span> : null}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ImagePromptCarousel({ prompts }) {
   if (!prompts.length) {
     return null;
   }
+
+  const carouselPrompts = prompts.length > 1 ? [...prompts, ...prompts] : prompts;
 
   return (
     <section className="section image-prompts-section">
@@ -54,31 +159,34 @@ function ImagePromptCarousel({ prompts }) {
           </Link>
         </div>
         <div className="image-prompt-carousel" aria-label="Image prompt carousel">
-          {prompts.map((prompt) => (
-            <Link
-              className="card image-prompt-card"
-              href={`/prompts/${prompt.slug}`}
-              key={prompt._id || prompt.id || prompt.slug}
-            >
-              <span className="image-prompt-media">
-                <img
-                  alt={prompt.sampleOutput?.fileName || `${prompt.title} image prompt`}
-                  height="180"
-                  loading="lazy"
-                  src={getPromptImage(prompt)}
-                  width="280"
-                />
-              </span>
-              <span className="image-prompt-copy">
-                <span className="pill">Image</span>
-                <strong>{prompt.title}</strong>
-                <span className="muted">
-                  {(prompt.prompt || "").slice(0, 105)}
-                  {(prompt.prompt || "").length > 105 ? "..." : ""}
+          <div className={`image-prompt-track${prompts.length > 1 ? " is-animated" : ""}`}>
+            {carouselPrompts.map((prompt, index) => (
+              <Link
+                className="card image-prompt-card"
+                href={`/prompts/${prompt.slug}`}
+                key={`${prompt._id || prompt.id || prompt.slug}-${index}`}
+                aria-hidden={index >= prompts.length ? "true" : undefined}
+                tabIndex={index >= prompts.length ? -1 : undefined}
+              >
+                <span className="image-prompt-media">
+                  <img
+                    alt={prompt.sampleOutput?.fileName || `${prompt.title} image prompt`}
+                    height="180"
+                    loading="lazy"
+                    src={getPromptImage(prompt)}
+                    width="280"
+                  />
                 </span>
-              </span>
-            </Link>
-          ))}
+                <span className="image-prompt-copy">
+                  <strong>{prompt.title}</strong>
+                  <span className="muted">
+                    {(prompt.prompt || "").slice(0, 105)}
+                    {(prompt.prompt || "").length > 105 ? "..." : ""}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -86,33 +194,53 @@ function ImagePromptCarousel({ prompts }) {
 }
 
 export default async function HomePage() {
-  const promptResponse = await fetchPublicPrompts({ limit: "24" }).catch(() => ({
-    data: [],
-    pagination: { total: 0 },
-  }));
+  const [promptResponse, featuredPromptResponse, categoryResponse] = await Promise.all([
+    fetchPublicPrompts({ limit: "24" }).catch(() => ({
+      data: [],
+      pagination: { total: 0 },
+    })),
+    fetchPublicFeaturedPrompts().catch(() => ({
+      data: [],
+      pagination: { total: 0 }
+    })),
+    fetchPublicCategories(100).catch(() => [])
+  ]);
 
   const allPrompts = promptResponse.data || [];
   const prompts = allPrompts.slice(0, 6);
+  const featuredPrompts = featuredPromptResponse.data || [];
   const imagePrompts = allPrompts.filter(isImagePrompt).slice(0, 8);
-  const categories = ["Marketing", "Coding", "Resume", "Business", "Design"];
+  const categories = getRandomCategories(categoryResponse, 10);
   const steps = [
     {
-      icon: "1",
-      title: "Find a prompt",
+      icon: Search,
+      title: "Find",
       description:
-        "Search by use case, category, tag, or tool to discover the right starting point.",
+        "Search or browse prompts for any tool or use case.",
     },
     {
-      icon: "2",
-      title: "Copy it",
+      icon: FileCheck2,
+      title: "Choose",
       description:
-        "Grab a polished prompt that is structured, specific, and ready to customize.",
+        "Pick the perfect prompt that fits your goal.",
     },
     {
-      icon: "3",
-      title: "Use in AI",
+      icon: MousePointerClick,
+      title: "Use",
       description:
-        "Paste it into ChatGPT, Claude, Gemini, or your favorite AI workspace.",
+        "Copy the prompt and use it in your favorite AI tool.",
+    },
+    {
+      icon: BarChart3,
+      title: "Get Results",
+      description:
+        "Receive better, faster, and more accurate outputs.",
+    },
+    {
+      icon: RefreshCw,
+      title: "Iterate",
+      description:
+        "Refine, tweak, and get even better results every time.",
     },
   ];
   const tools = [
@@ -148,6 +276,34 @@ export default async function HomePage() {
               writing, sharper ideas, faster coding, and clearer daily work.
             </p>
             <TrackedSearchForm className="hero-search" />
+            <div
+              className="home-category-cards"
+              aria-label="Popular categories"
+            >
+              {categories.map((category) =>
+                (() => {
+                  const CategoryIcon = getCategoryIcon(category.name);
+
+                  return (
+                    <Link
+                      className="home-category-card"
+                      href={categoryHref(category)}
+                      key={category.slug || category.name}
+                    >
+                      <span className="home-category-card-icon" aria-hidden="true">
+                        <CategoryIcon size={22} strokeWidth={1.9} />
+                      </span>
+                      <span className="home-category-card-copy">
+                        <span className="home-category-card-name">{category.name}</span>
+                        <span className="home-category-card-count">
+                          {formatPromptCount(category.promptCount)}
+                        </span>
+                      </span>
+                    </Link>
+                  );
+                })(),
+              )}
+            </div>
             <div className="home-hero-actions">
               <TrackedLink
                 className="button"
@@ -176,33 +332,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="home-category-section">
-        <div className="container">
-          <div
-            className="category-pills home-category-pills"
-            aria-label="Popular categories"
-          >
-            {categories.map((category) =>
-              (() => {
-                const CategoryIcon = getCategoryIcon(category);
-
-                return (
-                  <Link
-                    className="category-pill"
-                    href={getCategoryPath(category)}
-                    key={category}
-                  >
-                    <CategoryIcon size={15} />
-                    {category}
-                  </Link>
-                );
-              })(),
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
+      <section className="section how-it-works-section">
         <div className="container home-stack">
           <div className="home-section-heading">
             <h2>How It Works</h2>
@@ -211,24 +341,34 @@ export default async function HomePage() {
               copy it, and use it wherever you already work with AI.
             </p>
           </div>
-          <div className="home-info-grid">
-            {steps.map((step) => (
-              <article className="card home-info-card" key={step.title}>
-                <div className="home-info-icon" aria-hidden="true">
-                  {step.icon}
-                </div>
-                <h3>{step.title}</h3>
-                <p className="muted">{step.description}</p>
-              </article>
-            ))}
+          <div className="how-it-works-flow" aria-label="How SeyPrompt works">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+
+              return (
+                <article className="how-it-works-step" key={step.title}>
+                  <div className="how-step-icon" aria-hidden="true">
+                    <StepIcon size={42} strokeWidth={1.9} />
+                  </div>
+                  <div className="how-step-kicker">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    {step.title}
+                  </div>
+                  <p>{step.description}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
+
+      <FeaturedPromptsSection prompts={featuredPrompts} />
 
       <section className="section">
         <div className="container">
           <div className="section-header">
             <div>
+              <div className="eyebrow">Popular picks</div>
               <h2>Trending Prompts</h2>
             </div>
             <Link className="button-secondary" href="/prompts">
