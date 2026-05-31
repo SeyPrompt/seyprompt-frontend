@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
 import { PromptCard } from "@/components/prompt-card";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
+import { ToolBadges } from "@/components/tool-badges";
 import { trackEvent } from "@/lib/analytics";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { apiUrl } from "@/utils/api";
@@ -81,23 +82,6 @@ function normalizeFilterOptions(data, key) {
     .filter(Boolean);
 }
 
-function ToolBadges({ tools = [] }) {
-  const [firstTool, ...remainingTools] = tools;
-
-  if (!firstTool) {
-    return null;
-  }
-
-  return (
-    <div className="pill-row tool-row compact-tool-row">
-      <span className="pill pill-alt">{firstTool}</span>
-      {remainingTools.length ? (
-        <span className="pill pill-alt tool-count-badge">+{remainingTools.length}</span>
-      ) : null}
-    </div>
-  );
-}
-
 function PromptMetaPills({ prompt, compact = false }) {
   const categories = getPromptCategories(prompt);
   const tags = prompt.tags || [];
@@ -141,7 +125,7 @@ function PromptListItem({ prompt }) {
         </p>
         <div className="library-list-meta">
           <PromptMetaPills prompt={prompt} />
-          <ToolBadges tools={prompt.tools || []} />
+          <ToolBadges compact tools={prompt.tools || []} />
         </div>
       </div>
       <div className="library-list-actions">
@@ -186,7 +170,7 @@ function PromptTable({ prompts }) {
                   <PromptMetaPills prompt={prompt} compact />
                 </td>
                 <td>
-                  <ToolBadges tools={prompt.tools || []} />
+                  <ToolBadges compact tools={prompt.tools || []} />
                 </td>
                 <td>
                   <span className="status-badge">Published</span>

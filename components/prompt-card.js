@@ -5,10 +5,10 @@ import { trackEvent } from "@/lib/analytics";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
+import { ToolBadges } from "@/components/tool-badges";
 
 export function PromptCard({ prompt }) {
   const tools = prompt.tools || [];
-  const [firstTool, ...remainingTools] = tools;
   const categories = getPromptCategories(prompt);
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
@@ -45,12 +45,7 @@ export function PromptCard({ prompt }) {
         </div>
       </div>
       <div className="prompt-card-footer">
-        <div className="pill-row tool-row">
-          {firstTool ? <span className="pill pill-alt">{firstTool}</span> : null}
-          {remainingTools.length ? (
-            <span className="pill pill-alt tool-count-badge">+{remainingTools.length}</span>
-          ) : null}
-        </div>
+        <ToolBadges tools={tools} />
         <div className="prompt-actions">
           <Link
             className="button compact"

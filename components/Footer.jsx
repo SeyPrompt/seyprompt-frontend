@@ -40,6 +40,18 @@ function toFooterItems(items, fallbackItems, limit = 6) {
   return uniqueItems.slice(0, limit);
 }
 
+function formatFooterCategoryLabel(category) {
+  const label = String(category || "")
+    .trim()
+    .replace(/\bprompts\s+prompts$/i, "Prompts");
+
+  if (!label) {
+    return "";
+  }
+
+  return /\bprompts$/i.test(label) ? label : `${label} Prompts`;
+}
+
 function normalizeVersionLabel(version) {
   if (!version) return "unknown";
   const raw = String(version).trim();
@@ -112,14 +124,18 @@ export async function Footer() {
           <div className="footer-column">
             <h3>Categories</h3>
             <nav>
-              {categories.map((category) => (
-                <Link
-                  href={getCategoryPath(category)}
-                  key={category}
-                >
-                  {category} Prompts
-                </Link>
-              ))}
+              {categories.map((category) => {
+                const label = formatFooterCategoryLabel(category);
+
+                return (
+                  <Link
+                    href={getCategoryPath(category)}
+                    key={category}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 

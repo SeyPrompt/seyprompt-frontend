@@ -2,9 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   BarChart3,
+  BookmarkCheck,
   FileCheck2,
   MousePointerClick,
-  RefreshCw,
   Search
 } from "lucide-react";
 import {
@@ -245,13 +245,7 @@ export default async function HomePage() {
       icon: BarChart3,
       title: "Get Results",
       description:
-        "Receive better, faster, and more accurate outputs.",
-    },
-    {
-      icon: RefreshCw,
-      title: "Iterate",
-      description:
-        "Refine, tweak, and get even better results every time.",
+        "Receive better outputs, then refine the prompt when you need another pass.",
     },
   ];
   const tools = [
@@ -286,7 +280,10 @@ export default async function HomePage() {
               Discover, copy, and use high-quality AI prompts built for better
               writing, sharper ideas, faster coding, and clearer daily work.
             </p>
-            <TrackedSearchForm className="hero-search" />
+            <TrackedSearchForm
+              className="hero-search"
+              placeholder="Search SEO, resume, coding, image prompts..."
+            />
             <div
               className="home-category-cards"
               aria-label="Popular categories"
@@ -338,6 +335,32 @@ export default async function HomePage() {
               >
                 Learn Guide
               </TrackedLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section home-account-section" aria-labelledby="home-account-title">
+        <div className="container">
+          <div className="home-account-strip">
+            <div className="home-account-icon" aria-hidden="true">
+              <BookmarkCheck size={24} strokeWidth={2} />
+            </div>
+            <div className="home-account-copy">
+              <div className="eyebrow">Make it yours</div>
+              <h2 id="home-account-title">Save prompts and pick up where you left off.</h2>
+              <p className="muted">
+                Keep favorite prompts tied to your account so they are ready
+                whenever you return, across devices.
+              </p>
+            </div>
+            <div className="home-account-actions">
+              <Link className="button" href="/register">
+                Create Account
+              </Link>
+              <Link className="button-secondary" href="/saved">
+                View Saved
+              </Link>
             </div>
           </div>
         </div>
