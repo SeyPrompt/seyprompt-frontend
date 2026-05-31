@@ -2,11 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   BarChart3,
-  BookmarkCheck,
   FileCheck2,
   MousePointerClick,
   Search
 } from "lucide-react";
+import { HomeAccountStrip } from "@/components/home-account-strip";
 import {
   fetchPublicCategories,
   fetchPublicFeaturedPrompts,
@@ -340,31 +340,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section home-account-section" aria-labelledby="home-account-title">
-        <div className="container">
-          <div className="home-account-strip">
-            <div className="home-account-icon" aria-hidden="true">
-              <BookmarkCheck size={24} strokeWidth={2} />
-            </div>
-            <div className="home-account-copy">
-              <div className="eyebrow">Make it yours</div>
-              <h2 id="home-account-title">Save prompts and pick up where you left off.</h2>
-              <p className="muted">
-                Keep favorite prompts tied to your account so they are ready
-                whenever you return, across devices.
-              </p>
-            </div>
-            <div className="home-account-actions">
-              <Link className="button" href="/register">
-                Create Account
-              </Link>
-              <Link className="button-secondary" href="/saved">
-                View Saved
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeAccountStrip />
 
       <section className="section how-it-works-section">
         <div className="container home-stack">
