@@ -1899,15 +1899,27 @@ h2 {
     radial-gradient(circle at 50% 0%, rgba(15, 169, 104, 0.12), transparent 380px),
     linear-gradient(180deg, #F7FAF8 0%, #FFFFFF 44%, #F7FAF8 100%);
   color: var(--text);
-  padding-top: 12px;
+  padding-top: 34px;
 }
 
 .visual-prompts-page .container {
   width: min(1280px, calc(100% - 32px));
+  gap: 26px;
 }
 
 .visual-prompts-hero {
-  min-height: 0;
+  display: grid;
+  gap: 10px;
+  max-width: 720px;
+}
+
+.visual-prompts-hero .eyebrow {
+  background: #DDEED6;
+  color: var(--primary-dark);
+}
+
+.visual-prompts-hero .page-subtitle {
+  margin-top: 0;
 }
 
 .visual-prompt-toolbar {
@@ -1915,7 +1927,7 @@ h2 {
   width: 100%;
   max-width: 1280px;
   justify-items: start;
-  margin-top: 0;
+  margin-top: 2px;
 }
 
 .visual-prompts-tabs {

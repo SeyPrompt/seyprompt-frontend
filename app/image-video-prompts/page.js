@@ -206,7 +206,12 @@ export default async function ImageVideoPromptsPage({ searchParams }) {
     <main className="section visual-prompts-page">
       <div className="container stack">
         <section className="visual-prompts-hero">
-          <h1 className="visually-hidden">Image and Video Prompts</h1>
+          <div className="eyebrow">Visual ideas</div>
+          <h1 className="page-title">Image and Video Prompts</h1>
+          <p className="page-subtitle">
+            Browse visual AI prompts with preview media, then open the detail page
+            for the full prompt, tools, tips, and sample output.
+          </p>
         </section>
         <VisualPromptToolbar activeTab={activeTab} promptsByType={promptsByType} />
 
