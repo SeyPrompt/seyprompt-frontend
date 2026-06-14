@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { VisualPromptActions } from "@/components/VisualPromptActions";
-import { fetchPublicPrompts } from "@/lib/api";
+import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
 import { absoluteUrl, createPageMetadata, getPromptImage } from "@/lib/seo";
 import { getPromptCategories } from "@/lib/prompt-metadata";
 
@@ -72,6 +72,28 @@ function promptMatchesVisualType(prompt, type) {
   }
 
   return outputType === "image" || categories.some((category) => category.includes("image"));
+}
+
+async function hydratePromptDetails(prompts = []) {
+  return Promise.all(
+    prompts.map(async (prompt) => {
+      if (!prompt?.slug) {
+        return prompt;
+      }
+
+      try {
+        const fullPrompt = await fetchPromptBySlug(prompt.slug);
+
+        return {
+          ...prompt,
+          ...fullPrompt,
+          sampleOutput: fullPrompt.sampleOutput || prompt.sampleOutput
+        };
+      } catch (_error) {
+        return prompt;
+      }
+    })
+  );
 }
 
 function VisualPromptCard({ prompt, visualType }) {
@@ -201,6 +223,7 @@ export default async function ImageVideoPromptsPage({ searchParams }) {
   const totalPrompts = promptsByType.image.length + promptsByType.video.length;
   const activeCategory = visualCategories.find((category) => category.key === activeTab);
   const activePrompts = promptsByType[activeTab];
+  const hydratedActivePrompts = await hydratePromptDetails(activePrompts);
 
   return (
     <main className="section visual-prompts-page">
@@ -216,7 +239,7 @@ export default async function ImageVideoPromptsPage({ searchParams }) {
         <VisualPromptToolbar activeTab={activeTab} promptsByType={promptsByType} />
 
         {totalPrompts ? (
-          <VisualPromptSection category={activeCategory} prompts={activePrompts} />
+          <VisualPromptSection category={activeCategory} prompts={hydratedActivePrompts} />
         ) : (
           <div className="panel empty-state prompt-empty-state">
             <h3>
