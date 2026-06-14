@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowUpRight, Image as ImageIcon, Play } from "lucide-react";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
+import { VisualPromptActions } from "@/components/VisualPromptActions";
 import { fetchPublicPrompts } from "@/lib/api";
-import { createPageMetadata, getPromptImage } from "@/lib/seo";
-import { getPrimaryPromptCategory, getPromptCategories } from "@/lib/prompt-metadata";
+import { absoluteUrl, createPageMetadata, getPromptImage } from "@/lib/seo";
+import { getPromptCategories } from "@/lib/prompt-metadata";
 
 const visualCategories = [
   { key: "image", label: "Image", category: "Image Prompts" },
@@ -40,6 +41,10 @@ function getDescription(prompt) {
   return prompt.description || prompt.prompt || "";
 }
 
+function getPromptText(prompt) {
+  return prompt.prompt || prompt.content || prompt.text || prompt.description || "";
+}
+
 function dedupePrompts(prompts = []) {
   const seen = new Set();
   const uniquePrompts = [];
@@ -70,19 +75,16 @@ function promptMatchesVisualType(prompt, type) {
 }
 
 function VisualPromptCard({ prompt, visualType }) {
-  const primaryCategory = getPrimaryPromptCategory(prompt);
   const description = getDescription(prompt);
+  const promptText = getPromptText(prompt);
   const previewImage = getPromptImage(prompt);
   const sampleOutput = prompt.sampleOutput || {};
   const canRenderVideo = visualType === "video" && sampleOutput.type === "video" && sampleOutput.value;
+  const detailPath = `/prompts/${prompt.slug}`;
 
   return (
-    <Link
-      className="visual-prompt-card"
-      href={`/prompts/${prompt.slug}`}
-      aria-label={`View ${prompt.title}`}
-    >
-      <span className="visual-prompt-media">
+    <article className="visual-prompt-card">
+      <Link className="visual-prompt-card-link" href={detailPath} aria-label={`View ${prompt.title}`}>
         {canRenderVideo ? (
           <video
             muted
@@ -98,36 +100,22 @@ function VisualPromptCard({ prompt, visualType }) {
             src={previewImage}
           />
         )}
-        <span className="visual-prompt-type">
-          {visualType === "video" ? (
-            <Play size={14} fill="currentColor" aria-hidden="true" />
-          ) : (
-            <ImageIcon size={14} aria-hidden="true" />
-          )}
-          {visualType}
+        <span className="visual-prompt-copy">
+          <strong>{prompt.title}</strong>
+          <span>
+            {description.slice(0, 118)}
+            {description.length > 118 ? "..." : ""}
+          </span>
         </span>
-      </span>
-      <span className="visual-prompt-copy">
-        <span className="eyebrow">{primaryCategory || "Visual Prompt"}</span>
-        <strong>{prompt.title}</strong>
-        <span className="muted">
-          {description.slice(0, 118)}
-          {description.length > 118 ? "..." : ""}
-        </span>
-      </span>
-      <span className="visual-prompt-footer">
-        <span className="pill-row visual-prompt-tags">
-          {(prompt.tags || []).slice(0, 2).map((tag) => (
-            <span className="pill" key={tag}>
-              #{tag}
-            </span>
-          ))}
-        </span>
-        <span className="visual-prompt-open" aria-hidden="true">
-          <ArrowUpRight size={18} />
-        </span>
-      </span>
-    </Link>
+      </Link>
+      <VisualPromptActions
+        description={description}
+        promptText={promptText}
+        shareUrl={absoluteUrl(detailPath)}
+        title={prompt.title}
+      />
+      <SavedPromptButton className="visual-prompt-save" iconOnly prompt={prompt} />
+    </article>
   );
 }
 
@@ -150,6 +138,14 @@ function VisualPromptTabs({ activeTab, promptsByType }) {
           <strong>{promptsByType[category.key].length}</strong>
         </Link>
       ))}
+    </div>
+  );
+}
+
+function VisualPromptToolbar({ activeTab, promptsByType }) {
+  return (
+    <div className="visual-prompt-toolbar">
+      <VisualPromptTabs activeTab={activeTab} promptsByType={promptsByType} />
     </div>
   );
 }
@@ -210,16 +206,9 @@ export default async function ImageVideoPromptsPage({ searchParams }) {
     <main className="section visual-prompts-page">
       <div className="container stack">
         <section className="visual-prompts-hero">
-          <div>
-            <div className="eyebrow">Visual ideas</div>
-            <h1 className="page-title">Image and Video Prompts</h1>
-            <p className="page-subtitle">
-              Browse visual AI prompts with preview media, then open the detail page
-              for the full prompt, tools, tips, and sample output.
-            </p>
-          </div>
-          <VisualPromptTabs activeTab={activeTab} promptsByType={promptsByType} />
+          <h1 className="visually-hidden">Image and Video Prompts</h1>
         </section>
+        <VisualPromptToolbar activeTab={activeTab} promptsByType={promptsByType} />
 
         {totalPrompts ? (
           <VisualPromptSection category={activeCategory} prompts={activePrompts} />
