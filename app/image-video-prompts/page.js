@@ -45,6 +45,39 @@ function getPromptText(prompt) {
   return prompt.prompt || prompt.content || prompt.text || prompt.description || "";
 }
 
+function getPromptVideoSource(prompt) {
+  const sampleOutput = prompt.sampleOutput || {};
+  const sampleOutputType = String(
+    sampleOutput.type ||
+      prompt.sampleOutputType ||
+      prompt.outputType ||
+      prompt.output_type ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+  const sampleOutputValue = String(
+    sampleOutput.value ||
+      sampleOutput.url ||
+      prompt.sampleOutputUrl ||
+      prompt.sample_output_url ||
+      ""
+  ).trim();
+
+  if (!sampleOutputValue) {
+    return "";
+  }
+
+  if (
+    sampleOutputType.includes("video") ||
+    /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(sampleOutputValue)
+  ) {
+    return sampleOutputValue;
+  }
+
+  return "";
+}
+
 function dedupePrompts(prompts = []) {
   const seen = new Set();
   const uniquePrompts = [];
@@ -100,24 +133,25 @@ function VisualPromptCard({ prompt, visualType }) {
   const description = getDescription(prompt);
   const promptText = getPromptText(prompt);
   const previewImage = getPromptImage(prompt);
-  const sampleOutput = prompt.sampleOutput || {};
-  const canRenderVideo = visualType === "video" && sampleOutput.type === "video" && sampleOutput.value;
+  const videoSource = visualType === "video" ? getPromptVideoSource(prompt) : "";
   const detailPath = `/prompts/${prompt.slug}`;
 
   return (
     <article className="visual-prompt-card">
       <Link className="visual-prompt-card-link" href={detailPath} aria-label={`View ${prompt.title}`}>
-        {canRenderVideo ? (
+        {videoSource ? (
           <video
+            autoPlay
+            loop
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             poster={previewImage}
-            src={sampleOutput.value}
+            src={videoSource}
           />
         ) : (
           <img
-            alt={sampleOutput.fileName || `${prompt.title} preview`}
+            alt={prompt.sampleOutput?.fileName || `${prompt.title} preview`}
             loading="lazy"
             src={previewImage}
           />
