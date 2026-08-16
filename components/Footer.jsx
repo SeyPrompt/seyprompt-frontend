@@ -3,7 +3,7 @@ import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
 import { appVersionLabel } from "@/lib/app-version";
-import { getCategoryPath } from "@/lib/seo";
+import { getCategoryPath, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
 import { apiUrl } from "@/utils/api";
 
 const quickLinks = [
@@ -157,6 +157,12 @@ export async function Footer() {
         <div className="footer-bottom">
           <p>
             © 2026 SeyPrompt. All rights reserved.
+          </p>
+          <p>
+            A product of{" "}
+            <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+              {PARENT_COMPANY_NAME}
+            </a>.
           </p>
           <nav className="footer-legal-links" aria-label="Legal links">
             {legalLinks.map((link) => (

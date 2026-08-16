@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { BookOpenCheck, Layers3, SearchCheck, Sparkles } from "lucide-react";
-import { createPageMetadata, SITE_NAME, SITE_URL } from "@/lib/seo";
+import {
+  createPageMetadata,
+  PARENT_COMPANY_NAME,
+  PARENT_COMPANY_URL,
+  SITE_NAME,
+  SITE_URL
+} from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: "About SeyPrompt - AI Prompt Library for Better Results",
@@ -67,7 +73,12 @@ const aboutPageSchema = {
   about: {
     "@type": "Organization",
     name: SITE_NAME,
-    url: SITE_URL
+    url: SITE_URL,
+    parentOrganization: {
+      "@type": "Organization",
+      name: PARENT_COMPANY_NAME,
+      url: PARENT_COMPANY_URL
+    }
   }
 };
 
@@ -113,6 +124,13 @@ export default function AboutPage() {
               reusable building blocks for work. The site brings together prompt
               examples for writing, coding, marketing, business planning,
               resumes, design, social media, and more.
+            </p>
+            <p>
+              SeyPrompt is a product of{" "}
+              <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+                {PARENT_COMPANY_NAME}
+              </a>
+              .
             </p>
           </div>
 

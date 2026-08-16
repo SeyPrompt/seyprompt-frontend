@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createPageMetadata } from "@/lib/seo";
+import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: "Privacy Policy",
@@ -63,6 +63,13 @@ export default function PrivacyPolicyPage() {
               SeyPrompt is a prompt library. You can browse, copy, and share
               prompts without creating an account or making a payment.
             </p>
+            <p>
+              SeyPrompt is a product of{" "}
+              <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+                {PARENT_COMPANY_NAME}
+              </a>
+              .
+            </p>
             <span className="legal-updated">Last updated: May 12, 2026</span>
           </div>
         </div>
@@ -105,7 +112,12 @@ export default function PrivacyPolicyPage() {
               <h2>Contact</h2>
               <p>
                 For privacy questions or requests, please use the{" "}
-                <Link href="/contact">contact page</Link>.
+                <Link href="/contact">contact page</Link>. SeyPrompt is a product
+                of{" "}
+                <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+                  {PARENT_COMPANY_NAME}
+                </a>
+                .
               </p>
             </article>
           </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createPageMetadata } from "@/lib/seo";
+import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: "Terms of Use",
@@ -27,7 +27,7 @@ const terms = [
   {
     title: "Site Content",
     text:
-      "The prompts, examples, page copy, design, branding, and other site materials belong to SeyPrompt or their respective owners. You may copy prompts for practical use, but you may not reproduce the full site, scrape the library at scale, or resell SeyPrompt content as a competing prompt library without permission."
+      "The prompts, examples, page copy, design, branding, and other site materials belong to SeyPrompt, its parent company Sey Ventures, or their respective owners. You may copy prompts for practical use, but you may not reproduce the full site, scrape the library at scale, or resell SeyPrompt content as a competing prompt library without permission."
   },
   {
     title: "Third-Party Tools",
@@ -52,6 +52,13 @@ export default function TermsOfUsePage() {
             <p>
               These terms explain how visitors may use SeyPrompt's prompt
               library, examples, and website content.
+            </p>
+            <p>
+              SeyPrompt is a product of{" "}
+              <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+                {PARENT_COMPANY_NAME}
+              </a>
+              .
             </p>
             <span className="legal-updated">Last updated: May 12, 2026</span>
           </div>
