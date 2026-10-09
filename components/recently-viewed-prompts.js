@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
 import { RECENTLY_VIEWED_PROMPTS_KEY, readPromptList } from "@/lib/prompt-storage";
+import { PromptAccessLink } from "@/components/PromptAccessLink";
 
 export function RecentlyViewedPrompts({ excludeSlug = "" }) {
   const [prompts, setPrompts] = useState([]);
@@ -30,13 +30,13 @@ export function RecentlyViewedPrompts({ excludeSlug = "" }) {
       </div>
       <div className="recent-prompts-grid">
         {prompts.map((prompt) => (
-          <Link className="card recent-prompt-card" href={`/prompts/${prompt.slug}`} key={prompt.slug}>
+          <PromptAccessLink className="card recent-prompt-card" href={`/prompts/${prompt.slug}`} key={prompt.slug}>
             <Clock3 aria-hidden="true" size={18} />
             <span>
               <strong>{prompt.title}</strong>
               <small>{prompt.category || "Prompt"}</small>
             </span>
-          </Link>
+          </PromptAccessLink>
         ))}
       </div>
     </section>

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 
-export function CopyOpenButton({ description, prompt, text, title, url }) {
+export function CopyOpenButton({ description, hideCopyButton = false, prompt, text, title, url }) {
   const [copied, setCopied] = useState(false);
   const encodedPrompt = encodeURIComponent(text || "");
   const aiTools = [
@@ -70,18 +70,20 @@ export function CopyOpenButton({ description, prompt, text, title, url }) {
   return (
     <div className="copy-action-panel">
       <div className="prompt-action-layout">
-        <div className="prompt-primary-actions">
-          <CopyButton
-            className="copy-button-primary"
-            copiedLabel="Copied!"
-            label="Copy Prompt"
-            onCopied={() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 7000);
-            }}
-            text={text}
-            trackingLabel={title || "prompt"}
-          />
+        <div className={`prompt-primary-actions${hideCopyButton ? " prompt-primary-actions-compact" : ""}`}>
+          {!hideCopyButton ? (
+            <CopyButton
+              className="copy-button-primary"
+              copiedLabel="Copied!"
+              label="Copy Prompt"
+              onCopied={() => {
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 7000);
+              }}
+              text={text}
+              trackingLabel={title || "prompt"}
+            />
+          ) : null}
           <button
             aria-label={`Share ${title || "prompt"}`}
             className="share-prompt-button"

@@ -66,6 +66,10 @@ export async function proxyAdminRequest(path, init = {}) {
     headers
   });
 
+  if (response.status === 204) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   const result = await readBackendResponse(response);
   return NextResponse.json(result, { status: response.status });
 }

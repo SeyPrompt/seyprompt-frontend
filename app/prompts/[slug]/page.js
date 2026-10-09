@@ -1,17 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Lightbulb } from "lucide-react";
+import { ArrowLeft, Eye, Lightbulb } from "lucide-react";
 import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
-import { CopyButton } from "@/components/CopyButton";
-import { CopyOpenButton } from "@/components/CopyOpenButton";
+import { PromptAccessLink } from "@/components/PromptAccessLink";
+import { PromptLoginGate } from "@/components/PromptLoginGate";
+import { PremiumPromptUnlock } from "@/components/PremiumPromptUnlock";
 import { RecordPromptView } from "@/components/record-prompt-view";
-import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
 import {
   getPrimaryPromptCategory,
   getPromptCategories,
   getPromptCategoryLabel
 } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import {
   absoluteUrl,
   breadcrumbSchema,
@@ -30,15 +31,50 @@ function getPromptTips(prompt) {
   return String(prompt?.tips || prompt?.notes || "").trim();
 }
 
-function getPromptDetailImage(prompt) {
-  return String(prompt?.image || prompt?.thumbnail || "").trim();
+function getSampleOutputPreview(prompt) {
+  const sampleOutput = prompt?.sampleOutput;
+
+  if (sampleOutput?.type === "image") {
+    const value =
+      sampleOutput.watermarkedPreviewUrl || prompt?.watermarkedPreviewUrl || sampleOutput.value || "";
+
+    return value ? { type: "image", value } : null;
+  }
+
+  if (sampleOutput?.type === "video" && sampleOutput.value) {
+    return { type: "video", value: sampleOutput.value };
+  }
+
+  const fallbackImage = String(prompt?.watermarkedPreviewUrl || prompt?.image || prompt?.thumbnail || "").trim();
+
+  return fallbackImage ? { type: "image", value: fallbackImage } : null;
+}
+
+function formatPromptViews(viewsCount) {
+  const views = Math.max(Number(viewsCount || 0), 0);
+
+  if (views >= 1000000) {
+    return `${(views / 1000000).toFixed(views >= 10000000 ? 0 : 1)}M views`;
+  }
+
+  if (views >= 1000) {
+    return `${(views / 1000).toFixed(views >= 10000 ? 0 : 1)}K views`;
+  }
+
+  return `${views} ${views === 1 ? "view" : "views"}`;
 }
 
 function SampleOutputDisplay({ prompt }) {
   const sampleOutput = prompt.sampleOutput;
 
   if (!sampleOutput) {
-    return null;
+    return (
+      <div className="sample-empty-state">
+        <span>Sample output</span>
+        <strong>Preview not added yet</strong>
+        <p>The reusable prompt is still available after unlock.</p>
+      </div>
+    );
   }
 
   if (typeof sampleOutput === "string") {
@@ -50,14 +86,16 @@ function SampleOutputDisplay({ prompt }) {
   }
 
   if (sampleOutput.type === "image") {
+    const previewUrl =
+      sampleOutput.watermarkedPreviewUrl || prompt.watermarkedPreviewUrl || sampleOutput.value;
+
     return (
       <div className="sample-media-box">
         <img
           alt={sampleOutput.fileName || `${prompt.title} sample output`}
           className="sample-output-image"
-          src={sampleOutput.value}
+          src={previewUrl}
         />
-        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
       </div>
     );
   }
@@ -92,18 +130,6 @@ function SampleOutputDisplay({ prompt }) {
   }
 
   return null;
-}
-
-function hasSampleOutput(sampleOutput) {
-  if (!sampleOutput) {
-    return false;
-  }
-
-  if (typeof sampleOutput === "string") {
-    return Boolean(sampleOutput.trim());
-  }
-
-  return Boolean(sampleOutput.value);
 }
 
 async function fetchRelatedPrompts(prompt) {
@@ -168,181 +194,151 @@ export default async function PromptDetailPage({ params }) {
 
   const categories = getPromptCategories(prompt);
   const primaryCategory = getPrimaryPromptCategory(prompt);
-  const categoryCountLabel =
-    categories.length > 1
-      ? `${primaryCategory || "General"} +${categories.length - 1}`
-      : primaryCategory || "General";
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
   const promptTips = getPromptTips(prompt);
-  const promptDetailImage = getPromptDetailImage(prompt);
+  const heroPreview = getSampleOutputPreview(prompt);
   const schemas = [
     promptSchema(prompt),
     breadcrumbSchema([
-      { name: "Home", path: "/" },
-      { name: "Prompts", path: "/prompts" },
+      { name: "Discover", path: "/" },
       ...(primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
       { name: prompt.title, path: `/prompts/${prompt.slug}` }
     ])
   ];
 
   return (
-    <main className="section">
+    <main className="prompt-detail-page">
+      <PromptLoginGate />
       <RecordPromptView prompt={prompt} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
       />
-      <div className="container split">
-        <article className="panel content-card stack">
-          <Link className="back-link" href="/prompts" aria-label="Back to library">
-            <ArrowLeft size={20} />
-            <span>Back to library</span>
-          </Link>
-          <div>
-            <div className="detail-title-row">
-              <div className="category-icon prompt-icon" aria-hidden="true">
-                <CategoryIcon size={22} />
-              </div>
-              <div className="eyebrow">{primaryCategory || "General"}</div>
-            </div>
-            <h1 className="page-title">{prompt.title}</h1>
-            {prompt.description ? <p className="page-subtitle">{prompt.description}</p> : null}
-          </div>
-          {categories.length ? (
-            <div className="pill-row">
-              {categories.map((category) => (
-                <span className="pill" key={`category-${category}`}>
-                  {category}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <section>
-            <h2>Prompt</h2>
-            <div className="prompt-copy-box">
-              <CopyButton
-                ariaLabel="Copy prompt"
-                className="prompt-inline-copy"
-                copiedLabel="Copied!"
-                iconOnly
-                label="Copy prompt"
-                text={prompt.prompt}
-                trackingLabel={prompt.title || "prompt"}
-              />
-              <div className="prose content-box prompt-content-box">{prompt.prompt}</div>
-            </div>
-            {promptTips ? (
-              <aside className="prompt-tips-box" aria-label="Prompt tips">
-                <div className="prompt-tips-icon" aria-hidden="true">
-                  <Lightbulb size={18} />
+      <div className="container prompt-detail-container">
+        <article className="prompt-detail-shell">
+          <header className="prompt-detail-hero">
+            <div className="prompt-detail-hero-copy">
+              <Link className="back-link prompt-detail-back" href="/" aria-label="Back to Discover">
+                <ArrowLeft size={18} />
+                <span>Back to Discover</span>
+              </Link>
+              <div className="detail-title-row">
+                <div className="category-icon prompt-icon" aria-hidden="true">
+                  <CategoryIcon size={22} />
                 </div>
                 <div>
-                  <h3>Tips</h3>
-                  <div className="prose">{promptTips}</div>
+                  <div className="eyebrow">{primaryCategory || "General"}</div>
                 </div>
-              </aside>
-            ) : null}
-          </section>
-          {(prompt.tools || []).length ? (
-            <section>
-              <div className="pill-row">
-                {(prompt.tools || []).map((tool) => (
+              </div>
+              <h1 className="page-title">{prompt.title}</h1>
+              {prompt.description ? <p className="page-subtitle">{prompt.description}</p> : null}
+              <div className="prompt-detail-meta-row">
+                {categories.slice(0, 4).map((category) => (
+                  <span className="pill" key={`category-${category}`}>
+                    {category}
+                  </span>
+                ))}
+                {(prompt.tools || []).slice(0, 3).map((tool) => (
                   <span className="pill pill-alt" key={tool}>
                     {tool}
                   </span>
                 ))}
+                <span className="pill pill-alt prompt-views-pill">
+                  <Eye size={14} aria-hidden="true" />
+                  {formatPromptViews(prompt.viewsCount)}
+                </span>
               </div>
-            </section>
-          ) : null}
-          {hasSampleOutput(prompt.sampleOutput) ? (
-            <section>
-              <h2>Sample Output</h2>
+            </div>
+
+            <span className={`prompt-hero-price-badge price-badge price-badge-${getPromptPricingType(prompt)}`}>
+              {formatPromptPrice(prompt)}
+            </span>
+            <div className="prompt-hero-preview" aria-label="Prompt sample preview">
+              {heroPreview?.type === "image" ? (
+                <img alt={`${prompt.title} sample preview`} src={heroPreview.value} />
+              ) : heroPreview?.type === "video" ? (
+                <video
+                  aria-label={`${prompt.title} video preview`}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  src={heroPreview.value}
+                />
+              ) : (
+                <div className="prompt-hero-preview-empty">
+                  <CategoryIcon size={34} />
+                  <span>Preview pending</span>
+                </div>
+              )}
+              <span className="prompt-hero-preview-caption">Copy, adapt, generate</span>
+            </div>
+          </header>
+
+          <div className="prompt-flow-steps" aria-label="How to use this prompt">
+            <span>1. Inspect the sample</span>
+            <span>2. Copy the reusable prompt</span>
+            <span>3. Open it in your AI tool</span>
+          </div>
+
+          <div className="prompt-detail-workspace">
+            <section className="prompt-workspace-panel prompt-workspace-sample">
+              <div className="prompt-workspace-heading">
+                <div>
+                  <p className="eyebrow">Sample output</p>
+                </div>
+              </div>
               <SampleOutputDisplay prompt={prompt} />
             </section>
-          ) : null}
-          {(prompt.tags || []).length ? (
-            <section>
-              <div className="pill-row">
-                {(prompt.tags || []).map((tag) => (
-                  <span className="pill" key={tag}>
-                    #{tag}
-                  </span>
+
+            <div className="prompt-workspace-side">
+              <PremiumPromptUnlock
+                description={descriptionFromPrompt(prompt)}
+                prompt={prompt}
+                shareUrl={absoluteUrl(`/prompts/${prompt.slug}`)}
+              />
+              {promptTips ? (
+                <aside className="prompt-tips-box" aria-label="Prompt tips">
+                  <div className="prompt-tips-icon" aria-hidden="true">
+                    <Lightbulb size={18} />
+                  </div>
+                  <div>
+                    <h3>Use it better</h3>
+                    <div className="prose">{promptTips}</div>
+                  </div>
+                </aside>
+              ) : null}
+            </div>
+          </div>
+
+          {relatedPrompts.length ? (
+            <section className="prompt-related-strip" aria-label="Related prompts">
+              <div className="prompt-workspace-heading">
+                <div>
+                  <p className="eyebrow">Keep exploring</p>
+                  <h2>Related prompts</h2>
+                </div>
+              </div>
+              <div className="related-list prompt-related-grid">
+                {relatedPrompts.map((relatedPrompt) => (
+                  <PromptAccessLink href={`/prompts/${relatedPrompt.slug}`} key={relatedPrompt.slug}>
+                    <span>
+                      {relatedPrompt.title}
+                      <small>
+                        {getPromptCategoryLabel(
+                          relatedPrompt,
+                          (relatedPrompt.tools || [])[0] || "Prompt"
+                        )}
+                      </small>
+                    </span>
+                  </PromptAccessLink>
                 ))}
               </div>
             </section>
           ) : null}
-          <section className="prompt-actions-section" aria-label="Prompt actions">
-            <div className="prompt-actions-heading">
-              <h2>Actions</h2>
-             
-            </div>
-            <CopyOpenButton
-              description={descriptionFromPrompt(prompt)}
-              prompt={prompt}
-              text={prompt.prompt}
-              title={prompt.title}
-              url={absoluteUrl(`/prompts/${prompt.slug}`)}
-            />
-          </section>
         </article>
-
-        <aside className="panel sidebar-card stack">
-          <div>
-            <div className="eyebrow">Details</div>
-            <dl className="metadata-list">
-              <div>
-                <dt>Category</dt>
-                <dd>{categoryCountLabel}</dd>
-              </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{prompt.createdAt ? new Date(prompt.createdAt).toLocaleDateString() : "-"}</dd>
-              </div>
-              <div>
-                <dt>Status</dt>
-                <dd>
-                  <span className="status-badge">Published</span>
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div>
-            <div className="eyebrow">Related prompts</div>
-            <div className="related-list">
-              {relatedPrompts.map((relatedPrompt) => (
-                <Link href={`/prompts/${relatedPrompt.slug}`} key={relatedPrompt.slug}>
-                  <span>
-                    {relatedPrompt.title}
-                    <small>
-                      {getPromptCategoryLabel(
-                        relatedPrompt,
-                        (relatedPrompt.tools || [])[0] || "Prompt"
-                      )}
-                    </small>
-                  </span>
-                  <span>&gt;</span>
-                </Link>
-              ))}
-              {!relatedPrompts.length && primaryCategory ? (
-                <Link href={getCategoryPath(primaryCategory)}>
-                  More {primaryCategory} prompts
-                  <span>&gt;</span>
-                </Link>
-              ) : null}
-              {!relatedPrompts.length && (prompt.tools || [])[0] ? (
-                <Link href={{ pathname: "/prompts", query: { tool: prompt.tools[0] } }}>
-                  More {(prompt.tools || [])[0]} prompts
-                  <span>&gt;</span>
-                </Link>
-              ) : null}
-              {!relatedPrompts.length && !primaryCategory && !(prompt.tools || []).length ? (
-                <p className="muted">Browse the full library for more prompts.</p>
-              ) : null}
-            </div>
-          </div>
-          <RecentlyViewedPrompts excludeSlug={prompt.slug} />
-        </aside>
       </div>
     </main>
   );

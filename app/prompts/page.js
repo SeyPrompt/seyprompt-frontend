@@ -63,6 +63,7 @@ export default async function PromptsPage({ searchParams }) {
   const category = resolvedSearchParams?.category || "";
   const tag = resolvedSearchParams?.tag || "";
   const tool = resolvedSearchParams?.tool || "";
+  const pricing = resolvedSearchParams?.pricing || "";
   const page = resolvedSearchParams?.page || "1";
   const limit = resolvedSearchParams?.limit || "12";
 
@@ -71,6 +72,7 @@ export default async function PromptsPage({ searchParams }) {
     category,
     tag,
     tool,
+    pricing,
     page,
     limit
   }).catch(() => ({
@@ -117,6 +119,7 @@ export default async function PromptsPage({ searchParams }) {
           limit={limit}
           loadFailed={Boolean(filteredResponse.loadFailed)}
           prompts={filteredResponse.data || []}
+          pricing={pricing}
           q={q}
           tag={tag}
           tool={tool}
@@ -128,7 +131,7 @@ export default async function PromptsPage({ searchParams }) {
               className="button-secondary"
               href={{
                 pathname: "/prompts",
-                query: { q, category, tag, tool, page: Math.max(currentPage - 1, 1), limit }
+                query: { q, category, tag, tool, pricing, page: Math.max(currentPage - 1, 1), limit }
               }}
             >
               Previous
@@ -141,7 +144,7 @@ export default async function PromptsPage({ searchParams }) {
               className="button-secondary"
               href={{
                 pathname: "/prompts",
-                query: { q, category, tag, tool, page: currentPage + 1, limit }
+                query: { q, category, tag, tool, pricing, page: currentPage + 1, limit }
               }}
             >
               Next

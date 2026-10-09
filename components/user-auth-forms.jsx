@@ -6,11 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   forgotPassword,
   loginUser,
+  loginWithGoogle,
   registerUser,
   resetPassword,
   verifyEmail
 } from "@/lib/user-auth";
 import { useUserAuth } from "@/components/user-auth-provider";
+import { GoogleLoginButton } from "@/components/google-login-button";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const otpPattern = /^\d{6}$/;
@@ -180,7 +182,31 @@ function AuthFooter({ children }) {
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const safeRedirectTo =
+    redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard";
   const form = useAuthFormState();
+  const auth = useUserAuth();
+
+  async function handleGoogleCredential(idToken) {
+    form.clearMessages();
+    form.setLoading(true);
+
+    try {
+      const result = await loginWithGoogle(idToken);
+      auth.login(result);
+      router.replace(safeRedirectTo);
+    } catch (error) {
+      handleLoginError(form, error);
+    } finally {
+      form.setLoading(false);
+    }
+  }
+
+  function handleGoogleError(error) {
+    form.setFormError(error.message || "Unable to sign up with Google.");
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -253,8 +279,22 @@ export function RegisterForm() {
       <button className="button" disabled={form.disabled} type="submit">
         {form.loading ? "Sending OTP..." : "Create account"}
       </button>
+      <GoogleLoginButton
+        disabled={form.disabled}
+        onCredential={handleGoogleCredential}
+        onError={handleGoogleError}
+        text="signup_with"
+      />
       <AuthFooter>
-        Already have an account? <Link href="/login">Log in</Link>
+        Already have an account?{" "}
+        <Link
+          href={{
+            pathname: "/login",
+            query: safeRedirectTo !== "/dashboard" ? { redirect: safeRedirectTo } : {}
+          }}
+        >
+          Log in
+        </Link>
       </AuthFooter>
     </form>
   );
@@ -266,6 +306,7 @@ export function VerifyEmailForm() {
   const [email, setEmail] = useState(emailFromRoute);
   const form = useAuthFormState();
   const auth = useUserAuth();
+
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -290,7 +331,7 @@ export function VerifyEmailForm() {
     try {
       const result = await verifyEmail(payload);
       auth.login(result);
-      router.replace("/saved");
+      router.replace("/dashboard");
     } catch (error) {
       form.handleError(error);
     } finally {
@@ -340,10 +381,32 @@ export function VerifyEmailForm() {
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const safeRedirectTo =
+    redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard";
   const emailFromRoute = useEmailFromRoute();
   const [email, setEmail] = useState(emailFromRoute);
   const form = useAuthFormState();
   const auth = useUserAuth();
+  async function handleGoogleCredential(idToken) {
+    form.clearMessages();
+    form.setLoading(true);
+
+    try {
+      const result = await loginWithGoogle(idToken);
+      auth.login(result);
+      router.replace(safeRedirectTo);
+    } catch (error) {
+      handleLoginError(form, error);
+    } finally {
+      form.setLoading(false);
+    }
+  }
+
+  function handleGoogleError(error) {
+    form.setFormError(error.message || "Unable to sign in with Google.");
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -368,7 +431,7 @@ export function LoginForm() {
     try {
       const result = await loginUser(payload);
       auth.login(result);
-      router.replace("/saved");
+      router.replace(safeRedirectTo);
     } catch (error) {
       handleLoginError(form, error);
     } finally {
@@ -420,9 +483,24 @@ export function LoginForm() {
       <button className="button" disabled={form.disabled} type="submit">
         {form.loading ? "Signing in..." : "Log in"}
       </button>
+      <GoogleLoginButton
+        disabled={form.disabled}
+        onCredential={handleGoogleCredential}
+        onError={handleGoogleError}
+      />
       <AuthFooter>
         <Link href="/forgot-password">Forgot password?</Link>
-        <span>New here? <Link href="/register">Create account</Link></span>
+        <span>
+          New here?{" "}
+          <Link
+            href={{
+              pathname: "/register",
+              query: safeRedirectTo !== "/dashboard" ? { redirect: safeRedirectTo } : {}
+            }}
+          >
+            Create account
+          </Link>
+        </span>
       </AuthFooter>
     </form>
   );

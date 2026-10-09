@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
@@ -8,6 +8,26 @@ import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata"
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
 const SAMPLE_OUTPUT_URL_TYPES = ["image", "video", "pdf", "file"];
 const SAMPLE_OUTPUT_TYPES = ["text", ...SAMPLE_OUTPUT_URL_TYPES];
+const DEFAULT_REGIONAL_PRICES = [
+  { region: "IN", currency: "INR", amount: 10, isActive: false },
+  { region: "DEFAULT", currency: "USD", amount: 0.55, isActive: false }
+];
+const PRICING_REGION_OPTIONS = [
+  { value: "IN", label: "India" },
+  { value: "US", label: "United States" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "EU", label: "Europe" },
+  { value: "NZ", label: "New Zealand" },
+  { value: "DEFAULT", label: "Default / International" }
+];
+const REGION_CURRENCY_MAP = {
+  IN: "INR",
+  US: "USD",
+  GB: "GBP",
+  EU: "EUR",
+  NZ: "NZD",
+  DEFAULT: "USD"
+};
 
 function normalizeList(value) {
   return String(value || "")
@@ -27,6 +47,117 @@ function normalizeCategoryInput(value) {
   } catch {
     return normalizeCategories(normalizeList(value));
   }
+}
+
+function currencyFractionDigits(currency) {
+  return ["JPY", "KRW"].includes(String(currency || "").toUpperCase()) ? 0 : 2;
+}
+
+function formatInrAmount(amount) {
+  return new Intl.NumberFormat("en-IN", {
+    currency: "INR",
+    maximumFractionDigits: 2,
+    style: "currency"
+  }).format(Number(amount || 0));
+}
+
+function normalizeRegionalPriceForAdmin(price) {
+  const currency = String(price?.currency || "").toUpperCase();
+  const digits = currencyFractionDigits(currency);
+  const amount =
+    price?.amount !== undefined && price?.amount !== null
+      ? Number(price.amount)
+      : Number(price?.amountMinor || 0) / 10 ** digits;
+
+  return {
+    region: String(price?.region || "").toUpperCase(),
+    currency,
+    amount: Number.isFinite(amount) ? amount : 0,
+    isActive: price?.isActive === true
+  };
+}
+
+function getInitialRegionalPrices(value) {
+  const prices = Array.isArray(value) && value.length ? value : DEFAULT_REGIONAL_PRICES;
+  return prices.map((price, index) => ({
+    id: `${price?.region || "region"}-${index}`,
+    ...normalizeRegionalPriceForAdmin(price)
+  }));
+}
+
+function getInitialPricingType(prompt) {
+  return prompt?.pricingType === "premium" || prompt?.pricingType === "paid" || Number(prompt?.price || 0) > 0
+    ? "premium"
+    : "free";
+}
+
+function getRegionalPriceCurrencies(rows) {
+  return [
+    ...new Set(
+      rows
+        .map((row) => String(row.currency || "").trim().toUpperCase())
+        .filter((currency) => currency && currency !== "INR")
+    )
+  ].sort();
+}
+
+function formatInrApproximation(row, fxRates) {
+  const amount = Number(row.amount || 0);
+  const currency = String(row.currency || "").toUpperCase();
+
+  if (!amount || amount < 0) {
+    return "-";
+  }
+
+  if (currency === "INR") {
+    return formatInrAmount(amount);
+  }
+
+  const rate = fxRates[currency]?.rate;
+
+  if (!rate) {
+    return "Rate unavailable";
+  }
+
+  return `≈ ${formatInrAmount(amount * rate)}`;
+}
+
+function getRegionLabel(region) {
+  return PRICING_REGION_OPTIONS.find((option) => option.value === region)?.label || region;
+}
+
+function getUsedRegions(rows, excludeRowId) {
+  return new Set(
+    rows
+      .filter((row) => row.id !== excludeRowId)
+      .map((row) => String(row.region || "").toUpperCase())
+      .filter(Boolean)
+  );
+}
+
+function getNextAvailableRegion(rows) {
+  const usedRegions = getUsedRegions(rows);
+  return PRICING_REGION_OPTIONS.find((option) => !usedRegions.has(option.value));
+}
+
+function findDuplicateRegion(rows) {
+  const seen = new Set();
+
+  for (const row of rows) {
+    const region = String(row.region || "").toUpperCase();
+
+    if (!region) {
+      continue;
+    }
+
+    if (seen.has(region)) {
+      return region;
+    }
+
+    seen.add(region);
+  }
+
+  return "";
 }
 
 function normalizeTaxonomyResponse(data) {
@@ -109,6 +240,42 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Sample output file must be 10 MB or smaller.";
   }
 
+  if (!["free", "premium"].includes(payload.pricingType)) {
+    return "Pricing type must be free or premium.";
+  }
+
+  if (!Number.isInteger(payload.creditCost) || payload.creditCost < 0) {
+    return "Credit cost must be a whole number of credits.";
+  }
+
+  if (payload.pricingType === "premium" && payload.creditUnlockEnabled && payload.creditCost < 1) {
+    return "Credit unlock needs a credit cost of at least 1.";
+  }
+
+  if (!Array.isArray(payload.regionalPrices)) {
+    return "Regional prices must be valid JSON.";
+  }
+
+  if (payload.pricingType === "premium") {
+    if (
+      payload.directPurchaseEnabled &&
+      !payload.regionalPrices.some((regionalPrice) => regionalPrice.isActive)
+    ) {
+      return "Direct purchase needs at least one active regional price.";
+    }
+
+    for (const regionalPrice of payload.regionalPrices) {
+      if (
+        !regionalPrice.region ||
+        !regionalPrice.currency ||
+        !Number.isFinite(Number(regionalPrice.amount)) ||
+        Number(regionalPrice.amount) <= 0
+      ) {
+        return "Each regional price needs region, currency, and a positive amount.";
+      }
+    }
+  }
+
   if (!["public", "private"].includes(payload.visibility)) {
     return "Visibility must be public or private.";
   }
@@ -146,7 +313,8 @@ function getInitialSampleOutput(prompt) {
       publicId: sampleOutput.publicId || "",
       resourceType: sampleOutput.resourceType || "",
       format: sampleOutput.format || "",
-      bytes: sampleOutput.bytes || ""
+      bytes: sampleOutput.bytes || "",
+      watermarkedPreviewUrl: sampleOutput.watermarkedPreviewUrl || prompt?.watermarkedPreviewUrl || ""
     };
   }
 
@@ -158,7 +326,8 @@ function getInitialSampleOutput(prompt) {
     publicId: "",
     resourceType: "",
     format: "",
-    bytes: ""
+    bytes: "",
+    watermarkedPreviewUrl: ""
   };
 }
 
@@ -166,6 +335,10 @@ export function PromptForm({ mode, prompt }) {
   const router = useRouter();
   const slugEditedRef = useRef(Boolean(prompt?.slug));
   const initialSampleOutput = getInitialSampleOutput(prompt);
+  const initialPreviewUrl =
+    initialSampleOutput.type === "image"
+      ? initialSampleOutput.watermarkedPreviewUrl || initialSampleOutput.value
+      : "";
   const initialCategories = getPromptCategories(prompt);
   const [categories, setCategories] = useState(initialCategories);
   const [categoryInput, setCategoryInput] = useState("");
@@ -178,8 +351,22 @@ export function PromptForm({ mode, prompt }) {
       : "upload"
   );
   const [isFeatured, setIsFeatured] = useState(Boolean(prompt?.isFeatured));
+  const [pricingType, setPricingType] = useState(() => getInitialPricingType(prompt));
+  const [directPurchaseEnabled, setDirectPurchaseEnabled] = useState(
+    prompt?.directPurchaseEnabled !== false && prompt?.isPurchasable !== false
+  );
+  const [creditUnlockEnabled, setCreditUnlockEnabled] = useState(
+    Boolean(prompt?.creditUnlockEnabled)
+  );
+  const [regionalPriceRows, setRegionalPriceRows] = useState(() =>
+    getInitialRegionalPrices(prompt?.regionalPrices)
+  );
+  const [fxRates, setFxRates] = useState({});
+  const [fxRateDate, setFxRateDate] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const regionalPriceCurrenciesKey = getRegionalPriceCurrencies(regionalPriceRows).join(",");
+  const monetizationDisabled = pricingType !== "premium";
 
   useEffect(() => {
     let active = true;
@@ -215,6 +402,62 @@ export function PromptForm({ mode, prompt }) {
     };
   }, []);
 
+  useEffect(() => {
+    const currencies = regionalPriceCurrenciesKey
+      ? regionalPriceCurrenciesKey.split(",").filter(Boolean)
+      : [];
+
+    if (!currencies.length) {
+      setFxRateDate("");
+      return;
+    }
+
+    let active = true;
+
+    async function fetchFxRates() {
+      const nextRates = {};
+      let nextDate = "";
+
+      await Promise.all(
+        currencies.map(async (currency) => {
+          try {
+            const response = await fetch(
+              `https://api.frankfurter.dev/v2/rate/${currency.toLowerCase()}/inr`,
+              { cache: "force-cache" }
+            );
+
+            if (!response.ok) {
+              return;
+            }
+
+            const data = await response.json();
+
+            if (Number.isFinite(Number(data?.rate))) {
+              nextRates[currency] = {
+                rate: Number(data.rate),
+                date: data.date || ""
+              };
+              nextDate = nextDate || data.date || "";
+            }
+          } catch {
+            // Keep the pricing editor usable if the public FX helper is unavailable.
+          }
+        })
+      );
+
+      if (active) {
+        setFxRates((currentRates) => ({ ...currentRates, ...nextRates }));
+        setFxRateDate(nextDate);
+      }
+    }
+
+    fetchFxRates();
+
+    return () => {
+      active = false;
+    };
+  }, [regionalPriceCurrenciesKey]);
+
   function addCategories(values) {
     const nextCategories = normalizeCategories(Array.isArray(values) ? values : [values]);
 
@@ -249,6 +492,73 @@ export function PromptForm({ mode, prompt }) {
     setCategorySelectValues([]);
   }
 
+  function updateRegionalPriceRow(rowId, field, value) {
+    setRegionalPriceRows((currentRows) =>
+      currentRows.map((row) => {
+        if (row.id !== rowId) {
+          return row;
+        }
+
+        if (field === "region") {
+          const nextRegion = String(value || "").toUpperCase();
+
+          if (getUsedRegions(currentRows, rowId).has(nextRegion)) {
+            return row;
+          }
+
+          return {
+            ...row,
+            region: nextRegion,
+            currency: REGION_CURRENCY_MAP[nextRegion] || row.currency
+          };
+        }
+
+        return {
+          ...row,
+          [field]: value
+        };
+      })
+    );
+  }
+
+  function addRegionalPriceRow() {
+    setRegionalPriceRows((currentRows) => {
+      const nextRegion = getNextAvailableRegion(currentRows);
+
+      if (!nextRegion) {
+        return currentRows;
+      }
+
+      return [
+        ...currentRows,
+        {
+          id: `new-${Date.now()}`,
+          region: nextRegion.value,
+          currency: REGION_CURRENCY_MAP[nextRegion.value] || "USD",
+          amount: 0,
+          isActive: false
+        }
+      ];
+    });
+  }
+
+  function removeRegionalPriceRow(rowId) {
+    setRegionalPriceRows((currentRows) =>
+      currentRows.length > 1 ? currentRows.filter((row) => row.id !== rowId) : currentRows
+    );
+  }
+
+  function buildRegionalPricesPayload() {
+    return regionalPriceRows.map((row) => ({
+      region: String(row.region || "").trim().toUpperCase(),
+      currency:
+        REGION_CURRENCY_MAP[String(row.region || "").trim().toUpperCase()] ||
+        String(row.currency || "").trim().toUpperCase(),
+      amount: Number(row.amount || 0),
+      isActive: Boolean(row.isActive)
+    }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
@@ -262,6 +572,23 @@ export function PromptForm({ mode, prompt }) {
     const featuredOrderValue = String(formData.get("featuredOrder") || "").trim();
     const featuredOrder =
       featuredOrderValue === "" ? undefined : Number(featuredOrderValue);
+    const safeCreditUnlockEnabled = pricingType === "premium" && creditUnlockEnabled;
+    const safeDirectPurchaseEnabled = pricingType === "premium" && directPurchaseEnabled;
+    const creditCost = pricingType === "premium" ? Number(formData.get("creditCost") || 0) : 0;
+    const regionalPrices =
+      pricingType === "premium"
+        ? buildRegionalPricesPayload()
+        : buildRegionalPricesPayload().map((priceRow) => ({
+            ...priceRow,
+            isActive: false
+          }));
+    const duplicateRegion = findDuplicateRegion(regionalPrices);
+
+    if (duplicateRegion) {
+      setError(`${getRegionLabel(duplicateRegion)} is already added. Each region can be used only once.`);
+      setLoading(false);
+      return;
+    }
     const sampleOutputMetadata = {
       provider: String(formData.get("sampleOutputProvider") || "").trim(),
       publicId: String(formData.get("sampleOutputPublicId") || "").trim(),
@@ -297,6 +624,13 @@ export function PromptForm({ mode, prompt }) {
       },
       visibility: String(formData.get("visibility") || "public"),
       status: String(formData.get("status") || "published"),
+      pricingType,
+      price: 0,
+      isPurchasable: safeDirectPurchaseEnabled,
+      creditUnlockEnabled: safeCreditUnlockEnabled,
+      directPurchaseEnabled: safeDirectPurchaseEnabled,
+      creditCost,
+      regionalPrices,
       isFeatured,
       featuredOrder
     };
@@ -373,6 +707,14 @@ export function PromptForm({ mode, prompt }) {
       tools: payload.tools,
       visibility: payload.visibility,
       status: payload.status,
+      pricingType: payload.pricingType,
+      price: 0,
+      currency: "INR",
+      isPurchasable: payload.isPurchasable,
+      creditUnlockEnabled: payload.creditUnlockEnabled,
+      directPurchaseEnabled: payload.directPurchaseEnabled,
+      creditCost: payload.creditCost,
+      regionalPrices: payload.regionalPrices,
       isFeatured: payload.isFeatured
     };
 
@@ -420,6 +762,14 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("tools", JSON.stringify(payload.tools));
     uploadFormData.append("visibility", payload.visibility);
     uploadFormData.append("status", payload.status);
+    uploadFormData.append("pricingType", payload.pricingType);
+    uploadFormData.append("price", "0");
+    uploadFormData.append("currency", "INR");
+    uploadFormData.append("isPurchasable", String(payload.isPurchasable));
+    uploadFormData.append("creditUnlockEnabled", String(payload.creditUnlockEnabled));
+    uploadFormData.append("directPurchaseEnabled", String(payload.directPurchaseEnabled));
+    uploadFormData.append("creditCost", String(payload.creditCost));
+    uploadFormData.append("regionalPrices", JSON.stringify(payload.regionalPrices));
     uploadFormData.append("isFeatured", String(payload.isFeatured));
     if (payload.featuredOrder !== undefined) {
       uploadFormData.append("featuredOrder", String(payload.featuredOrder));
@@ -637,6 +987,21 @@ export function PromptForm({ mode, prompt }) {
         <input name="sampleOutputResourceType" readOnly type="hidden" value={initialSampleOutput.resourceType} />
         <input name="sampleOutputFormat" readOnly type="hidden" value={initialSampleOutput.format} />
         <input name="sampleOutputBytes" readOnly type="hidden" value={initialSampleOutput.bytes} />
+        {initialPreviewUrl ? (
+          <div className="field admin-sample-preview">
+            <label>Public image preview</label>
+            <div className="sample-media-box">
+              <img
+                alt={
+                  initialSampleOutput.fileName ||
+                  `${prompt?.title || "Prompt"} public sample preview`
+                }
+                className="sample-output-image"
+                src={initialPreviewUrl}
+              />
+            </div>
+          </div>
+        ) : null}
         <div className="field">
           <label htmlFor="sampleOutputType">Sample output type</label>
           <select
@@ -787,6 +1152,187 @@ export function PromptForm({ mode, prompt }) {
         />
         <span className="field-hint muted">Comma-separated values.</span>
       </div>
+      <section className="pricing-editor-section" aria-label="Prompt pricing">
+        <div className="pricing-editor-heading">
+          <div>
+            <h2>Pricing</h2>
+            <p className="muted">Choose whether this prompt is free or unlockable through credits and regional checkout.</p>
+          </div>
+          <div className="pricing-radio-group" role="radiogroup" aria-label="Pricing">
+            <label className="admin-checkbox" htmlFor="pricingTypeFree">
+              <input
+                checked={pricingType === "free"}
+                id="pricingTypeFree"
+                name="pricingType"
+                onChange={() => setPricingType("free")}
+                type="radio"
+                value="free"
+              />
+              Free
+            </label>
+            <label className="admin-checkbox" htmlFor="pricingTypePremium">
+              <input
+                checked={pricingType === "premium"}
+                id="pricingTypePremium"
+                name="pricingType"
+                onChange={() => setPricingType("premium")}
+                type="radio"
+                value="premium"
+              />
+              Premium
+            </label>
+          </div>
+        </div>
+
+        <div className="pricing-editor-controls">
+          <label className="admin-checkbox" htmlFor="directPurchaseEnabled">
+            <input
+              checked={pricingType === "premium" && directPurchaseEnabled}
+              disabled={monetizationDisabled}
+              id="directPurchaseEnabled"
+              name="directPurchaseEnabled"
+              onChange={(event) => setDirectPurchaseEnabled(event.target.checked)}
+              type="checkbox"
+            />
+            Direct purchase
+          </label>
+          <label className="admin-checkbox" htmlFor="creditUnlockEnabled">
+            <input
+              checked={pricingType === "premium" && creditUnlockEnabled}
+              disabled={monetizationDisabled}
+              id="creditUnlockEnabled"
+              name="creditUnlockEnabled"
+              onChange={(event) => setCreditUnlockEnabled(event.target.checked)}
+              type="checkbox"
+            />
+            Credit unlock
+          </label>
+          <div className="field pricing-credit-field">
+            <label htmlFor="creditCost">Credit cost</label>
+            <input
+              defaultValue={prompt?.creditCost || 0}
+              id="creditCost"
+              disabled={monetizationDisabled || !creditUnlockEnabled}
+              min="0"
+              name="creditCost"
+              step="1"
+              type="number"
+            />
+          </div>
+        </div>
+
+        <div className="field pricing-region-field">
+          <div className="pricing-table-title-row">
+            <label>Regional prices</label>
+            <span className="field-hint muted">Region controls currency automatically.</span>
+          </div>
+          <div className="regional-prices-table-wrap">
+            <table className="regional-prices-table">
+              <thead>
+                <tr>
+                  <th>Active</th>
+	                  <th>Region</th>
+	                  <th>Currency</th>
+	                  <th>Amount</th>
+	                  <th>INR approx</th>
+	                  <th aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {regionalPriceRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+	                      <input
+	                        aria-label={`Activate ${row.region || "regional"} price`}
+	                        checked={Boolean(row.isActive)}
+	                        disabled={monetizationDisabled}
+	                        onChange={(event) =>
+	                          updateRegionalPriceRow(row.id, "isActive", event.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                    </td>
+	                    <td>
+		                      <select
+		                        aria-label="Pricing region"
+		                        disabled={monetizationDisabled}
+	                        onChange={(event) =>
+                          updateRegionalPriceRow(row.id, "region", event.target.value)
+                        }
+	                        value={row.region}
+	                      >
+	                        {PRICING_REGION_OPTIONS.map((option) => (
+	                          <option
+	                            disabled={getUsedRegions(regionalPriceRows, row.id).has(option.value)}
+	                            key={option.value}
+	                            value={option.value}
+	                          >
+	                            {option.label}
+	                          </option>
+	                        ))}
+                      </select>
+                    </td>
+                    <td>
+		                      <select
+		                        aria-label="Pricing currency"
+		                        disabled
+	                        value={row.currency}
+	                      >
+                        <option value="INR">INR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                        <option value="EUR">EUR</option>
+                        <option value="NZD">NZD</option>
+                      </select>
+                    </td>
+	                    <td>
+	                      <input
+	                        aria-label="Pricing amount"
+	                        disabled={monetizationDisabled}
+	                        min="0"
+                        onChange={(event) =>
+                          updateRegionalPriceRow(row.id, "amount", event.target.value)
+                        }
+                        step="0.01"
+                        type="number"
+	                        value={row.amount}
+	                      />
+	                    </td>
+	                    <td className="regional-price-conversion">
+	                      {formatInrApproximation(row, fxRates)}
+	                    </td>
+	                    <td>
+                      <button
+                        aria-label={`Remove ${row.region || "regional"} price`}
+	                        className="button-icon"
+	                        disabled={monetizationDisabled || regionalPriceRows.length <= 1}
+                        onClick={() => removeRegionalPriceRow(row.id)}
+                        type="button"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            className="button-secondary compact"
+            disabled={monetizationDisabled || !getNextAvailableRegion(regionalPriceRows)}
+            onClick={addRegionalPriceRow}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add region
+          </button>
+          <span className="field-hint muted">
+            Enter normal amounts, for example INR 10 as 10 and USD 0.55 as 0.55.
+            Only active rows are used for checkout. INR conversion is an approximate daily reference
+            {fxRateDate ? ` from ${fxRateDate}` : ""}.
+          </span>
+        </div>
+      </section>
       <div className="toolbar">
         <div className="field" style={{ flex: 1 }}>
           <label htmlFor="status">Status</label>

@@ -3,6 +3,7 @@ import { Eye, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
+import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import { DeletePromptButton } from "@/components/delete-prompt-button";
 
 export const metadata = {
@@ -107,6 +108,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                     <th>Category</th>
                     <th>Tools</th>
                     <th>Status</th>
+                    <th>Price</th>
                     <th>Featured</th>
                     <th>Actions</th>
                   </tr>
@@ -146,6 +148,9 @@ export default async function AdminPromptsPage({ searchParams }) {
                         </td>
                         <td>
                           <span className="status-badge">{prompt.status}</span>
+                        </td>
+                        <td>
+                          <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
                         </td>
                         <td>
                           {prompt.isFeatured ? (
@@ -202,6 +207,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                       {firstTool ? <span>{firstTool}</span> : null}
                       {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
+                      <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
                       {prompt.isFeatured ? (
                         <span className="status-badge featured-badge">
                           Featured

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
+import { PromptAccessLink } from "@/components/PromptAccessLink";
 import { PromptCard } from "@/components/prompt-card";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { ToolBadges } from "@/components/tool-badges";
 import { trackEvent } from "@/lib/analytics";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
+import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import { apiUrl } from "@/utils/api";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 
@@ -129,10 +131,11 @@ function PromptListItem({ prompt }) {
         </div>
       </div>
       <div className="library-list-actions">
+        <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
         <SavedPromptButton className="library-list-save" iconOnly prompt={prompt} />
-        <Link className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
+        <PromptAccessLink className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
           View <ArrowUpRight size={16} aria-hidden="true" />
-        </Link>
+        </PromptAccessLink>
       </div>
     </article>
   );
@@ -147,6 +150,7 @@ function PromptTable({ prompts }) {
             <th>Title</th>
             <th>Tags</th>
             <th>Tools</th>
+            <th>Price</th>
             <th>Status</th>
             <th aria-label="Actions"></th>
           </tr>
@@ -158,9 +162,9 @@ function PromptTable({ prompts }) {
             return (
               <tr key={prompt._id || prompt.id || prompt.slug}>
                 <td className="library-table-title-cell">
-                  <Link className="library-table-title" href={`/prompts/${prompt.slug}`}>
+                  <PromptAccessLink className="library-table-title" href={`/prompts/${prompt.slug}`}>
                     {prompt.title}
-                  </Link>
+                  </PromptAccessLink>
                   <div className="muted library-table-description">
                     {description.slice(0, 90)}
                     {description.length > 90 ? "..." : ""}
@@ -173,18 +177,21 @@ function PromptTable({ prompts }) {
                   <ToolBadges compact tools={prompt.tools || []} />
                 </td>
                 <td>
+                  <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                </td>
+                <td>
                   <span className="status-badge">Published</span>
                 </td>
                 <td>
                   <div className="library-table-actions">
                     <SavedPromptButton iconOnly prompt={prompt} />
-                    <Link
+                    <PromptAccessLink
                       aria-label={`View ${prompt.title}`}
                       className="library-table-view"
                       href={`/prompts/${prompt.slug}`}
                     >
                       <ArrowUpRight size={18} aria-hidden="true" />
-                    </Link>
+                    </PromptAccessLink>
                   </div>
                 </td>
               </tr>
@@ -202,6 +209,7 @@ export function PromptLibraryView({
   category = "",
   tag = "",
   tool = "",
+  pricing = "",
   limit,
   loadFailed = false,
   total,
@@ -211,6 +219,7 @@ export function PromptLibraryView({
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [selectedTag, setSelectedTag] = useState(tag);
   const [selectedTool, setSelectedTool] = useState(tool);
+  const [selectedPricing, setSelectedPricing] = useState(pricing);
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     tags: [],
@@ -262,12 +271,13 @@ export function PromptLibraryView({
     setSelectedCategory(category);
     setSelectedTag(tag);
     setSelectedTool(tool);
-  }, [category, tag, tool]);
+    setSelectedPricing(pricing);
+  }, [category, tag, tool, pricing]);
 
   const categoryOptions = mergeSelectedOption(filterOptions.categories, selectedCategory);
   const tagOptions = mergeSelectedOption(filterOptions.tags, selectedTag);
   const toolOptions = mergeSelectedOption(filterOptions.tools, selectedTool);
-  const hasActiveFilters = Boolean(q || category || tag || tool);
+  const hasActiveFilters = Boolean(q || category || tag || tool || pricing);
 
   function renderFilterOptions(options, emptyLabel, selectedValue) {
     if (filterOptionsLoading) {
@@ -303,7 +313,8 @@ export function PromptLibraryView({
             search_term: formData.get("q") || "",
             category: formData.get("category") || "",
             tag: formData.get("tag") || "",
-            tool: formData.get("tool") || ""
+            tool: formData.get("tool") || "",
+            pricing: formData.get("pricing") || ""
           });
         }}
       >
@@ -348,6 +359,16 @@ export function PromptLibraryView({
         >
           <option value="">{filterOptionRequests.tools.label}</option>
           {renderFilterOptions(toolOptions, filterOptionRequests.tools.emptyLabel, selectedTool)}
+        </select>
+        <select
+          className="library-filter-select"
+          name="pricing"
+          onChange={(event) => setSelectedPricing(event.target.value)}
+          value={selectedPricing}
+        >
+          <option value="">All prices</option>
+          <option value="free">Free</option>
+          <option value="premium">Premium</option>
         </select>
         <select
           className="library-filter-select"
