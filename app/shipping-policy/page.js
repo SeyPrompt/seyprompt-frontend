@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createPageMetadata } from "@/lib/seo";
-import { POLICY_EFFECTIVE_DATE, SUPPORT_EMAIL } from "@/lib/policy-info";
+import { policyDateLabel, SUPPORT_EMAIL } from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
   title: "Shipping & Digital Delivery Policy",
@@ -30,7 +30,7 @@ const sections = [
     items: [
       "Most confirmed purchases should appear in your account shortly after checkout is completed.",
       "Pending payments, incomplete checkout, failed verification, payment-provider delay, or bank/payment reversals may delay or prevent activation.",
-      "If access is missing after a successful payment, contact support with your account and payment details so the order can be reviewed."
+      "If access or credits are not visible after a successful payment, contact support with your account and payment details so the order can be reviewed."
     ]
   },
   {
@@ -68,26 +68,18 @@ export default function ShippingPolicyPage() {
             <div className="eyebrow">SeyPrompt Delivery</div>
             <h1>Shipping & Digital Delivery Policy</h1>
             <p>
-              SeyPrompt is a digital prompt service. This page explains how
-              prompt unlocks, credits, and all-access plans are delivered.
+              SeyPrompt is a digital prompt service. No physical item is
+              shipped. This page explains how prompt unlocks, credits, and
+              all-access plans are delivered, and what to do if digital access
+              is missing after a successful payment.
             </p>
-            <span className="legal-updated">Effective: {POLICY_EFFECTIVE_DATE}</span>
+            <span className="legal-updated">{policyDateLabel}</span>
           </div>
         </div>
       </section>
 
       <section className="section">
         <div className="container legal-container legal-stack">
-          <div className="panel legal-summary">
-            <h2>Digital Only</h2>
-            <p>
-              No physical item is shipped. If digital access is missing after a
-              successful payment, contact{" "}
-              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> or use the{" "}
-              <Link href="/contact">contact page</Link>.
-            </p>
-          </div>
-
           <div className="legal-content">
             {sections.map((section) => (
               <article className="card legal-card" key={section.title}>
@@ -99,6 +91,15 @@ export default function ShippingPolicyPage() {
                 </ul>
               </article>
             ))}
+
+            <article className="card legal-card">
+              <h2>Contact</h2>
+              <p>
+                If digital access is missing after a successful payment, contact{" "}
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> or use the{" "}
+                <Link href="/contact">contact page</Link>.
+              </p>
+            </article>
           </div>
         </div>
       </section>

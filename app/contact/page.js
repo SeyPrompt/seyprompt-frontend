@@ -68,12 +68,15 @@ const supportDetails = [
     value: CUSTOMER_CARE_EMAIL,
     href: `mailto:${CUSTOMER_CARE_EMAIL}`
   },
-  {
-    label: "Grievance escalation",
-    value: GRIEVANCE_OFFICER.name
-      ? `${GRIEVANCE_OFFICER.name}, ${GRIEVANCE_OFFICER.designation || "Grievance Officer"}`
-      : `Email ${CUSTOMER_CARE_EMAIL} for privacy or grievance requests.`
-  },
+  ...(GRIEVANCE_OFFICER.name
+    ? [
+        {
+          label: "Grievance escalation",
+          value: `${GRIEVANCE_OFFICER.name}, ${GRIEVANCE_OFFICER.designation || "Grievance Officer"}`,
+          href: `mailto:${GRIEVANCE_OFFICER.email || CUSTOMER_CARE_EMAIL}`
+        }
+      ]
+    : []),
   {
     label: "Payment support",
     value: "Use the contact form for payment, subscription, prompt unlock, credit, refund, or delivery issues."

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createPageMetadata, PARENT_COMPANY_URL } from "@/lib/seo";
 import {
   LEGAL_OPERATOR_DISPLAY,
-  POLICY_EFFECTIVE_DATE,
+  policyDateLabel,
   SUPPORT_EMAIL
 } from "@/lib/policy-info";
 
@@ -58,10 +58,9 @@ const terms = [
     title: "All-Access Plans",
     items: [
       "All-access plans grant access to premium prompts during the plan duration shown at checkout.",
-      "The seeded SeyPrompt plans are Starter for 30 days, Pro for 90 days, and Annual for 365 days, unless the checkout shows a different active plan at the time of purchase.",
       "Plans start when payment is confirmed and end when the purchased duration expires.",
       "Plans do not renew automatically. Buying another plan is a separate manual purchase.",
-      "If you already have plan access, an additional purchase may create a separate access period rather than automatically extending an existing one unless the checkout or account screen states otherwise."
+      "If you already have active all-access, SeyPrompt does not offer another all-access purchase from the account dashboard. If an all-access purchase is completed, the access period starts from that payment confirmation and does not add remaining time from another plan."
     ]
   },
   {
@@ -69,8 +68,8 @@ const terms = [
     items: [
       "Review the product, plan, currency, discounts, credits, and total payable amount shown at checkout before paying.",
       "SeyPrompt may show different prices, currencies, or product availability by country or region.",
-      "The amount shown by Razorpay for the order is the amount payable to complete that order. Your bank, card network, wallet, or payment provider may apply separate foreign-exchange, conversion, or payment charges.",
-      "Taxes may be included or applied as required by the checkout, invoice, payment provider, or applicable law."
+      "The checkout amount shown before payment is the total payable to SeyPrompt for that order. Any applicable taxes charged by SeyPrompt are included in that checkout total unless the checkout shows them separately.",
+      "Your bank, card network, wallet, or payment provider may apply separate foreign-exchange, conversion, or payment charges outside SeyPrompt's checkout total."
     ]
   },
   {
@@ -139,25 +138,17 @@ export default function TermsOfUsePage() {
               <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
                 {LEGAL_OPERATOR_DISPLAY}
               </a>
-              .
+              . Review the checkout details before paying: paid products are
+              digital, external AI tools are separate, and all-access plans do
+              not renew automatically.
             </p>
-            <span className="legal-updated">Effective: {POLICY_EFFECTIVE_DATE}</span>
+            <span className="legal-updated">{policyDateLabel}</span>
           </div>
         </div>
       </section>
 
       <section className="section">
         <div className="container legal-container legal-stack">
-          <div className="panel legal-summary">
-            <h2>Simple Summary</h2>
-            <p>
-              Buy only if the checkout details match what you want: a single
-              prompt, credits, or a fixed-duration all-access plan. External AI
-              tools are separate, plans do not renew automatically, and payment
-              confirmation controls access.
-            </p>
-          </div>
-
           <div className="legal-content">
             {terms.map((term) => (
               <article className="card legal-card" key={term.title}>

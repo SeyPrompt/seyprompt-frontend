@@ -335,7 +335,7 @@ export function PromptCheckoutModal({
           <div>
             <span>Single prompt</span>
             <strong>{formatPromptPrice(prompt)}</strong>
-            <small>Lifetime access to this prompt in your dashboard.</small>
+            <small>Total payable for this prompt. Access has no scheduled expiry.</small>
           </div>
           {promptAlreadyUnlocked ? (
             <button className="button checkout-unlocked-cta" onClick={openPromptDetail} type="button">
@@ -479,7 +479,10 @@ export function PromptCheckoutModal({
             </button>
           </div>
         ) : null}
-        <p className="checkout-policy-note">* Terms and conditions apply.</p>
+        <p className="checkout-policy-note">
+          Prices shown are the SeyPrompt checkout total before payment. All-access
+          starts when payment is confirmed and does not renew automatically.
+        </p>
         {error ? <p className="error-text">{error}</p> : null}
       </section>
     </div>

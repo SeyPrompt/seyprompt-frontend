@@ -4,7 +4,7 @@ import {
   CUSTOMER_CARE_EMAIL,
   GRIEVANCE_OFFICER,
   LEGAL_OPERATOR_DISPLAY,
-  POLICY_EFFECTIVE_DATE,
+  policyDateLabel,
   SUPPORT_EMAIL
 } from "@/lib/policy-info";
 
@@ -127,26 +127,16 @@ export default function PrivacyPolicyPage() {
               <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
                 {LEGAL_OPERATOR_DISPLAY}
               </a>
-              .
+              . We use account, purchase, access, support, analytics, and
+              security information to run the digital prompt service.
             </p>
-            <span className="legal-updated">Effective: {POLICY_EFFECTIVE_DATE}</span>
+            <span className="legal-updated">{policyDateLabel}</span>
           </div>
         </div>
       </section>
 
       <section className="section">
         <div className="container legal-container legal-stack">
-          <div className="panel legal-summary">
-            <h2>Short Version</h2>
-            <p>
-              SeyPrompt uses account, purchase, access, support, analytics, and
-              security data to run the digital prompt service. We use service
-              providers such as Razorpay for payments and analytics or
-              monitoring tools where enabled, and we do not sell personal
-              information.
-            </p>
-          </div>
-
           <div className="legal-content">
             {sections.map((section) => (
               <article className="card legal-card" key={section.title}>

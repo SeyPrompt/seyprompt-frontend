@@ -360,7 +360,11 @@ export function UserDashboard() {
                   </label>
                 ))}
               </div>
-              <p className="dashboard-policy-note">* Terms and conditions apply.</p>
+              <p className="dashboard-policy-note">
+                Prices shown are the SeyPrompt checkout total before payment.
+                All-access starts when payment is confirmed and does not renew
+                automatically.
+              </p>
               <button
                 className="button dashboard-plan-submit"
                 disabled={checkoutLoading || Boolean(activeSubscription)}
