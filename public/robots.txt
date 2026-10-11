@@ -7,9 +7,12 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /dashboard
+Disallow: /orders
 Disallow: /profile
 Disallow: /saved-prompts
 Disallow: /saved
+Disallow: /unlocked-prompts
+Disallow: /verify-email
 Disallow: /api/
 
 Sitemap: https://www.seyprompt.com/sitemap.xml

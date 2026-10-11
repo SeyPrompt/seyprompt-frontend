@@ -1,15 +1,16 @@
 "use client";
 
+import { LockOpen } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
 import { PromptCheckoutModal } from "@/components/PromptCheckoutModal";
-import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
+import { formatPromptPriceParts, getPromptPricingType } from "@/lib/prompt-pricing";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { ToolBadges } from "@/components/tool-badges";
 
-export function PromptCard({ prompt }) {
+export function PromptCard({ prompt, isUnlocked = false }) {
   const tools = prompt.tools || [];
   const categories = getPromptCategories(prompt);
   const primaryCategory = getPrimaryPromptCategory(prompt);
@@ -17,6 +18,7 @@ export function PromptCard({ prompt }) {
   const description = prompt.description || prompt.prompt || "";
   const promptTags = prompt.tags || [];
   const pricingType = getPromptPricingType(prompt);
+  const displayPrice = formatPromptPriceParts(prompt);
   const tagPills = promptTags.length
     ? promptTags.slice(0, 1).map((tag) => ({ label: `#${tag}`, key: `tag-${tag}` }))
     : (categories.length ? categories.slice(0, 2) : ["General"]).map((category) => ({
@@ -37,8 +39,12 @@ export function PromptCard({ prompt }) {
           </span>
         </div>
         <div className="prompt-card-controls">
-          <span className={`price-badge prompt-card-price price-badge-${pricingType}`}>{formatPromptPrice(prompt)}</span>
-          <SavedPromptButton className="prompt-card-save" iconOnly prompt={prompt} />
+          <span className={`price-badge stacked-price-badge prompt-card-price price-badge-${pricingType}${isUnlocked && pricingType === "premium" ? " price-badge-owned" : ""}`}>
+            <span>
+              <span className="price-badge-amount">{displayPrice.label}</span>
+              {displayPrice.suffix ? <small>{displayPrice.suffix}</small> : null}
+            </span>
+          </span>
         </div>
       </div>
 
@@ -72,10 +78,28 @@ export function PromptCard({ prompt }) {
       </div>
 
       <div className="prompt-card-footer">
-        <ToolBadges tools={tools} />
+        <ToolBadges maxVisible={1} tools={tools} />
         <div className="prompt-actions">
-          {pricingType === "premium" ? (
+          <SavedPromptButton className="prompt-card-save" iconOnly prompt={prompt} />
+          {pricingType === "premium" && isUnlocked ? (
+            <PromptAccessLink
+              className="button compact prompt-card-view-unlocked"
+              href={`/prompts/${prompt.slug}`}
+              onClick={() =>
+                trackEvent("prompt_card_unlocked_view_click", {
+                  event_category: "Prompt",
+                  event_label: prompt.slug || prompt.title,
+                  prompt_slug: prompt.slug,
+                  prompt_category: primaryCategory || "General"
+                })
+              }
+            >
+              <LockOpen aria-hidden="true" size={16} />
+              View unlocked
+            </PromptAccessLink>
+          ) : pricingType === "premium" ? (
             <PromptCheckoutModal
+              initiallyUnlocked={isUnlocked}
               prompt={prompt}
               triggerClassName="button compact prompt-card-unlock"
               triggerLabel="Unlock"

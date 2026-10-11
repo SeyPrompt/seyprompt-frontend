@@ -15,6 +15,9 @@ import {
   Zap
 } from "lucide-react";
 import { useUserAuth } from "@/components/user-auth-provider";
+import { buildUnlockedPromptItems, isActiveEntitlement } from "@/lib/account-access";
+import { trackEvent } from "@/lib/analytics";
+import { POLICY_VERSION } from "@/lib/policy-info";
 import {
   createCheckout,
   fetchMyEntitlements,
@@ -26,9 +29,13 @@ import {
 function formatCurrency(amount, currency = "INR") {
   return new Intl.NumberFormat("en-IN", {
     currency: currency || "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: Number(amount || 0) % 1 === 0 ? 0 : 2,
     style: "currency"
   }).format(Number(amount || 0));
+}
+
+function formatPlanPrice(plan) {
+  return plan?.pricing?.displayPrice || formatCurrency(plan.price, plan.currency);
 }
 
 function formatDate(value) {
@@ -39,18 +46,6 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium"
   }).format(new Date(value));
-}
-
-function isActiveEntitlement(entitlement) {
-  if (!entitlement || entitlement.revokedAt) {
-    return false;
-  }
-
-  if (!entitlement.expiresAt) {
-    return true;
-  }
-
-  return new Date(entitlement.expiresAt).getTime() > Date.now();
 }
 
 function loadRazorpayScript() {
@@ -67,6 +62,18 @@ function loadRazorpayScript() {
     script.onerror = () => reject(new Error("Unable to load Razorpay checkout."));
     document.body.appendChild(script);
   });
+}
+
+function DashboardAvatar({ initial, src }) {
+  return (
+    <div className="dashboard-avatar" aria-hidden="true">
+      {src ? (
+        <img alt="" referrerPolicy="no-referrer" src={src} />
+      ) : (
+        initial
+      )}
+    </div>
+  );
 }
 
 export function UserDashboard() {
@@ -126,15 +133,11 @@ export function UserDashboard() {
   }, [auth.ready, auth.token]);
 
   const purchasedPrompts = useMemo(
-    () =>
-      entitlements.filter(
-        (entitlement) =>
-          entitlement.type === "single_prompt" &&
-          entitlement.prompt &&
-          isActiveEntitlement(entitlement)
-      ),
-    [entitlements]
+    () => buildUnlockedPromptItems({ entitlements, orders }),
+    [entitlements, orders]
   );
+  const dashboardPrompts = purchasedPrompts.slice(0, 10);
+  const hasMorePurchasedPrompts = purchasedPrompts.length > dashboardPrompts.length;
 
   const activeSubscription = useMemo(
     () =>
@@ -147,6 +150,9 @@ export function UserDashboard() {
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || plans[0];
   const paidOrderCount = orders.filter((order) => order.status === "paid").length;
+  const accountName = auth.user?.name || auth.user?.email || "SeyPrompt user";
+  const accountInitial = accountName.slice(0, 1).toUpperCase();
+  const accountAvatarUrl = auth.user?.avatarUrl || "";
   const activeAccessLabel = activeSubscription
     ? activeSubscription.expiresAt
       ? `Active until ${formatDate(activeSubscription.expiresAt)}`
@@ -160,12 +166,18 @@ export function UserDashboard() {
 
     setCheckoutLoading(true);
     setError("");
+    trackEvent("subscription_checkout_started", {
+      plan_id: selectedPlan.id,
+      plan_slug: selectedPlan.slug || "",
+    });
 
     try {
       await loadRazorpayScript();
       const checkout = await createCheckout(auth.token, {
         type: "subscription",
-        planId: selectedPlan.id
+        planId: selectedPlan.id,
+        acceptedTerms: true,
+        termsVersion: POLICY_VERSION
       });
       const razorpay = checkout.razorpay;
 
@@ -184,6 +196,11 @@ export function UserDashboard() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature
+              });
+              trackEvent("subscription_activated", {
+                event_id: `subscription:${checkout.order.id}`,
+                plan_id: selectedPlan.id,
+                plan_slug: selectedPlan.slug || "",
               });
               await loadAccountPayments(auth.token);
               resolve();
@@ -214,7 +231,13 @@ export function UserDashboard() {
         instance.open();
       });
     } catch (checkoutError) {
-      setError(checkoutError.message || "Unable to start checkout.");
+      const message = checkoutError.message || "Unable to start checkout.";
+      setError(message);
+      trackEvent("checkout_failed", {
+        checkout_target: "subscription",
+        plan_id: selectedPlan.id,
+        reason: message,
+      });
     } finally {
       setCheckoutLoading(false);
     }
@@ -236,9 +259,7 @@ export function UserDashboard() {
     <div className="dashboard-workbench">
       <header className="dashboard-command-bar">
         <div className="dashboard-identity">
-          <div className="dashboard-avatar" aria-hidden="true">
-            {(auth.user?.name || auth.user?.email || "S").slice(0, 1).toUpperCase()}
-          </div>
+          <DashboardAvatar initial={accountInitial} src={accountAvatarUrl} />
           <div>
             <strong>{auth.user?.name || "Your account"}</strong>
             <span>{auth.user?.email}</span>
@@ -286,11 +307,11 @@ export function UserDashboard() {
               <strong>{activeSubscription ? "Active" : "Off"}</strong>
               <p>All-access</p>
             </div>
-            <div className="dashboard-stat-card">
+            <Link className="dashboard-stat-card dashboard-stat-link" href="/orders">
               <span><ReceiptText size={18} /></span>
               <strong>{paidOrderCount}</strong>
               <p>Paid orders</p>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -329,16 +350,17 @@ export function UserDashboard() {
                       {index === 0 ? <Crown size={16} /> : <Zap size={16} />}
                     </span>
                     <span>
-                      <strong>{formatCurrency(plan.price, plan.currency)} - {plan.name}</strong>
+                      <strong>{formatPlanPrice(plan)} - {plan.name}</strong>
                       <small>
                         {plan.durationDays >= 365
-                          ? `${formatCurrency(plan.price, plan.currency)}/year`
-                          : `${formatCurrency(plan.price, plan.currency)}/${plan.durationDays} days`}
+                          ? `${formatPlanPrice(plan)}/year`
+                          : `${formatPlanPrice(plan)}/${plan.durationDays} days`}
                       </small>
                     </span>
                   </label>
                 ))}
               </div>
+              <p className="dashboard-policy-note">* Terms and conditions apply.</p>
               <button
                 className="button dashboard-plan-submit"
                 disabled={checkoutLoading || Boolean(activeSubscription)}
@@ -368,12 +390,19 @@ export function UserDashboard() {
               <p className="eyebrow">Prompt shelf</p>
               <h2>Your unlocked prompts</h2>
             </div>
-            <Sparkles aria-hidden="true" size={22} />
+            {hasMorePurchasedPrompts ? (
+              <Link className="dashboard-view-all-link" href="/unlocked-prompts">
+                View all
+                <ArrowRight aria-hidden="true" size={15} />
+              </Link>
+            ) : (
+              <Sparkles aria-hidden="true" size={22} />
+            )}
           </div>
 
           {purchasedPrompts.length ? (
             <div className="dashboard-prompt-shelf">
-              {purchasedPrompts.map((entitlement) => (
+              {dashboardPrompts.map((entitlement) => (
                 <Link
                   className="dashboard-prompt-tile"
                   href={`/prompts/${entitlement.prompt.slug}`}

@@ -8,14 +8,15 @@ const siteUrl = (
 const staticPaths = [
   "/",
   "/prompts",
-  "/image-video-prompts",
   "/ai-prompt-guide",
   "/ai-tools",
   "/use-cases",
   "/about",
   "/contact",
   "/privacy-policy",
-  "/terms-of-use"
+  "/terms-of-use",
+  "/refund-policy",
+  "/shipping-policy"
 ];
 
 const fallbackCategories = [
@@ -63,6 +64,22 @@ function pathFromUrl(value) {
   }
 }
 
+function uniqueSitemapItems(items) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const item of items) {
+    if (!item.path || seen.has(item.path)) {
+      continue;
+    }
+
+    seen.add(item.path);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
 function normalizeSitemapData(payload) {
   const data = payload?.data || payload || {};
   const rootList = Array.isArray(payload) ? payload : [];
@@ -83,68 +100,98 @@ function normalizeSitemapData(payload) {
   const promptPaths = promptItems
     .map((item) => {
       if (typeof item === "string") {
-        return item.startsWith("/") ? item : `/prompts/${item}`;
+        return {
+          path: item.startsWith("/") ? item : `/prompts/${item}`,
+          updatedAt: ""
+        };
       }
 
       const path = item?.path || item?.url;
       const slug = item?.slug;
+      const resolvedPath = path ? pathFromUrl(path) : slug ? `/prompts/${slug}` : "";
 
-      if (path) {
-        return pathFromUrl(path);
-      }
-
-      return slug ? `/prompts/${slug}` : "";
+      return {
+        path: resolvedPath,
+        updatedAt: item?.updatedAt || item?.lastmod || item?.lastModified || ""
+      };
     })
-    .filter((path) => path.startsWith("/prompts/"));
+    .filter((item) => item.path.startsWith("/prompts/"));
 
   const categoryPaths = categoryItems
     .map((item) => {
       if (typeof item === "string") {
-        return item.startsWith("/") ? item : `/categories/${slugify(item)}`;
+        return {
+          path: item.startsWith("/") ? item : `/categories/${slugify(item)}`,
+          updatedAt: ""
+        };
       }
 
       const path = item?.path || item?.url;
       const slug = item?.slug || item?.categorySlug;
       const name = item?.name || item?.label || item?.title || item?.category;
+      const resolvedPath = path ? pathFromUrl(path) : slug || name ? `/categories/${slug || slugify(name)}` : "";
 
-      if (path) {
-        return pathFromUrl(path);
-      }
-
-      return slug || name ? `/categories/${slug || slugify(name)}` : "";
+      return {
+        path: resolvedPath,
+        updatedAt: item?.updatedAt || item?.lastmod || item?.lastModified || ""
+      };
     })
-    .filter((path) => path.startsWith("/categories/"));
+    .filter((item) => item.path.startsWith("/categories/"));
 
   return {
-    promptPaths: [...new Set(promptPaths)],
-    categoryPaths: [...new Set(categoryPaths)]
+    promptPaths: uniqueSitemapItems(promptPaths),
+    categoryPaths: uniqueSitemapItems(categoryPaths)
   };
 }
 
+let publicSitemapPathsPromise;
+
 async function getPublicSitemapPaths() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  if (publicSitemapPathsPromise) {
+    return publicSitemapPathsPromise;
+  }
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || siteUrl;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
 
-  try {
+  publicSitemapPathsPromise = (async () => {
     const response = await fetch(`${apiBaseUrl}/api/public/sitemap-data`, {
       signal: controller.signal
     });
 
     if (!response.ok) {
-      return [];
+      return {
+        promptPaths: [],
+        categoryPaths: fallbackCategories.map((category) => ({
+          path: `/categories/${slugify(category)}`,
+          updatedAt: ""
+        }))
+      };
     }
 
     const payload = await response.json();
     return normalizeSitemapData(payload);
-  } catch (_error) {
-    return {
-      promptPaths: [],
-      categoryPaths: fallbackCategories.map((category) => `/categories/${slugify(category)}`)
-    };
-  } finally {
+  })().catch((_error) => ({
+    promptPaths: [],
+    categoryPaths: fallbackCategories.map((category) => ({
+      path: `/categories/${slugify(category)}`,
+      updatedAt: ""
+    }))
+  })).finally(() => {
     clearTimeout(timeout);
-  }
+  });
+
+  return publicSitemapPathsPromise;
+}
+
+async function getSitemapLastModifiedByPath() {
+  const { promptPaths, categoryPaths } = await getPublicSitemapPaths();
+
+  return new Map([
+    ...promptPaths.map((item) => [item.path, item.updatedAt]),
+    ...categoryPaths.map((item) => [item.path, item.updatedAt])
+  ]);
 }
 
 /** @type {import('next-sitemap').IConfig} */
@@ -166,14 +213,21 @@ module.exports = {
     "/verify-email",
     "/dashboard",
     "/dashboard/*",
+    "/orders",
+    "/orders/*",
     "/profile",
     "/profile/*",
     "/saved",
-    "/saved-prompts"
+    "/saved/*",
+    "/saved-prompts",
+    "/unlocked-prompts",
+    "/unlocked-prompts/*"
   ],
   additionalPaths: async (config) => {
     const { promptPaths, categoryPaths } = await getPublicSitemapPaths();
-    const paths = [...staticPaths, ...categoryPaths, ...promptPaths];
+    const paths = [...staticPaths, ...categoryPaths, ...promptPaths].map((item) =>
+      typeof item === "string" ? item : item.path
+    );
 
     return Promise.all(
       paths.map((path) =>
@@ -181,10 +235,19 @@ module.exports = {
       )
     );
   },
-  transform: async (config, path) => ({
-    loc: path,
-    changefreq: path.startsWith("/prompts/") ? "monthly" : config.changefreq,
-    priority: path === "/" ? 1 : path.startsWith("/prompts") || path.startsWith("/categories") ? 0.8 : config.priority,
-    lastmod: new Date().toISOString()
-  })
+  transform: async (config, path) => {
+    const lastModifiedByPath = await getSitemapLastModifiedByPath();
+
+    return {
+      loc: path,
+      changefreq: path.startsWith("/prompts/") ? "monthly" : config.changefreq,
+      priority:
+        path === "/"
+          ? 1
+          : path.startsWith("/prompts") || path.startsWith("/categories")
+            ? 0.8
+            : config.priority,
+      lastmod: lastModifiedByPath.get(path) || new Date().toISOString()
+    };
+  }
 };

@@ -1,19 +1,23 @@
 "use client";
 
-import { Lock, Sparkles } from "lucide-react";
+import { Lock, LockOpen, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/CopyButton";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { PromptCheckoutModal } from "@/components/PromptCheckoutModal";
+import { useAccountAccess } from "@/components/account-access-provider";
 import { useUserAuth } from "@/components/user-auth-provider";
 import { fetchUserPrompt } from "@/lib/payments";
 import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 
 export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
   const auth = useUserAuth();
+  const { isPromptUnlocked } = useAccountAccess();
   const [currentPrompt, setCurrentPrompt] = useState(prompt);
+  const [loadingUnlockedPrompt, setLoadingUnlockedPrompt] = useState(false);
 
   const isPremium = getPromptPricingType(currentPrompt) === "premium";
+  const hasPremiumAccess = isPromptUnlocked(currentPrompt);
   const hasPromptText = Boolean(String(currentPrompt?.prompt || "").trim());
   const locked = isPremium && !hasPromptText;
 
@@ -36,6 +40,23 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
       active = false;
     };
   }, [auth.ready, auth.token, currentPrompt?.slug, hasPromptText]);
+
+  async function loadUnlockedPrompt() {
+    if (!auth.token || !currentPrompt?.slug) {
+      return;
+    }
+
+    setLoadingUnlockedPrompt(true);
+
+    try {
+      const nextPrompt = await fetchUserPrompt(auth.token, currentPrompt.slug);
+      setCurrentPrompt(nextPrompt);
+    } catch (_err) {
+      // Keep the locked placeholder visible if the authenticated prompt cannot be loaded.
+    } finally {
+      setLoadingUnlockedPrompt(false);
+    }
+  }
 
   if (!locked) {
     return (
@@ -85,12 +106,20 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
           <p>One-time unlock</p>
           <strong>{formatPromptPrice(currentPrompt)}</strong>
         </div>
-        <PromptCheckoutModal
-          onUnlocked={setCurrentPrompt}
-          prompt={currentPrompt}
-          triggerClassName="button"
-          triggerLabel="Unlock"
-        />
+        {hasPremiumAccess ? (
+          <button className="button" disabled={loadingUnlockedPrompt} onClick={loadUnlockedPrompt} type="button">
+            <LockOpen aria-hidden="true" size={16} />
+            {loadingUnlockedPrompt ? "Opening..." : "View unlocked"}
+          </button>
+        ) : (
+          <PromptCheckoutModal
+            initiallyUnlocked={hasPremiumAccess}
+            onUnlocked={setCurrentPrompt}
+            prompt={currentPrompt}
+            triggerClassName="button"
+            triggerLabel="Unlock"
+          />
+        )}
       </div>
       <p className="muted unlock-note">
         <Lock size={14} />

@@ -1,18 +1,20 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Eye, Lightbulb } from "lucide-react";
-import { fetchPromptBySlug, fetchPublicPrompts } from "@/lib/api";
+import { ArrowLeft, Lightbulb } from "lucide-react";
+import { fetchPromptBySlug, fetchPromptMetadataBySlug, fetchPublicPrompts } from "@/lib/api";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
 import { PromptLoginGate } from "@/components/PromptLoginGate";
 import { PremiumPromptUnlock } from "@/components/PremiumPromptUnlock";
+import { PromptDetailPriceBadge } from "@/components/prompt-detail-price-badge";
+import { ProtectedImage, ProtectedMediaFrame, ProtectedVideo } from "@/components/protected-media";
 import { RecordPromptView } from "@/components/record-prompt-view";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
 import {
   getPrimaryPromptCategory,
   getPromptCategories,
   getPromptCategoryLabel
 } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
-import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import {
   absoluteUrl,
   breadcrumbSchema,
@@ -29,39 +31,6 @@ function descriptionFromPrompt(prompt) {
 
 function getPromptTips(prompt) {
   return String(prompt?.tips || prompt?.notes || "").trim();
-}
-
-function getSampleOutputPreview(prompt) {
-  const sampleOutput = prompt?.sampleOutput;
-
-  if (sampleOutput?.type === "image") {
-    const value =
-      sampleOutput.watermarkedPreviewUrl || prompt?.watermarkedPreviewUrl || sampleOutput.value || "";
-
-    return value ? { type: "image", value } : null;
-  }
-
-  if (sampleOutput?.type === "video" && sampleOutput.value) {
-    return { type: "video", value: sampleOutput.value };
-  }
-
-  const fallbackImage = String(prompt?.watermarkedPreviewUrl || prompt?.image || prompt?.thumbnail || "").trim();
-
-  return fallbackImage ? { type: "image", value: fallbackImage } : null;
-}
-
-function formatPromptViews(viewsCount) {
-  const views = Math.max(Number(viewsCount || 0), 0);
-
-  if (views >= 1000000) {
-    return `${(views / 1000000).toFixed(views >= 10000000 ? 0 : 1)}M views`;
-  }
-
-  if (views >= 1000) {
-    return `${(views / 1000).toFixed(views >= 10000 ? 0 : 1)}K views`;
-  }
-
-  return `${views} ${views === 1 ? "view" : "views"}`;
 }
 
 function SampleOutputDisplay({ prompt }) {
@@ -90,24 +59,30 @@ function SampleOutputDisplay({ prompt }) {
       sampleOutput.watermarkedPreviewUrl || prompt.watermarkedPreviewUrl || sampleOutput.value;
 
     return (
-      <div className="sample-media-box">
-        <img
+      <ProtectedMediaFrame className="sample-media-box">
+        <ProtectedImage
           alt={sampleOutput.fileName || `${prompt.title} sample output`}
           className="sample-output-image"
+          fetchPriority="high"
+          height={900}
+          loading="eager"
+          sizes="(max-width: 760px) 100vw, (max-width: 1180px) 62vw, 900px"
           src={previewUrl}
+          width={1200}
+          widths={[480, 720, 960, 1200, 1440]}
         />
-      </div>
+      </ProtectedMediaFrame>
     );
   }
 
   if (sampleOutput.type === "video") {
+    const previewUrl =
+      sampleOutput.watermarkedPreviewUrl || prompt.watermarkedPreviewUrl || sampleOutput.value;
+
     return (
-      <div className="sample-media-box">
-        <video className="sample-output-video" controls preload="metadata" src={sampleOutput.value}>
-          <a href={sampleOutput.value}>Open video</a>
-        </video>
-        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
-      </div>
+      <ProtectedMediaFrame className="sample-media-box">
+        <ProtectedVideo className="sample-output-video" controls preload="metadata" src={previewUrl} />
+      </ProtectedMediaFrame>
     );
   }
 
@@ -124,7 +99,6 @@ function SampleOutputDisplay({ prompt }) {
         >
           {label}
         </a>
-        {sampleOutput.fileName ? <p className="muted">{sampleOutput.fileName}</p> : null}
       </div>
     );
   }
@@ -171,7 +145,7 @@ async function fetchRelatedPrompts(prompt) {
 export async function generateMetadata({ params }) {
   try {
     const { slug } = await params;
-    const prompt = await fetchPromptBySlug(slug);
+    const prompt = await fetchPromptMetadataBySlug(slug);
     return createPromptMetadata(prompt);
   } catch (_error) {
     return {
@@ -197,7 +171,6 @@ export default async function PromptDetailPage({ params }) {
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
   const promptTips = getPromptTips(prompt);
-  const heroPreview = getSampleOutputPreview(prompt);
   const schemas = [
     promptSchema(prompt),
     breadcrumbSchema([
@@ -244,36 +217,12 @@ export default async function PromptDetailPage({ params }) {
                     {tool}
                   </span>
                 ))}
-                <span className="pill pill-alt prompt-views-pill">
-                  <Eye size={14} aria-hidden="true" />
-                  {formatPromptViews(prompt.viewsCount)}
-                </span>
+                <SavedPromptButton className="prompt-detail-save" prompt={prompt} />
               </div>
             </div>
 
-            <span className={`prompt-hero-price-badge price-badge price-badge-${getPromptPricingType(prompt)}`}>
-              {formatPromptPrice(prompt)}
-            </span>
-            <div className="prompt-hero-preview" aria-label="Prompt sample preview">
-              {heroPreview?.type === "image" ? (
-                <img alt={`${prompt.title} sample preview`} src={heroPreview.value} />
-              ) : heroPreview?.type === "video" ? (
-                <video
-                  aria-label={`${prompt.title} video preview`}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                  src={heroPreview.value}
-                />
-              ) : (
-                <div className="prompt-hero-preview-empty">
-                  <CategoryIcon size={34} />
-                  <span>Preview pending</span>
-                </div>
-              )}
-              <span className="prompt-hero-preview-caption">Copy, adapt, generate</span>
+            <div className="prompt-hero-visual">
+              <PromptDetailPriceBadge prompt={prompt} />
             </div>
           </header>
 

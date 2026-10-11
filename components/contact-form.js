@@ -87,6 +87,9 @@ export function ContactForm() {
         <label htmlFor="topic">What do you need?</label>
         <select defaultValue="Custom Prompts" id="topic" name="topic">
           <option>Custom Prompts</option>
+          <option>Payment or Subscription Support</option>
+          <option>Prompt Unlock or Credit Issue</option>
+          <option>Privacy Request</option>
           <option>AI Consultation</option>
           <option>Other</option>
         </select>

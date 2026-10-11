@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, BookmarkPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
@@ -174,7 +174,7 @@ export function SavedPromptButton({ prompt, className = "", iconOnly = false }) 
         {saved ? (
           <BookmarkCheck aria-hidden="true" size={16} />
         ) : (
-          <Bookmark aria-hidden="true" size={16} />
+          <BookmarkPlus aria-hidden="true" size={16} />
         )}
         <span className={iconOnly ? "visually-hidden" : ""}>
           {loading ? "Saving..." : saved ? "Saved" : "Save"}

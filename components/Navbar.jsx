@@ -4,9 +4,11 @@ import {
   BookmarkCheck,
   ChevronDown,
   LayoutDashboard,
+  Library,
   LogIn,
   LogOut,
   Menu,
+  ReceiptText,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -32,6 +34,18 @@ const mobileLinks = [...primaryLinks, ...moreLinks];
 
 function isActive(pathname, href) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+function AccountAvatar({ initial, src }) {
+  return (
+    <span className="navbar-account-avatar" aria-hidden="true">
+      {src ? (
+        <img alt="" referrerPolicy="no-referrer" src={src} />
+      ) : (
+        initial
+      )}
+    </span>
+  );
 }
 
 function AccountDropdownContent({ auth, closeMenu }) {
@@ -62,6 +76,24 @@ function AccountDropdownContent({ auth, closeMenu }) {
         <BookmarkCheck aria-hidden="true" size={16} />
         Saved Prompts
       </Link>
+      <Link
+        className="navbar-user-dropdown-item"
+        href="/unlocked-prompts"
+        onClick={closeMenu}
+        role="menuitem"
+      >
+        <Library aria-hidden="true" size={16} />
+        Unlocked Prompts
+      </Link>
+      <Link
+        className="navbar-user-dropdown-item"
+        href="/orders"
+        onClick={closeMenu}
+        role="menuitem"
+      >
+        <ReceiptText aria-hidden="true" size={16} />
+        Orders
+      </Link>
       <button
         className="navbar-user-dropdown-item"
         onClick={() => {
@@ -88,6 +120,7 @@ export function Navbar() {
   const moreActive = moreLinks.some((link) => isActive(pathname, link.href));
   const accountName = auth.user?.name?.trim() || auth.user?.email?.trim() || "Account";
   const accountInitial = accountName.slice(0, 1).toUpperCase();
+  const accountAvatarUrl = auth.user?.avatarUrl || "";
 
   function closeMenu() {
     setOpen(false);
@@ -157,16 +190,14 @@ export function Navbar() {
                   aria-expanded={userMenuOpen}
                   aria-haspopup="menu"
                   aria-label="Open account menu"
-                  className={`navbar-account-button${userMenuOpen || isActive(pathname, "/dashboard") || isActive(pathname, "/saved") ? " active" : ""}`}
+                  className={`navbar-account-button${userMenuOpen || isActive(pathname, "/dashboard") || isActive(pathname, "/saved") || isActive(pathname, "/unlocked-prompts") || isActive(pathname, "/orders") ? " active" : ""}`}
                   onClick={() => {
                     setUserMenuOpen((current) => !current);
                     setMoreMenuOpen(false);
                   }}
                   type="button"
                 >
-                  <span className="navbar-account-avatar" aria-hidden="true">
-                    {accountInitial}
-                  </span>
+                  <AccountAvatar initial={accountInitial} src={accountAvatarUrl} />
                   <span className="navbar-account-label">Account</span>
                   <ChevronDown aria-hidden="true" size={15} />
                 </button>
@@ -236,6 +267,20 @@ export function Navbar() {
                   onClick={closeMenu}
                 >
                   Saved Prompts
+                </Link>
+                <Link
+                  className={`mobile-nav-link${isActive(pathname, "/unlocked-prompts") ? " active" : ""}`}
+                  href="/unlocked-prompts"
+                  onClick={closeMenu}
+                >
+                  Unlocked Prompts
+                </Link>
+                <Link
+                  className={`mobile-nav-link${isActive(pathname, "/orders") ? " active" : ""}`}
+                  href="/orders"
+                  onClick={closeMenu}
+                >
+                  Orders
                 </Link>
                 <button
                   className="mobile-nav-link mobile-logout-button"

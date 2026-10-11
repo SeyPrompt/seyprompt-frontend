@@ -25,9 +25,9 @@ const REGION_CURRENCY_MAP = {
   US: "USD",
   GB: "GBP",
   EU: "EUR",
-  NZ: "NZD",
-  DEFAULT: "USD"
+  NZ: "NZD"
 };
+const CURRENCY_OPTIONS = ["INR", "USD", "GBP", "EUR", "NZD"];
 
 function normalizeList(value) {
   return String(value || "")
@@ -51,6 +51,10 @@ function normalizeCategoryInput(value) {
 
 function currencyFractionDigits(currency) {
   return ["JPY", "KRW"].includes(String(currency || "").toUpperCase()) ? 0 : 2;
+}
+
+function minimumCheckoutAmount(currency) {
+  return currencyFractionDigits(currency) === 0 ? 1 : 1;
 }
 
 function formatInrAmount(amount) {
@@ -124,6 +128,11 @@ function formatInrApproximation(row, fxRates) {
 
 function getRegionLabel(region) {
   return PRICING_REGION_OPTIONS.find((option) => option.value === region)?.label || region;
+}
+
+function getCurrencyForRegion(region, fallback = "USD") {
+  const normalizedRegion = String(region || "").trim().toUpperCase();
+  return REGION_CURRENCY_MAP[normalizedRegion] || String(fallback || "USD").trim().toUpperCase();
 }
 
 function getUsedRegions(rows, excludeRowId) {
@@ -208,6 +217,22 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Description must be 1,000 characters or fewer.";
   }
 
+  if (payload.seoTitle.length > 70) {
+    return "SEO title must be 70 characters or fewer.";
+  }
+
+  if (payload.seoDescription.length > 180) {
+    return "SEO description must be 180 characters or fewer.";
+  }
+
+  if (payload.shareImage && !/^https?:\/\//i.test(payload.shareImage)) {
+    return "Sharing image must be an absolute HTTP or HTTPS URL.";
+  }
+
+  if (payload.shareImageAlt.length > 180) {
+    return "Sharing image alt text must be 180 characters or fewer.";
+  }
+
   if (payload.tips.length > 5000) {
     return "Tips must be 5,000 characters or fewer.";
   }
@@ -273,6 +298,10 @@ function validatePrompt(payload, sampleOutputFile) {
       ) {
         return "Each regional price needs region, currency, and a positive amount.";
       }
+
+      if (Number(regionalPrice.amount) < minimumCheckoutAmount(regionalPrice.currency)) {
+        return `${regionalPrice.currency} checkout amount must be at least ${minimumCheckoutAmount(regionalPrice.currency)}.`;
+      }
     }
   }
 
@@ -336,7 +365,7 @@ export function PromptForm({ mode, prompt }) {
   const slugEditedRef = useRef(Boolean(prompt?.slug));
   const initialSampleOutput = getInitialSampleOutput(prompt);
   const initialPreviewUrl =
-    initialSampleOutput.type === "image"
+    initialSampleOutput.type === "image" || initialSampleOutput.type === "video"
       ? initialSampleOutput.watermarkedPreviewUrl || initialSampleOutput.value
       : "";
   const initialCategories = getPromptCategories(prompt);
@@ -509,7 +538,7 @@ export function PromptForm({ mode, prompt }) {
           return {
             ...row,
             region: nextRegion,
-            currency: REGION_CURRENCY_MAP[nextRegion] || row.currency
+            currency: getCurrencyForRegion(nextRegion, row.currency)
           };
         }
 
@@ -534,7 +563,7 @@ export function PromptForm({ mode, prompt }) {
         {
           id: `new-${Date.now()}`,
           region: nextRegion.value,
-          currency: REGION_CURRENCY_MAP[nextRegion.value] || "USD",
+          currency: getCurrencyForRegion(nextRegion.value),
           amount: 0,
           isActive: false
         }
@@ -551,9 +580,7 @@ export function PromptForm({ mode, prompt }) {
   function buildRegionalPricesPayload() {
     return regionalPriceRows.map((row) => ({
       region: String(row.region || "").trim().toUpperCase(),
-      currency:
-        REGION_CURRENCY_MAP[String(row.region || "").trim().toUpperCase()] ||
-        String(row.currency || "").trim().toUpperCase(),
+      currency: getCurrencyForRegion(row.region, row.currency),
       amount: Number(row.amount || 0),
       isActive: Boolean(row.isActive)
     }));
@@ -604,6 +631,10 @@ export function PromptForm({ mode, prompt }) {
       title: String(formData.get("title") || "").trim(),
       slug: String(formData.get("slug") || "").trim(),
       description: String(formData.get("description") || "").trim(),
+      seoTitle: String(formData.get("seoTitle") || "").trim(),
+      seoDescription: String(formData.get("seoDescription") || "").trim(),
+      shareImage: String(formData.get("shareImage") || "").trim(),
+      shareImageAlt: String(formData.get("shareImageAlt") || "").trim(),
       tips: String(formData.get("tips") || "").trim(),
       notes: String(formData.get("notes") || "").trim(),
       image: String(formData.get("image") || "").trim(),
@@ -696,6 +727,10 @@ export function PromptForm({ mode, prompt }) {
       title: payload.title,
       slug: payload.slug,
       description: payload.description,
+      seoTitle: payload.seoTitle,
+      seoDescription: payload.seoDescription,
+      shareImage: payload.shareImage,
+      shareImageAlt: payload.shareImageAlt,
       tips: payload.tips,
       notes: payload.notes,
       image: payload.image,
@@ -751,6 +786,10 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("title", payload.title);
     uploadFormData.append("slug", payload.slug);
     uploadFormData.append("description", payload.description);
+    uploadFormData.append("seoTitle", payload.seoTitle);
+    uploadFormData.append("seoDescription", payload.seoDescription);
+    uploadFormData.append("shareImage", payload.shareImage);
+    uploadFormData.append("shareImageAlt", payload.shareImageAlt);
     uploadFormData.append("tips", payload.tips);
     uploadFormData.append("notes", payload.notes);
     uploadFormData.append("image", payload.image);
@@ -922,6 +961,56 @@ export function PromptForm({ mode, prompt }) {
         />
         <span className="field-hint muted">Shown publicly. Up to 1,000 characters.</span>
       </div>
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="seoTitle">SEO title optional</label>
+          <input
+            defaultValue={prompt?.seoTitle || ""}
+            id="seoTitle"
+            maxLength={70}
+            name="seoTitle"
+            placeholder={prompt?.title || "Prompt title"}
+          />
+          <span className="field-hint muted">Defaults to the prompt title.</span>
+        </div>
+        <div className="field">
+          <label htmlFor="seoDescription">SEO description optional</label>
+          <textarea
+            defaultValue={prompt?.seoDescription || ""}
+            id="seoDescription"
+            maxLength={180}
+            name="seoDescription"
+            placeholder={prompt?.description || "Short public summary for social previews."}
+          />
+          <span className="field-hint muted">Defaults to the public description.</span>
+        </div>
+      </div>
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="shareImage">Sharing image optional</label>
+          <input
+            defaultValue={prompt?.shareImage || ""}
+            id="shareImage"
+            name="shareImage"
+            placeholder="https://example.com/social-preview.jpg"
+            type="url"
+          />
+          <span className="field-hint muted">
+            Defaults to the image sample or video poster when available.
+          </span>
+        </div>
+        <div className="field">
+          <label htmlFor="shareImageAlt">Sharing image alt text optional</label>
+          <input
+            defaultValue={prompt?.shareImageAlt || ""}
+            id="shareImageAlt"
+            maxLength={180}
+            name="shareImageAlt"
+            placeholder={`${prompt?.title || "Prompt"} sample output`}
+          />
+          <span className="field-hint muted">Defaults to the prompt title and sample output.</span>
+        </div>
+      </div>
       <div className="field">
         <label className="field-label-with-icon" htmlFor="tips">
           <Lightbulb aria-hidden="true" size={16} />
@@ -989,16 +1078,25 @@ export function PromptForm({ mode, prompt }) {
         <input name="sampleOutputBytes" readOnly type="hidden" value={initialSampleOutput.bytes} />
         {initialPreviewUrl ? (
           <div className="field admin-sample-preview">
-            <label>Public image preview</label>
+            <label>Public sample preview</label>
             <div className="sample-media-box">
-              <img
-                alt={
-                  initialSampleOutput.fileName ||
-                  `${prompt?.title || "Prompt"} public sample preview`
-                }
-                className="sample-output-image"
-                src={initialPreviewUrl}
-              />
+              {initialSampleOutput.type === "video" ? (
+                <video
+                  className="sample-output-video"
+                  controls
+                  preload="metadata"
+                  src={initialPreviewUrl}
+                />
+              ) : (
+                <img
+                  alt={
+                    initialSampleOutput.fileName ||
+                    `${prompt?.title || "Prompt"} public sample preview`
+                  }
+                  className="sample-output-image"
+                  src={initialPreviewUrl}
+                />
+              )}
             </div>
           </div>
         ) : null}
@@ -1273,17 +1371,20 @@ export function PromptForm({ mode, prompt }) {
                       </select>
                     </td>
                     <td>
-		                      <select
-		                        aria-label="Pricing currency"
-		                        disabled
-	                        value={row.currency}
-	                      >
-                        <option value="INR">INR</option>
-                        <option value="USD">USD</option>
-                        <option value="GBP">GBP</option>
-                        <option value="EUR">EUR</option>
-                        <option value="NZD">NZD</option>
-                      </select>
+			                      <select
+			                        aria-label="Pricing currency"
+			                        disabled={monetizationDisabled || row.region !== "DEFAULT"}
+                        onChange={(event) =>
+                          updateRegionalPriceRow(row.id, "currency", event.target.value)
+                        }
+		                        value={row.currency}
+		                      >
+	                        {CURRENCY_OPTIONS.map((currencyOption) => (
+                          <option key={currencyOption} value={currencyOption}>
+                            {currencyOption}
+                          </option>
+                        ))}
+	                      </select>
                     </td>
 	                    <td>
 	                      <input

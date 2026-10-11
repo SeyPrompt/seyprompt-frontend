@@ -13,9 +13,11 @@ function getToolIcon(tool) {
   return toolIconPaths[String(tool || "").trim().toLowerCase()];
 }
 
-export function ToolBadges({ tools = [], compact = false }) {
-  const visibleTools = tools.filter(Boolean).slice(0, compact ? 2 : 3);
-  const remainingCount = Math.max(tools.filter(Boolean).length - visibleTools.length, 0);
+export function ToolBadges({ tools = [], compact = false, maxVisible }) {
+  const cleanTools = tools.filter(Boolean);
+  const visibleCount = maxVisible ?? (compact ? 2 : 3);
+  const visibleTools = cleanTools.slice(0, visibleCount);
+  const remainingCount = Math.max(cleanTools.length - visibleTools.length, 0);
 
   if (!visibleTools.length) {
     return null;

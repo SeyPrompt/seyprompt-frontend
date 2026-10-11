@@ -13,6 +13,7 @@ import {
 } from "@/lib/user-auth";
 import { useUserAuth } from "@/components/user-auth-provider";
 import { GoogleLoginButton } from "@/components/google-login-button";
+import { trackEvent } from "@/lib/analytics";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const otpPattern = /^\d{6}$/;
@@ -196,6 +197,7 @@ export function RegisterForm() {
     try {
       const result = await loginWithGoogle(idToken);
       auth.login(result);
+      trackEvent("signup_completed", { auth_provider: "google" });
       router.replace(safeRedirectTo);
     } catch (error) {
       handleLoginError(form, error);
@@ -236,6 +238,7 @@ export function RegisterForm() {
 
     try {
       const result = await registerUser(payload);
+      trackEvent("signup_started", { auth_provider: "password" });
       form.setSuccess(
         result.message || "OTP sent. Please verify your email to complete registration."
       );
@@ -331,6 +334,7 @@ export function VerifyEmailForm() {
     try {
       const result = await verifyEmail(payload);
       auth.login(result);
+      trackEvent("signup_completed", { auth_provider: "password" });
       router.replace("/dashboard");
     } catch (error) {
       form.handleError(error);

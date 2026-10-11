@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, CalendarDays, ChevronDown, Search, X } from "lucide-react";
+import { ArrowUp, CalendarDays, ChevronDown, Search, X } from "lucide-react";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
-import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
+import { useAccountAccess } from "@/components/account-access-provider";
+import { ProtectedImage, ProtectedVideo } from "@/components/protected-media";
+import { SavedPromptButton } from "@/components/saved-prompt-button";
+import { formatPromptPriceParts, getPromptPricingType } from "@/lib/prompt-pricing";
 import {
   dedupePrompts,
   getPromptImageSource,
@@ -168,35 +171,51 @@ async function fetchPromptPage(source, page, filters) {
   return normalizePromptList(await response.json());
 }
 
-function VisualPromptCard({ prompt, index }) {
+function VisualPromptCard({ isUnlocked = false, prompt, index }) {
   const title = prompt?.title || "Untitled prompt";
   const previewImage = getPromptImageSource(prompt);
   const videoSource = getPromptVideoSource(prompt);
   const createdDate = formatPromptCreatedDate(prompt);
   const pricingType = getPromptPricingType(prompt);
+  const displayPrice = formatPromptPriceParts(prompt);
 
   return (
     <article className={`home-reference-card home-reference-card-${index % 6}${videoSource ? " has-video" : ""}`}>
-      <PromptAccessLink className="home-reference-card-link" href={`/prompts/${prompt.slug}`}>
+      <PromptAccessLink
+        className="home-reference-card-link"
+        href={`/prompts/${prompt.slug}`}
+      >
         {videoSource ? (
-          <video
+          <ProtectedVideo
             autoPlay
             loop
             muted
             playsInline
             poster={previewImage}
+            posterOptions={{ crop: "fill" }}
+            posterWidth={480}
             preload={index < 8 ? "auto" : "metadata"}
             src={videoSource}
           />
         ) : (
-          <img
+          <ProtectedImage
             alt={prompt?.sampleOutput?.fileName || `${title} preview`}
+            fetchPriority={index < 4 ? "high" : "auto"}
+            height={720}
             loading={index < 8 ? "eager" : "lazy"}
+            sizes="(max-width: 560px) 100vw, (max-width: 860px) 50vw, (max-width: 1180px) 33vw, 25vw"
             src={previewImage}
+            width={640}
+            widths={[320, 480, 640, 800]}
           />
         )}
         <span className="home-reference-card-shade" aria-hidden="true" />
-        <span className={`price-badge home-reference-price-badge price-badge-${pricingType}`}>{formatPromptPrice(prompt)}</span>
+        <span className={`price-badge home-reference-price-badge price-badge-${pricingType}${isUnlocked && pricingType === "premium" ? " price-badge-owned" : ""}`}>
+          <span>
+            <span className="price-badge-amount">{displayPrice.label}</span>
+            {displayPrice.suffix ? <small>{displayPrice.suffix}</small> : null}
+          </span>
+        </span>
         <span className="home-reference-card-copy">
           <span className="home-reference-card-title">{title} ›</span>
           {createdDate ? (
@@ -206,10 +225,8 @@ function VisualPromptCard({ prompt, index }) {
             </span>
           ) : null}
         </span>
-        <span className="home-reference-save" aria-label="Save prompt">
-          <Bookmark size={18} aria-hidden="true" />
-        </span>
       </PromptAccessLink>
+      <SavedPromptButton className="home-reference-save" iconOnly prompt={prompt} />
     </article>
   );
 }
@@ -237,12 +254,14 @@ function HeroVideoRail({ videos = [] }) {
           href={`/prompts/${prompt.slug}`}
           key={prompt.slug}
         >
-          <video
+          <ProtectedVideo
             autoPlay
             loop
             muted
             playsInline
             poster={prompt.image}
+            posterOptions={{ crop: "fill" }}
+            posterWidth={360}
             preload={index < 2 ? "auto" : "metadata"}
             src={prompt.video}
           />
@@ -261,6 +280,7 @@ export default function HomeVisualFeed({
   initialPrompts = [],
   trendings = []
 }) {
+  const { isPromptUnlocked } = useAccountAccess();
   const initialVisualPrompts = useMemo(
     () => dedupePrompts(initialPrompts).filter(isVisualPrompt),
     [initialPrompts]
@@ -282,6 +302,7 @@ export default function HomeVisualFeed({
   const [activePricing, setActivePricing] = useState("");
   const [heroBackground, setHeroBackground] = useState("");
   const [columnCount, setColumnCount] = useState(4);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const sentinelRef = useRef(null);
   const activeFilters = useMemo(
     () => ({
@@ -318,6 +339,17 @@ export default function HomeVisualFeed({
     window.addEventListener("resize", syncColumnCount);
 
     return () => window.removeEventListener("resize", syncColumnCount);
+  }, []);
+
+  useEffect(() => {
+    function syncBackToTop() {
+      setShowBackToTop(window.scrollY > 560);
+    }
+
+    syncBackToTop();
+    window.addEventListener("scroll", syncBackToTop, { passive: true });
+
+    return () => window.removeEventListener("scroll", syncBackToTop);
   }, []);
 
   useEffect(() => {
@@ -624,6 +656,7 @@ export default function HomeVisualFeed({
                     {column.map(({ prompt, index }) => (
                       <VisualPromptCard
                         index={index}
+                        isUnlocked={isPromptUnlocked(prompt)}
                         key={prompt._id || prompt.id || prompt.slug}
                         prompt={prompt}
                       />
@@ -650,6 +683,14 @@ export default function HomeVisualFeed({
           <div id="home-reference-feed-end" />
         </div>
       </section>
+      <button
+        aria-label="Back to top"
+        className={`home-back-to-top${showBackToTop ? " visible" : ""}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        type="button"
+      >
+        <ArrowUp size={19} aria-hidden="true" />
+      </button>
     </>
   );
 }

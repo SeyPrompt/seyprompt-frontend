@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,10 +71,14 @@ const nextConfig = {
       "/verify-email",
       "/dashboard",
       "/dashboard/:path*",
+      "/orders",
+      "/orders/:path*",
       "/profile",
       "/profile/:path*",
       "/saved",
-      "/saved-prompts"
+      "/saved-prompts",
+      "/unlocked-prompts",
+      "/unlocked-prompts/:path*"
     ].map((source) => ({
       source,
       headers: privateSeoHeaders
@@ -81,4 +86,14 @@ const nextConfig = {
   }
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT || "seyprompt-frontend",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  disableLogger: true,
+});

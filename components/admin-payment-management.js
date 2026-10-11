@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 const EMPTY_PLAN = {
   name: "",
@@ -13,8 +13,32 @@ const EMPTY_PLAN = {
   durationDays: "30",
   badge: "",
   sortOrder: "0",
-  isActive: true
+  isActive: true,
+  regionalPrices: []
 };
+
+const DEFAULT_PLAN_REGIONAL_PRICES = [
+  { region: "IN", currency: "INR", amount: 99, isActive: true },
+  { region: "DEFAULT", currency: "USD", amount: 0, isActive: false }
+];
+
+const PRICING_REGION_OPTIONS = [
+  { value: "IN", label: "India" },
+  { value: "US", label: "United States" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "EU", label: "Europe" },
+  { value: "NZ", label: "New Zealand" },
+  { value: "DEFAULT", label: "Default / International" }
+];
+
+const REGION_CURRENCY_MAP = {
+  IN: "INR",
+  US: "USD",
+  GB: "GBP",
+  EU: "EUR",
+  NZ: "NZD"
+};
+const CURRENCY_OPTIONS = ["INR", "USD", "GBP", "EUR", "NZD"];
 
 const EMPTY_COUPON = {
   code: "",
@@ -40,9 +64,109 @@ const EMPTY_GRANT = {
 function formatCurrency(amount, currency = "INR") {
   return new Intl.NumberFormat("en-IN", {
     currency: currency || "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: Number(amount || 0) % 1 === 0 ? 0 : 2,
     style: "currency"
   }).format(Number(amount || 0));
+}
+
+function currencyFractionDigits(currency) {
+  return ["JPY", "KRW"].includes(String(currency || "").toUpperCase()) ? 0 : 2;
+}
+
+function minimumCheckoutAmount(currency) {
+  return currencyFractionDigits(currency) === 0 ? 1 : 1;
+}
+
+function normalizeRegionalPriceForAdmin(price) {
+  const currency = String(price?.currency || "").toUpperCase();
+  const digits = currencyFractionDigits(currency);
+  const amount =
+    price?.amount !== undefined && price?.amount !== null
+      ? Number(price.amount)
+      : Number(price?.amountMinor || 0) / 10 ** digits;
+
+  return {
+    region: String(price?.region || "").toUpperCase(),
+    currency,
+    amount: Number.isFinite(amount) ? amount : 0,
+    isActive: price?.isActive === true
+  };
+}
+
+function getInitialPlanRegionalPrices(plan) {
+  const prices =
+    Array.isArray(plan?.regionalPrices) && plan.regionalPrices.length
+      ? plan.regionalPrices
+      : DEFAULT_PLAN_REGIONAL_PRICES.map((price) => ({
+          ...price,
+          amount: price.region === "IN" ? Number(plan?.price || price.amount || 0) : price.amount
+        }));
+
+  return prices.map((price, index) => ({
+    id: `${price?.region || "region"}-${index}`,
+    ...normalizeRegionalPriceForAdmin(price)
+  }));
+}
+
+function getUsedRegions(rows, excludeRowId) {
+  return new Set(
+    rows
+      .filter((row) => row.id !== excludeRowId)
+      .map((row) => String(row.region || "").toUpperCase())
+      .filter(Boolean)
+  );
+}
+
+function getNextAvailableRegion(rows) {
+  const usedRegions = getUsedRegions(rows);
+  return PRICING_REGION_OPTIONS.find((option) => !usedRegions.has(option.value));
+}
+
+function findDuplicateRegion(rows) {
+  const seen = new Set();
+
+  for (const row of rows) {
+    const region = String(row.region || "").toUpperCase();
+
+    if (!region) {
+      continue;
+    }
+
+    if (seen.has(region)) {
+      return region;
+    }
+
+    seen.add(region);
+  }
+
+  return "";
+}
+
+function getRegionLabel(region) {
+  return PRICING_REGION_OPTIONS.find((option) => option.value === region)?.label || region;
+}
+
+function getCurrencyForRegion(region, fallback = "USD") {
+  const normalizedRegion = String(region || "").trim().toUpperCase();
+  return REGION_CURRENCY_MAP[normalizedRegion] || String(fallback || "USD").trim().toUpperCase();
+}
+
+function summarizePlanPrice(plan) {
+  const activePrices = Array.isArray(plan.regionalPrices)
+    ? plan.regionalPrices.filter((price) => price.isActive)
+    : [];
+
+  if (!activePrices.length) {
+    return formatCurrency(plan.price, plan.currency);
+  }
+
+  return activePrices
+    .slice(0, 2)
+    .map((price) => {
+      const normalized = normalizeRegionalPriceForAdmin(price);
+      return `${getRegionLabel(normalized.region)} ${formatCurrency(normalized.amount, normalized.currency)}`;
+    })
+    .join(" / ");
 }
 
 function formatDate(value) {
@@ -88,7 +212,7 @@ function boolFromSelect(value) {
   return String(value) === "true";
 }
 
-function buildPlanPayload(formData) {
+function buildPlanPayload(formData, regionalPriceRows = []) {
   return {
     name: String(formData.get("name") || "").trim(),
     slug: String(formData.get("slug") || "").trim(),
@@ -98,7 +222,13 @@ function buildPlanPayload(formData) {
     durationDays: Number(formData.get("durationDays") || 0),
     badge: String(formData.get("badge") || "").trim(),
     sortOrder: Number(formData.get("sortOrder") || 0),
-    isActive: boolFromSelect(formData.get("isActive"))
+    isActive: boolFromSelect(formData.get("isActive")),
+    regionalPrices: regionalPriceRows.map((row) => ({
+      region: String(row.region || "").trim().toUpperCase(),
+      currency: getCurrencyForRegion(row.region, row.currency),
+      amount: Number(row.amount || 0),
+      isActive: Boolean(row.isActive)
+    }))
   };
 }
 
@@ -151,13 +281,113 @@ export function AdminPlanManager({ initialPlans = [] }) {
   const [error, setError] = useState("");
   const [loadingAction, setLoadingAction] = useState("");
   const formValues = editingPlan || EMPTY_PLAN;
+  const [regionalPriceRows, setRegionalPriceRows] = useState(() =>
+    getInitialPlanRegionalPrices(EMPTY_PLAN)
+  );
+
+  useEffect(() => {
+    setRegionalPriceRows(getInitialPlanRegionalPrices(editingPlan || EMPTY_PLAN));
+  }, [editingPlan]);
+
+  function updateRegionalPriceRow(rowId, field, value) {
+    setRegionalPriceRows((currentRows) =>
+      currentRows.map((row) => {
+        if (row.id !== rowId) {
+          return row;
+        }
+
+        if (field === "isActive") {
+          return {
+            ...row,
+            isActive: Boolean(value)
+          };
+        }
+
+        if (field === "region") {
+          const nextRegion = String(value || "").toUpperCase();
+
+          if (getUsedRegions(currentRows, rowId).has(nextRegion)) {
+            return row;
+          }
+
+          return {
+            ...row,
+            region: nextRegion,
+            currency: getCurrencyForRegion(nextRegion, row.currency)
+          };
+        }
+
+        return {
+          ...row,
+          [field]: value
+        };
+      })
+    );
+  }
+
+  function addRegionalPriceRow() {
+    setRegionalPriceRows((currentRows) => {
+      const nextRegion = getNextAvailableRegion(currentRows);
+
+      if (!nextRegion) {
+        return currentRows;
+      }
+
+      return [
+        ...currentRows,
+        {
+          id: `new-${Date.now()}`,
+          region: nextRegion.value,
+          currency: getCurrencyForRegion(nextRegion.value),
+          amount: 0,
+          isActive: false
+        }
+      ];
+    });
+  }
+
+  function removeRegionalPriceRow(rowId) {
+    setRegionalPriceRows((currentRows) =>
+      currentRows.length > 1 ? currentRows.filter((row) => row.id !== rowId) : currentRows
+    );
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
     setLoadingAction("save");
+    const form = event.currentTarget;
 
-    const payload = buildPlanPayload(new FormData(event.currentTarget));
+    const duplicateRegion = findDuplicateRegion(regionalPriceRows);
+
+    if (duplicateRegion) {
+      setError(`${getRegionLabel(duplicateRegion)} is already added.`);
+      setLoadingAction("");
+      return;
+    }
+
+    const invalidActivePrice = regionalPriceRows.find((row) => {
+      if (!row.isActive) {
+        return false;
+      }
+
+      return (
+        !row.region ||
+        !row.currency ||
+        Number(row.amount || 0) <= 0 ||
+        Number(row.amount || 0) < minimumCheckoutAmount(row.currency)
+      );
+    });
+
+    if (invalidActivePrice) {
+      setError(
+        `Active ${invalidActivePrice.currency || "regional"} prices must be at least ${minimumCheckoutAmount(invalidActivePrice.currency)}.`
+      );
+      setLoadingAction("");
+      return;
+    }
+
+    const payload = buildPlanPayload(new FormData(form), regionalPriceRows);
     const planId = getRecordId(editingPlan);
     const endpoint = planId ? `/api/admin/plans/${planId}` : "/api/admin/plans";
     const method = planId ? "PUT" : "POST";
@@ -179,8 +409,8 @@ export function AdminPlanManager({ initialPlans = [] }) {
 
         return currentPlans.map((plan) => (getRecordId(plan) === planId ? savedPlan : plan));
       });
+      form.reset();
       setEditingPlan(null);
-      event.currentTarget.reset();
       router.refresh();
     } catch (submitError) {
       setError(submitError.message);
@@ -234,7 +464,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
         </div>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="plan-price">Price</label>
+            <label htmlFor="plan-price">Base INR price</label>
             <input id="plan-price" key={`price-${getRecordId(editingPlan) || "new"}`} min="1" name="price" required step="1" type="number" defaultValue={formValues.price || ""} />
           </div>
           <div className="field">
@@ -254,8 +484,14 @@ export function AdminPlanManager({ initialPlans = [] }) {
         </div>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="plan-currency">Currency</label>
-            <input id="plan-currency" key={`currency-${getRecordId(editingPlan) || "new"}`} maxLength={6} name="currency" defaultValue={formValues.currency || "INR"} />
+            <label htmlFor="plan-currency">Base currency</label>
+            <select id="plan-currency" key={`currency-${getRecordId(editingPlan) || "new"}`} name="currency" defaultValue={formValues.currency || "INR"}>
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+              <option value="EUR">EUR</option>
+              <option value="NZD">NZD</option>
+            </select>
           </div>
           <div className="field">
             <label htmlFor="plan-active">Status</label>
@@ -264,6 +500,112 @@ export function AdminPlanManager({ initialPlans = [] }) {
               <option value="false">Inactive</option>
             </select>
           </div>
+        </div>
+        <div className="field pricing-region-field">
+          <div className="pricing-table-title-row">
+            <label>Regional prices</label>
+            <span className="muted">Currency follows the selected region. Active rows are used at checkout.</span>
+          </div>
+          <div className="regional-prices-table-wrap">
+            <table className="regional-prices-table">
+              <thead>
+                <tr>
+                  <th>Active</th>
+                  <th>Region</th>
+                  <th>Currency</th>
+                  <th>Amount</th>
+                  <th>Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regionalPriceRows.map((row) => {
+                  const usedRegions = getUsedRegions(regionalPriceRows, row.id);
+
+                  return (
+                    <tr key={row.id}>
+                      <td>
+                        <input
+                          aria-label={`Activate ${getRegionLabel(row.region)} price`}
+                          checked={Boolean(row.isActive)}
+                          onChange={(event) =>
+                            updateRegionalPriceRow(row.id, "isActive", event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                      </td>
+                      <td>
+                        <select
+                          aria-label="Plan price region"
+                          value={row.region}
+                          onChange={(event) =>
+                            updateRegionalPriceRow(row.id, "region", event.target.value)
+                          }
+                        >
+                          {PRICING_REGION_OPTIONS.map((option) => (
+                            <option
+                              disabled={usedRegions.has(option.value)}
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          aria-label="Plan price currency"
+                          disabled={row.region !== "DEFAULT"}
+                          onChange={(event) =>
+                            updateRegionalPriceRow(row.id, "currency", event.target.value)
+                          }
+                          value={row.currency}
+                        >
+                          {CURRENCY_OPTIONS.map((currencyOption) => (
+                            <option key={currencyOption} value={currencyOption}>
+                              {currencyOption}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          aria-label={`${getRegionLabel(row.region)} amount`}
+                          min="0"
+                          onChange={(event) =>
+                            updateRegionalPriceRow(row.id, "amount", event.target.value)
+                          }
+                          step="0.01"
+                          type="number"
+                          value={row.amount}
+                        />
+                      </td>
+                      <td>
+                        <button
+                          aria-label={`Remove ${getRegionLabel(row.region)} price`}
+                          className="button-secondary compact button-icon"
+                          disabled={regionalPriceRows.length <= 1}
+                          onClick={() => removeRegionalPriceRow(row.id)}
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <button
+            className="button-secondary add-region-button"
+            disabled={!getNextAvailableRegion(regionalPriceRows)}
+            onClick={addRegionalPriceRow}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add region
+          </button>
         </div>
         <div className="field">
           <label htmlFor="plan-description">Description</label>
@@ -306,15 +648,16 @@ export function AdminPlanManager({ initialPlans = [] }) {
                     <strong>{plan.name}</strong>
                     <div className="muted">{plan.slug}</div>
                   </td>
-                  <td>{formatCurrency(plan.price, plan.currency)}</td>
+                  <td>{summarizePlanPrice(plan)}</td>
                   <td>{plan.durationDays} days</td>
                   <td><StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge></td>
                   <td>
                     <div className="toolbar admin-table-actions">
-                      <button className="button-secondary compact" onClick={() => setEditingPlan(plan)} type="button">Edit</button>
-                      <button className="button-danger compact" disabled={loadingAction === `delete-${getRecordId(plan)}`} onClick={() => deletePlan(plan)} type="button">
+                      <button aria-label={`Edit ${plan.name}`} className="icon-button" onClick={() => setEditingPlan(plan)} title="Edit" type="button">
+                        <Pencil aria-hidden="true" size={18} />
+                      </button>
+                      <button aria-label={`Delete ${plan.name}`} className="icon-button icon-button-danger" disabled={loadingAction === `delete-${getRecordId(plan)}`} onClick={() => deletePlan(plan)} title="Delete" type="button">
                         <Trash2 aria-hidden="true" size={16} />
-                        Delete
                       </button>
                     </div>
                   </td>
@@ -331,13 +674,17 @@ export function AdminPlanManager({ initialPlans = [] }) {
                 <p className="muted">{plan.slug}</p>
               </div>
               <div className="admin-card-meta">
-                <span>{formatCurrency(plan.price, plan.currency)}</span>
+                <span>{summarizePlanPrice(plan)}</span>
                 <span>{plan.durationDays} days</span>
                 <StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge>
               </div>
               <div className="toolbar admin-table-actions">
-                <button className="button-secondary compact" onClick={() => setEditingPlan(plan)} type="button">Edit</button>
-                <button className="button-danger compact" disabled={loadingAction === `delete-${getRecordId(plan)}`} onClick={() => deletePlan(plan)} type="button">Delete</button>
+                <button aria-label={`Edit ${plan.name}`} className="icon-button" onClick={() => setEditingPlan(plan)} title="Edit" type="button">
+                  <Pencil aria-hidden="true" size={18} />
+                </button>
+                <button aria-label={`Delete ${plan.name}`} className="icon-button icon-button-danger" disabled={loadingAction === `delete-${getRecordId(plan)}`} onClick={() => deletePlan(plan)} title="Delete" type="button">
+                  <Trash2 aria-hidden="true" size={18} />
+                </button>
               </div>
             </article>
           ))}
@@ -359,8 +706,9 @@ export function AdminCouponManager({ initialCoupons = [] }) {
     event.preventDefault();
     setError("");
     setLoadingAction("save");
+    const form = event.currentTarget;
 
-    const payload = buildCouponPayload(new FormData(event.currentTarget));
+    const payload = buildCouponPayload(new FormData(form));
     const couponId = getRecordId(editingCoupon);
     const endpoint = couponId ? `/api/admin/coupons/${couponId}` : "/api/admin/coupons";
     const method = couponId ? "PUT" : "POST";
@@ -382,8 +730,8 @@ export function AdminCouponManager({ initialCoupons = [] }) {
 
         return currentCoupons.map((coupon) => (getRecordId(coupon) === couponId ? savedCoupon : coupon));
       });
+      form.reset();
       setEditingCoupon(null);
-      event.currentTarget.reset();
       router.refresh();
     } catch (submitError) {
       setError(submitError.message);
@@ -526,10 +874,11 @@ export function AdminCouponManager({ initialCoupons = [] }) {
                   <td><StatusBadge tone={coupon.isActive === false ? "muted" : "success"}>{coupon.isActive === false ? "Inactive" : "Active"}</StatusBadge></td>
                   <td>
                     <div className="toolbar admin-table-actions">
-                      <button className="button-secondary compact" onClick={() => setEditingCoupon(coupon)} type="button">Edit</button>
-                      <button className="button-danger compact" disabled={loadingAction === `delete-${getRecordId(coupon)}`} onClick={() => deleteCoupon(coupon)} type="button">
+                      <button aria-label={`Edit ${coupon.code}`} className="icon-button" onClick={() => setEditingCoupon(coupon)} title="Edit" type="button">
+                        <Pencil aria-hidden="true" size={18} />
+                      </button>
+                      <button aria-label={`Delete ${coupon.code}`} className="icon-button icon-button-danger" disabled={loadingAction === `delete-${getRecordId(coupon)}`} onClick={() => deleteCoupon(coupon)} title="Delete" type="button">
                         <Trash2 aria-hidden="true" size={16} />
-                        Delete
                       </button>
                     </div>
                   </td>
@@ -551,8 +900,12 @@ export function AdminCouponManager({ initialCoupons = [] }) {
                 <StatusBadge tone={coupon.isActive === false ? "muted" : "success"}>{coupon.isActive === false ? "Inactive" : "Active"}</StatusBadge>
               </div>
               <div className="toolbar admin-table-actions">
-                <button className="button-secondary compact" onClick={() => setEditingCoupon(coupon)} type="button">Edit</button>
-                <button className="button-danger compact" disabled={loadingAction === `delete-${getRecordId(coupon)}`} onClick={() => deleteCoupon(coupon)} type="button">Delete</button>
+                <button aria-label={`Edit ${coupon.code}`} className="icon-button" onClick={() => setEditingCoupon(coupon)} title="Edit" type="button">
+                  <Pencil aria-hidden="true" size={18} />
+                </button>
+                <button aria-label={`Delete ${coupon.code}`} className="icon-button icon-button-danger" disabled={loadingAction === `delete-${getRecordId(coupon)}`} onClick={() => deleteCoupon(coupon)} title="Delete" type="button">
+                  <Trash2 aria-hidden="true" size={18} />
+                </button>
               </div>
             </article>
           ))}

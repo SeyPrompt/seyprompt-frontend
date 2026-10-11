@@ -28,6 +28,12 @@ function truncateDescription(description = "") {
   return `${cleanDescription.slice(0, 89).trimEnd()}...`;
 }
 
+function formatAdminViewCount(viewsCount) {
+  const views = Math.max(Number(viewsCount || 0), 0);
+
+  return `${views.toLocaleString("en-IN")} ${views === 1 ? "view" : "views"}`;
+}
+
 function PromptViewLink({ prompt }) {
   if (!prompt.slug) {
     return (
@@ -109,6 +115,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                     <th>Tools</th>
                     <th>Status</th>
                     <th>Price</th>
+                    <th>Views</th>
                     <th>Featured</th>
                     <th>Actions</th>
                   </tr>
@@ -151,6 +158,11 @@ export default async function AdminPromptsPage({ searchParams }) {
                         </td>
                         <td>
                           <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                        </td>
+                        <td>
+                          <span className="admin-readable-count">
+                            {formatAdminViewCount(prompt.viewsCount)}
+                          </span>
                         </td>
                         <td>
                           {prompt.isFeatured ? (
@@ -208,6 +220,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                       {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
                       <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                      <span>{formatAdminViewCount(prompt.viewsCount)}</span>
                       {prompt.isFeatured ? (
                         <span className="status-badge featured-badge">
                           Featured
