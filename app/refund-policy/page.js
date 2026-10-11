@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createPageMetadata } from "@/lib/seo";
-import { POLICY_EFFECTIVE_DATE, SUPPORT_EMAIL, launchBlockers } from "@/lib/policy-info";
+import { POLICY_EFFECTIVE_DATE, SUPPORT_EMAIL } from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
   title: "Refund & Cancellation Policy",
@@ -13,41 +13,51 @@ const sections = [
   {
     title: "Cancellation",
     items: [
-      "SeyPrompt's current all-access plans are fixed-duration manual purchases. The code does not implement automatic recurring renewal, so cancellation generally means not purchasing another plan after the current period ends.",
-      "Single-prompt unlocks and credit packs are digital purchases delivered to your account after verified payment and do not have a recurring cancellation cycle.",
-      "If future automatic renewal is added, cancellation controls and renewal timing must be updated before launch."
+      "SeyPrompt all-access plans are fixed-duration manual purchases and do not renew automatically. Cancellation generally means choosing not to buy another plan after the current access period ends.",
+      "Single-prompt unlocks and credit packs are digital purchases delivered to your account after payment confirmation and do not have a recurring cancellation cycle.",
+      "A failed-payment reversal or bank chargeback is different from choosing not to renew and may be handled by your bank, card network, wallet, Razorpay, or SeyPrompt depending on the issue."
     ]
   },
   {
     title: "When To Contact Support",
     items: [
-      "Contact support if you were charged twice for the same purchase, paid successfully but did not receive access or credits, were charged the wrong amount, or believe a payment status is incorrect.",
-      "Include your SeyPrompt account email, order page details, Razorpay payment or order reference if available, purchase date, and the issue summary.",
+      "Contact support if you were charged twice for the same intended purchase, paid successfully but did not receive access or credits, were charged the wrong amount, or believe a payment status is incorrect.",
+      "Include your SeyPrompt account email, purchase date, product or plan name, order page details, Razorpay order or payment reference if available, and a short explanation of the issue.",
       "Never send full card numbers, CVV, OTPs, banking passwords, or account passwords."
     ]
   },
   {
-    title: "Refund Review",
+    title: "How Refund Requests Are Reviewed",
     items: [
-      "Refund requests are reviewed against order status, payment provider records, delivered access, credit ledger activity, and applicable consumer rights.",
-      "Approved refunds are sent through the original payment provider or payment method where supported by Razorpay and the bank/card network.",
-      "Refund timing depends on Razorpay and the issuing bank. SeyPrompt can confirm submission, but bank settlement may take additional business days."
+      "Refund requests are reviewed against the order status, payment-provider information, delivered access, credit activity, product description, support history, and applicable consumer rights.",
+      "Duplicate successful charges, incorrect charges, successful payments without delivered access, and materially defective or misdescribed digital products should be reported for review.",
+      "Change-of-mind requests after a prompt has been unlocked, used credits, unused credits, partially used credit packs, all-access plans, promotional credits, and gifts may require case-by-case review until final commercial rules are approved.",
+      "Nothing in this policy limits mandatory consumer remedies that apply by law."
     ]
   },
   {
-    title: "Digital Access And Credits",
+    title: "Review And Refund Timing",
     items: [
-      "If a refund is approved for a prompt unlock or all-access plan, related entitlements may be revoked.",
-      "If a refund is approved for credits, related credit balance or credit ledger entries may be reversed where technically and operationally possible.",
-      "The final policy for used/unlocked digital content, unused credits, promotional credits, and gifts still requires business approval before public release."
+      "SeyPrompt aims to acknowledge billing and refund requests within 48 hours after receiving enough information to identify the order.",
+      "If a refund is approved, SeyPrompt will initiate it through Razorpay where supported for the original payment.",
+      "Razorpay states that normal refunds can take about 7-10 business days to reflect in the customer's bank account or card balance, depending on bank processing.",
+      "SeyPrompt can confirm that a refund has been initiated, but final bank settlement timing is controlled by Razorpay, banks, wallets, card networks, and payment rails."
     ]
   },
   {
-    title: "Duplicate Or Failed Orders",
+    title: "Effect Of Approved Refunds",
     items: [
-      "Pending, failed, or cancelled orders do not grant access unless server-side verification or webhook processing marks the order paid.",
-      "If Razorpay shows a successful payment but SeyPrompt has not delivered access, support can review the payment reference and manually resolve the entitlement or refund path.",
-      "Duplicate successful charges for the same intended purchase should be reported for review."
+      "If a refund is approved for a single-prompt unlock or all-access plan, the related access may be removed for the refunded purchase.",
+      "If a refund is approved for credits, SeyPrompt may reverse the related credit balance or credit activity for the refunded purchase where possible.",
+      "A refund of one purchase does not automatically revoke unrelated paid purchases."
+    ]
+  },
+  {
+    title: "Missing Access",
+    items: [
+      "If payment appears successful but access or credits are missing, contact support before making a duplicate purchase where possible.",
+      "Support may resolve missing access by confirming the purchase, restoring the related access or credits, or reviewing whether a refund path applies.",
+      "Pending, failed, cancelled, or reversed payments do not grant access unless the payment is later confirmed."
     ]
   }
 ];
@@ -92,15 +102,6 @@ export default function RefundPolicyPage() {
                 </ul>
               </article>
             ))}
-
-            <article className="card legal-card legal-blocker-card">
-              <h2>Policy Decisions Still Needed</h2>
-              <ul>
-                {launchBlockers.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
           </div>
         </div>
       </section>

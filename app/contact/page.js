@@ -1,11 +1,13 @@
 import { ContactForm } from "@/components/contact-form";
 import { SocialLinks } from "@/components/SocialLinks";
 import { WandSparkles, Sparkles, Workflow, Bot, CreditCard, ShieldCheck } from "lucide-react";
-import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
+import { createPageMetadata, PARENT_COMPANY_URL } from "@/lib/seo";
 import {
+  CUSTOMER_CARE_EMAIL,
+  GRIEVANCE_OFFICER,
+  LEGAL_OPERATOR_DISPLAY,
   SUPPORT_EMAIL,
-  VERIFIED_BUSINESS_ADDRESS,
-  VERIFIED_LEGAL_NAME
+  VERIFIED_BUSINESS_ADDRESS
 } from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
@@ -45,7 +47,7 @@ const services = [
 const supportDetails = [
   {
     label: "Operator",
-    value: VERIFIED_LEGAL_NAME || PARENT_COMPANY_NAME,
+    value: LEGAL_OPERATOR_DISPLAY,
     href: PARENT_COMPANY_URL
   },
   {
@@ -53,9 +55,24 @@ const supportDetails = [
     value: SUPPORT_EMAIL,
     href: `mailto:${SUPPORT_EMAIL}`
   },
+  ...(VERIFIED_BUSINESS_ADDRESS
+    ? [
+        {
+          label: "Business address",
+          value: VERIFIED_BUSINESS_ADDRESS
+        }
+      ]
+    : []),
   {
-    label: "Business address",
-    value: VERIFIED_BUSINESS_ADDRESS || "Launch blocker: verified business address not configured."
+    label: "Customer care",
+    value: CUSTOMER_CARE_EMAIL,
+    href: `mailto:${CUSTOMER_CARE_EMAIL}`
+  },
+  {
+    label: "Grievance escalation",
+    value: GRIEVANCE_OFFICER.name
+      ? `${GRIEVANCE_OFFICER.name}, ${GRIEVANCE_OFFICER.designation || "Grievance Officer"}`
+      : `Email ${CUSTOMER_CARE_EMAIL} for privacy or grievance requests.`
   },
   {
     label: "Payment support",

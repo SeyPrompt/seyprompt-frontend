@@ -2,10 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
-import { appVersionLabel } from "@/lib/app-version";
-import { getCategoryPath, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
-import { policyLinks } from "@/lib/policy-info";
-import { apiUrl } from "@/utils/api";
+import { getCategoryPath, PARENT_COMPANY_URL } from "@/lib/seo";
+import { LEGAL_OPERATOR_DISPLAY, policyLinks } from "@/lib/policy-info";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -50,29 +48,6 @@ function formatFooterCategoryLabel(category) {
   return /\bprompts$/i.test(label) ? label : `${label} Prompts`;
 }
 
-function normalizeVersionLabel(version) {
-  if (!version) return "unknown";
-  const raw = String(version).trim();
-  return raw.toLowerCase().startsWith("v") ? raw : `v${raw}`;
-}
-
-async function fetchBackendVersion() {
-  try {
-    const response = await fetch(apiUrl("/api/version"), {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data?.version || null;
-  } catch (_error) {
-    return null;
-  }
-}
-
 export async function Footer() {
   const [categoryItems, toolItems] = await Promise.all([
     fetchPromptCategories(footerCategoryLimit).catch(() => []),
@@ -80,7 +55,6 @@ export async function Footer() {
   ]);
   const categories = toFooterItems(categoryItems, fallbackCategories, footerCategoryLimit);
   const tools = toFooterItems(toolItems, fallbackTools);
-  const backendVersionLabel = normalizeVersionLabel(await fetchBackendVersion());
 
   return (
     <footer className="footer">
@@ -159,7 +133,7 @@ export async function Footer() {
           <p>
             A product of{" "}
             <a className="footer-company-link" href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
-              {PARENT_COMPANY_NAME}
+              {LEGAL_OPERATOR_DISPLAY}
             </a>.
           </p>
           <nav className="footer-legal-links" aria-label="Legal links">
@@ -170,7 +144,6 @@ export async function Footer() {
             ))}
           </nav>
           <p>Built for creators, developers, and businesses using AI.</p>
-          <p>UI - {appVersionLabel} | API - {backendVersionLabel}</p>
         </div>
       </div>
     </footer>

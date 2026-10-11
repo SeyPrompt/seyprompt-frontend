@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
+import { createPageMetadata, PARENT_COMPANY_URL } from "@/lib/seo";
 import {
+  CUSTOMER_CARE_EMAIL,
+  GRIEVANCE_OFFICER,
+  LEGAL_OPERATOR_DISPLAY,
   POLICY_EFFECTIVE_DATE,
-  SUPPORT_EMAIL,
-  launchBlockers
+  SUPPORT_EMAIL
 } from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
@@ -15,59 +17,94 @@ export const metadata = createPageMetadata({
 
 const sections = [
   {
-    title: "Account And Profile Data",
+    title: "Who Operates SeyPrompt",
     items: [
-      "When you create an account, SeyPrompt collects details such as your name, email address, authentication status, saved prompts, unlocked prompts, and account activity needed to run the service.",
-      "Passwords are processed through the authentication system and are not shown to SeyPrompt support. Never send passwords, OTPs, full card numbers, CVV, or banking credentials through the contact form.",
-      "If you contact support, we collect the information you submit, including name, email address, message topic, message content, and any related order or payment reference you provide."
+      `SeyPrompt is operated by ${LEGAL_OPERATOR_DISPLAY}.`,
+      `For privacy, account, payment, or support requests, email ${SUPPORT_EMAIL} or use the contact page.`
     ]
   },
   {
-    title: "Billing And Purchase Data",
+    title: "Information We Collect",
     items: [
-      "SeyPrompt records payment orders, product snapshots, pricing region, currency, amount, Razorpay order/payment references, purchase history, subscription entitlements, credit purchases, credit spending, refunds, and related status changes.",
-      "Payments are processed through Razorpay. SeyPrompt does not store full card numbers or CVV in its database; Razorpay receives and processes payment credentials under its own terms and privacy practices.",
-      "We retain purchase and refund records where needed for account access, support, fraud prevention, tax, audit, and legal obligations."
+      "Account details such as your name, email address, authentication status, saved prompts, unlocked prompts, and account activity.",
+      "Order and access records such as purchased prompts, credit packs, all-access plans, prices, currency, discounts, payment references, refund status, credit balances, and access history.",
+      "Support submissions, including the name, email address, topic, message, and order or payment reference you choose to provide.",
+      "Device and usage data such as browser type, device information, IP address, approximate region, referral details, pages viewed, searches, clicks, and performance or error data.",
+      "Prompt library content, sample images or videos, thumbnails, categories, and product metadata shown in the service."
     ]
   },
   {
-    title: "Prompts, Images, And AI Tool Data",
+    title: "Payments",
     items: [
-      "SeyPrompt stores prompt library content, sample outputs, thumbnails, categories, tools, pricing settings, and admin-managed prompt metadata.",
-      "If you upload or provide prompt-related images or text through an available feature, that content may be stored or processed so the feature can work.",
-      "SeyPrompt links to third-party AI tools, but using a prompt inside those tools is your action. Data you paste into ChatGPT, Gemini, Midjourney, Claude, Canva, or similar services is handled by that provider."
+      "Payments are processed by Razorpay. SeyPrompt stores order and payment references needed to confirm purchases, deliver access, support refunds, prevent misuse, and maintain business records.",
+      "SeyPrompt does not ask you to send full card numbers, CVV, banking passwords, OTPs, or account passwords through support channels.",
+      "Razorpay handles payment credentials under its own terms and privacy practices."
     ]
   },
   {
-    title: "Analytics, Cookies, Logs, And Location",
+    title: "Cookies, Sessions, And Analytics",
     items: [
-      "SeyPrompt may use analytics, cookies, local storage, server logs, device/browser details, page interactions, referral data, and approximate country or region signals.",
-      "Approximate location headers may be used to choose regional pricing and currency availability. Final prices remain calculated by the backend.",
-      "You can control cookies through your browser settings. Blocking cookies may affect analytics or sign-in/session convenience."
+      "Essential session storage keeps account, sign-in, saved prompt, cart, checkout, and security features working.",
+      "Optional analytics may run through Google Analytics, PostHog, Vercel Analytics, Vercel Speed Insights, and Sentry when the relevant site configuration is enabled.",
+      "PostHog is configured with automatic capture and session recording disabled. Product events are sent with sensitive fields removed before capture.",
+      "You can limit some cookies and tracking through browser settings or device controls. Browser controls are separate from a site-level consent preference."
     ]
   },
   {
-    title: "How We Use Data",
+    title: "How We Use Information",
     items: [
-      "To create and secure accounts, verify payments, deliver prompt access, manage credits, process refunds, provide support, and prevent misuse.",
-      "To improve the prompt library, search, categories, visual feed, performance, pricing availability, and product experience.",
-      "To comply with applicable accounting, tax, legal, fraud-prevention, and dispute-resolution obligations."
+      "To create and secure accounts, verify purchases, deliver prompt access, manage credits and plans, process refunds, and respond to support requests.",
+      "To show regional pricing and currency availability, improve search and browsing, maintain product quality, troubleshoot errors, and measure performance.",
+      "To prevent fraud, misuse, scraping, chargebacks, security incidents, and violations of SeyPrompt policies.",
+      "To meet accounting, tax, audit, legal, regulatory, and dispute-resolution obligations."
     ]
   },
   {
-    title: "Service Providers And Sharing",
+    title: "Service Providers",
     items: [
       "We do not sell personal information.",
-      "Data may be processed by service providers that help operate SeyPrompt, including hosting, database, email/contact, analytics, Cloudinary image storage or delivery where configured, and Razorpay payment processing.",
-      "We may share information when required by law, to protect SeyPrompt, or to investigate misuse, fraud, chargebacks, security issues, or policy violations."
+      "Information may be processed by providers that help run SeyPrompt, including hosting, database, email/contact delivery, authentication, analytics, error monitoring, Cloudinary media storage or delivery, and Razorpay payment processing.",
+      "We may disclose information when required by law, to protect users or SeyPrompt, or to investigate misuse, fraud, payment disputes, security issues, or policy violations."
     ]
   },
   {
-    title: "Retention, Deletion, And Requests",
+    title: "Third-Party AI Tools",
+    items: [
+      "SeyPrompt provides prompts and examples for use with third-party AI tools. External tools such as ChatGPT, Gemini, Claude, Midjourney, Canva, and similar services are operated independently.",
+      "Information you paste, upload, or generate inside those external tools is handled by the provider of that tool, not by this Privacy Policy."
+    ]
+  },
+  {
+    title: "Retention And Deletion",
+    items: [
+      "Account and support records are kept while needed to operate the service, respond to requests, and maintain security.",
+      "Purchase, refund, credit, tax, accounting, audit, fraud-prevention, and dispute records may be retained where required or reasonably needed, even after an account deletion request.",
+      "When information is no longer needed, SeyPrompt may delete, de-identify, or aggregate it."
+    ]
+  },
+  {
+    title: "Your Choices And Requests",
     items: [
       "You may request access, correction, deletion, or account support through the contact page or by emailing support.",
-      "Some records, including paid orders, refund records, credit ledgers, and security logs, may be retained for legitimate business, legal, tax, audit, or dispute-resolution needs even after an account request.",
-      "SeyPrompt may delete or anonymize inactive operational data when it is no longer needed."
+      "We may need to verify your identity before acting on a privacy or account request.",
+      "Some requests may be limited where retention is required for legal, tax, accounting, fraud-prevention, security, or dispute-resolution reasons."
+    ]
+  },
+  {
+    title: "Security And International Processing",
+    items: [
+      "SeyPrompt uses practical administrative, technical, and access-control measures to protect account, purchase, and support information.",
+      "No internet service can guarantee perfect security. Keep your account email, password, OTPs, and devices secure.",
+      "SeyPrompt and its providers may process information in India or other countries where service providers operate."
+    ]
+  },
+  {
+    title: "Grievances And Escalation",
+    items: [
+      `For privacy complaints or grievances, contact ${CUSTOMER_CARE_EMAIL}. We aim to acknowledge grievances within 48 hours and redress them within one month, subject to receiving the information needed to review the issue.`,
+      GRIEVANCE_OFFICER.name
+        ? `Grievance Officer: ${GRIEVANCE_OFFICER.name}, ${GRIEVANCE_OFFICER.designation || "Grievance Officer"}, ${GRIEVANCE_OFFICER.email}.`
+        : `Requests sent to ${CUSTOMER_CARE_EMAIL} will be routed for review.`
     ]
   }
 ];
@@ -81,13 +118,14 @@ export default function PrivacyPolicyPage() {
             <div className="eyebrow">SeyPrompt Privacy</div>
             <h1>Privacy Policy</h1>
             <p>
-              SeyPrompt supports accounts, saved prompts, paid prompt unlocks,
-              credit packs, all-access plans, analytics, and support workflows.
+              This policy explains how SeyPrompt collects, uses, shares, and
+              protects information when you browse, create an account, save or
+              unlock prompts, buy credits or plans, make payments, or contact us.
             </p>
             <p>
-              SeyPrompt is a product of{" "}
+              SeyPrompt is operated by{" "}
               <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
-                {PARENT_COMPANY_NAME}
+                {LEGAL_OPERATOR_DISPLAY}
               </a>
               .
             </p>
@@ -101,10 +139,11 @@ export default function PrivacyPolicyPage() {
           <div className="panel legal-summary">
             <h2>Short Version</h2>
             <p>
-              SeyPrompt uses account, billing, prompt, analytics, and support
-              data to operate the service. Payments are handled by Razorpay, and
-              full card numbers/CVV are not stored in SeyPrompt's application
-              database based on the current implementation.
+              SeyPrompt uses account, purchase, access, support, analytics, and
+              security data to run the digital prompt service. We use service
+              providers such as Razorpay for payments and analytics or
+              monitoring tools where enabled, and we do not sell personal
+              information.
             </p>
           </div>
 
@@ -121,35 +160,12 @@ export default function PrivacyPolicyPage() {
             ))}
 
             <article className="card legal-card">
-              <h2>Third-Party Links</h2>
-              <p>
-                SeyPrompt may link to AI tools, resources, or other websites.
-                We are not responsible for the privacy practices or content of
-                third-party sites.
-              </p>
-            </article>
-
-            <article className="card legal-card">
               <h2>Contact</h2>
               <p>
                 For privacy questions or requests, please use the{" "}
                 <Link href="/contact">contact page</Link> or email{" "}
-                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. SeyPrompt is a product
-                of{" "}
-                <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
-                  {PARENT_COMPANY_NAME}
-                </a>
-                .
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
               </p>
-            </article>
-
-            <article className="card legal-card legal-blocker-card">
-              <h2>Launch Blockers To Confirm</h2>
-              <ul>
-                {launchBlockers.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
             </article>
           </div>
         </div>

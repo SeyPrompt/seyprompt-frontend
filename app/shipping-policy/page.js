@@ -5,7 +5,7 @@ import { POLICY_EFFECTIVE_DATE, SUPPORT_EMAIL } from "@/lib/policy-info";
 export const metadata = createPageMetadata({
   title: "Shipping & Digital Delivery Policy",
   description:
-    "Read how SeyPrompt delivers digital prompts, credit packs, and all-access plan entitlements after verified payment.",
+    "Read how SeyPrompt delivers digital prompts, credit packs, and all-access plan entitlements after confirmed payment.",
   path: "/shipping-policy"
 });
 
@@ -14,38 +14,47 @@ const sections = [
     title: "No Physical Shipping",
     items: [
       "SeyPrompt sells digital prompt access, credit packs, and account-based all-access plans. No physical goods are shipped.",
-      "Because products are digital, there are no courier charges, tracking numbers, or delivery addresses for normal SeyPrompt purchases."
+      "There are no courier fees, tracking numbers, or delivery addresses for normal SeyPrompt purchases."
     ]
   },
   {
     title: "How Digital Delivery Works",
     items: [
-      "Single-prompt purchases unlock the selected prompt in the purchasing account after Razorpay payment verification succeeds on SeyPrompt's backend.",
-      "Credit packs add credits to the account wallet after verified payment and create a credit ledger entry.",
-      "All-access plans create a time-limited entitlement for the purchasing account based on the selected plan duration."
+      "Single-prompt purchases unlock the selected prompt in the purchasing account after payment is confirmed.",
+      "Credit packs add credits to the purchasing account wallet after payment is confirmed.",
+      "All-access plans add time-limited premium prompt access to the purchasing account for the selected plan duration."
     ]
   },
   {
     title: "Activation Timing",
     items: [
-      "The current implementation grants access after server-side verification or webhook processing confirms payment. Most verified orders should appear shortly after checkout completes.",
-      "If payment is pending, closed before completion, fails verification, or Razorpay/webhook confirmation is delayed, access may not appear until the order can be verified.",
-      "SeyPrompt does not grant access based only on a browser success callback; backend verification controls delivery."
+      "Most confirmed purchases should appear in your account shortly after checkout is completed.",
+      "Pending payments, incomplete checkout, failed verification, payment-provider delay, or bank/payment reversals may delay or prevent activation.",
+      "If access is missing after a successful payment, contact support with your account and payment details so the order can be reviewed."
     ]
   },
   {
-    title: "Access Location",
+    title: "Where To Find Purchases",
     items: [
-      "Unlocked prompts are available inside your SeyPrompt account and dashboard.",
-      "The orders page shows payment history and status where supported by the current account billing implementation.",
-      "Purchased content is account-based. Downloadable invoices, receipts, or exports are not currently implemented as a separate self-service feature."
+      "Unlocked prompts are available from the prompt page, dashboard, unlocked prompts area, and account experience where shown.",
+      "Credits and all-access plan status are shown in the account dashboard where available.",
+      "Order history and payment status are shown on the orders page for signed-in users where available."
+    ]
+  },
+  {
+    title: "Receipts And Records",
+    items: [
+      "Payment references and order status are available through your SeyPrompt account where supported and through Razorpay payment communications where applicable.",
+      "If you need help with a receipt, invoice, order status, or payment reference, contact support with your account email and purchase details.",
+      "Do not send full card numbers, CVV, OTPs, banking passwords, or account passwords when requesting delivery or receipt support."
     ]
   },
   {
     title: "Missing Access",
     items: [
-      "If you paid successfully but do not see access or credits, contact support with your account email, purchase date, prompt or plan name, and Razorpay order/payment reference if available.",
-      "Do not share full card numbers, CVV, OTPs, banking passwords, or account passwords when reporting delivery issues."
+      "If you paid successfully but do not see access or credits, email support or use the contact page.",
+      "Include your SeyPrompt account email, purchase date, prompt or plan name, and Razorpay order or payment reference if available.",
+      "Support may confirm the purchase, restore the related access or credits, or review whether the Refund & Cancellation Policy applies."
     ]
   }
 ];

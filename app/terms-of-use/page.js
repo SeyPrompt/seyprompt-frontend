@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
-import { POLICY_EFFECTIVE_DATE, launchBlockers } from "@/lib/policy-info";
+import { createPageMetadata, PARENT_COMPANY_URL } from "@/lib/seo";
+import {
+  LEGAL_OPERATOR_DISPLAY,
+  POLICY_EFFECTIVE_DATE,
+  SUPPORT_EMAIL
+} from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
   title: "Terms & Conditions",
@@ -11,83 +15,109 @@ export const metadata = createPageMetadata({
 
 const terms = [
   {
+    title: "About SeyPrompt",
+    items: [
+      `SeyPrompt is a digital prompt service operated by ${LEGAL_OPERATOR_DISPLAY}.`,
+      "These terms apply when you browse SeyPrompt, create an account, save prompts, unlock paid prompts, buy credits, purchase an all-access plan, or contact support.",
+      "By using SeyPrompt or completing a purchase, you agree to these terms and the related policies linked below."
+    ]
+  },
+  {
+    title: "Accounts",
+    items: [
+      "You are responsible for keeping your account email, password, OTPs, and device access secure.",
+      "Use accurate account and contact information so purchases, access, support, and refund requests can be matched to you.",
+      "Do not share full card numbers, CVV, banking passwords, OTPs, or account passwords with SeyPrompt support."
+    ]
+  },
+  {
     title: "Free And Paid Features",
     items: [
-      "SeyPrompt includes free prompt browsing and paid features such as single-prompt unlocks, credit packs, and time-limited all-access plans.",
-      "Paid access is delivered through your SeyPrompt account after payment verification succeeds on the backend.",
-      "Free prompts and paid prompts may change, be reorganized, or be removed as the library evolves."
+      "SeyPrompt includes free prompt browsing and paid features such as single-prompt unlocks, credit packs, and fixed-duration all-access plans.",
+      "Paid access is delivered to the purchasing SeyPrompt account after payment is confirmed.",
+      "Free prompts, paid prompts, sample outputs, categories, and tool labels may change as the library evolves."
     ]
   },
   {
     title: "Single-Prompt Purchases",
     items: [
       "A single-prompt purchase unlocks the specific premium prompt shown at checkout for the purchasing account.",
-      "Current direct prompt purchases create prompt-specific access without an expiry date unless the access is refunded, revoked for misuse, or otherwise required by law.",
-      "A prompt purchase does not include external AI tool subscriptions, generation credits, or guaranteed output quality."
+      "Single-prompt access has no scheduled expiry date, but this is not a lifetime availability guarantee. Content may be removed or restricted for legal, safety, rights, security, service, or policy reasons.",
+      "A prompt purchase does not include external AI tool subscriptions, external generation credits, or guaranteed output quality."
     ]
   },
   {
-    title: "Credit Packs",
+    title: "Credits",
     items: [
-      "Credit packs add credits to your SeyPrompt wallet after successful server-verified payment.",
-      "Credits can be spent only on prompts where credit unlock is enabled and the displayed credit cost is available.",
-      "The current implementation records credit purchases and spending in a ledger. No automatic credit expiry or rollover rule is configured in code, so no new expiry rule should be applied retroactively without notice and migration handling."
+      "Credit packs add credits to your SeyPrompt wallet after payment is confirmed.",
+      "Credits can be spent only on prompts where credit unlock is enabled and where the displayed credit cost is available.",
+      "Credits do not currently have a scheduled expiry date. If that changes, SeyPrompt will provide notice where required before applying a new expiry rule to existing paid credits."
     ]
   },
   {
     title: "All-Access Plans",
     items: [
-      "All-access plans grant access to premium prompts during the plan duration shown at checkout, such as 30 days, 90 days, or 1 year depending on the plan.",
-      "The current checkout creates one Razorpay order for the selected plan and grants an entitlement with an expiry date. The code does not implement automatic recurring renewal.",
-      "If a plan expires, prompt access may require a new plan purchase or separate prompt unlock."
+      "All-access plans grant access to premium prompts during the plan duration shown at checkout.",
+      "The seeded SeyPrompt plans are Starter for 30 days, Pro for 90 days, and Annual for 365 days, unless the checkout shows a different active plan at the time of purchase.",
+      "Plans start when payment is confirmed and end when the purchased duration expires.",
+      "Plans do not renew automatically. Buying another plan is a separate manual purchase.",
+      "If you already have plan access, an additional purchase may create a separate access period rather than automatically extending an existing one unless the checkout or account screen states otherwise."
     ]
   },
   {
-    title: "Pricing, Currency, Taxes, And Regions",
+    title: "Pricing, Taxes, And Regions",
     items: [
-      "Prices, currencies, regional availability, discounts, credits, and entitlements are calculated on the backend and may differ by detected country or configured pricing region.",
-      "The checkout amount shown by Razorpay is the payable amount for that order. Taxes, gateway charges, or currency conversion charges may depend on the payment provider, bank, card network, or applicable law.",
-      "Client-side prices are informational only and do not override backend pricing."
+      "Review the product, plan, currency, discounts, credits, and total payable amount shown at checkout before paying.",
+      "SeyPrompt may show different prices, currencies, or product availability by country or region.",
+      "The amount shown by Razorpay for the order is the amount payable to complete that order. Your bank, card network, wallet, or payment provider may apply separate foreign-exchange, conversion, or payment charges.",
+      "Taxes may be included or applied as required by the checkout, invoice, payment provider, or applicable law."
     ]
   },
   {
-    title: "Permitted Use And Restrictions",
+    title: "Permitted Use",
     items: [
-      "You may use unlocked prompts for personal, educational, creative, and business workflows, including commercial use of your own AI outputs where allowed by the AI tool you use.",
-      "You may not scrape, mass copy, redistribute, resell, sublicense, or publish SeyPrompt's library as a competing prompt library or dataset.",
-      "Do not use SeyPrompt to violate laws, intellectual-property rights, privacy rights, platform policies, payment rules, or security controls."
+      "You may use unlocked prompts for personal, educational, creative, and business workflows, including commercial use of your own outputs where permitted by the AI tool and applicable law.",
+      "You may adapt prompts for your own workflow, but you may not scrape, mass copy, redistribute, resell, sublicense, or publish SeyPrompt's library as a competing prompt library, database, marketplace, or dataset.",
+      "Do not use SeyPrompt to violate laws, intellectual-property rights, privacy rights, platform rules, payment rules, security controls, or third-party terms."
     ]
   },
   {
-    title: "AI Outputs And Third-Party Tools",
+    title: "Samples, Media, And AI Outputs",
     items: [
-      "AI results vary by model, settings, uploaded inputs, and provider behavior. SeyPrompt does not guarantee accuracy, suitability, revenue, rankings, or any specific output.",
-      "Third-party tools such as ChatGPT, Gemini, Claude, Midjourney, Canva, DALL-E, Kling, Luma, and others are operated independently and may require their own accounts, payments, subscriptions, credits, and terms.",
-      "You are responsible for reviewing outputs before publishing, selling, submitting, or relying on them."
+      "Prompt text and sample images or videos are provided to help you evaluate and use the prompt. Sample media may include generated, edited, uploaded, or third-party materials and is not a transfer of third-party rights.",
+      "SeyPrompt does not promise that you own third-party AI outputs, model outputs, provider assets, or rights controlled by external tools.",
+      "You are responsible for reviewing AI outputs before publishing, selling, submitting, or relying on them."
     ]
   },
   {
-    title: "Cancellation, Failed Payments, And Refunds",
+    title: "Third-Party Tools",
     items: [
-      "Because current all-access plans are fixed-duration manual purchases, cancellation generally means choosing not to buy another plan after the current access period ends.",
-      "Failed or pending payments do not grant access unless server verification or webhook processing confirms the payment.",
-      "Refund handling is described in the Refund & Cancellation Policy. Approved refunds may revoke related prompt access, subscription access, or credits."
+      "External AI tools such as ChatGPT, Gemini, Claude, Midjourney, Canva, DALL-E, Kling, Luma, and similar services are operated independently.",
+      "External accounts, subscriptions, generation credits, model limits, and provider terms are separate from SeyPrompt unless a specific SeyPrompt offer expressly says otherwise."
     ]
   },
   {
-    title: "Accounts, Security, And Suspension",
+    title: "Cancellations, Refunds, And Failed Payments",
     items: [
-      "You are responsible for keeping your account email, password, OTPs, and device access secure.",
-      "SeyPrompt may suspend, revoke, or restrict access for fraud, chargebacks, abuse, scraping, resale, security risks, or violation of these terms.",
-      "Never share full card numbers, CVV, banking passwords, OTPs, or account passwords with SeyPrompt support."
+      "Because all-access plans are fixed-duration manual purchases, cancellation generally means choosing not to buy another plan after the current access period ends.",
+      "Single-prompt unlocks and credit packs are digital purchases and do not have a recurring cancellation cycle.",
+      "Pending, failed, or reversed payments do not grant access. If money is deducted but the purchase is not confirmed, contact support so the order can be reviewed.",
+      "Refund handling is described in the Refund & Cancellation Policy. Approved refunds may remove the related access or credits for the refunded purchase."
     ]
   },
   {
-    title: "Policy Changes And Consumer Rights",
+    title: "Service Changes And Suspension",
     items: [
-      "SeyPrompt may update prices, plans, credit packs, prompt access rules, and policies. Material changes should be communicated where legally required.",
-      "Nothing in these terms limits mandatory consumer rights that cannot be waived under applicable law.",
-      "Questions can be sent through the contact page."
+      "SeyPrompt may update products, prices, plans, credits, prompt availability, features, and policies from time to time.",
+      "SeyPrompt may suspend, revoke, or restrict access for fraud, chargebacks, misuse, scraping, resale, abuse, security risks, or violation of these terms.",
+      "Nothing in these terms limits mandatory consumer rights that cannot be waived under applicable law."
+    ]
+  },
+  {
+    title: "Disputes And Support",
+    items: [
+      `For account, billing, delivery, refund, privacy, or policy questions, use the contact page or email ${SUPPORT_EMAIL}.`,
+      "These terms do not choose a specific court or forum. Mandatory rights and dispute processes under applicable law continue to apply."
     ]
   }
 ];
@@ -102,12 +132,12 @@ export default function TermsOfUsePage() {
             <h1>Terms & Conditions</h1>
             <p>
               These terms explain how SeyPrompt accounts, free prompts, premium
-              prompt unlocks, credit packs, and all-access plans work.
+              prompt unlocks, credit packs, and fixed-duration all-access plans work.
             </p>
             <p>
-              SeyPrompt is a product of{" "}
+              SeyPrompt is operated by{" "}
               <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
-                {PARENT_COMPANY_NAME}
+                {LEGAL_OPERATOR_DISPLAY}
               </a>
               .
             </p>
@@ -121,9 +151,10 @@ export default function TermsOfUsePage() {
           <div className="panel legal-summary">
             <h2>Simple Summary</h2>
             <p>
-              Buy only if the checkout details match what you want: single
-              prompt, credits, or fixed-duration all-access. External AI tools
-              are separate, and backend-verified payment controls access.
+              Buy only if the checkout details match what you want: a single
+              prompt, credits, or a fixed-duration all-access plan. External AI
+              tools are separate, plans do not renew automatically, and payment
+              confirmation controls access.
             </p>
           </div>
 
@@ -146,15 +177,6 @@ export default function TermsOfUsePage() {
                 <Link href="/refund-policy">Refund & Cancellation Policy</Link>, and{" "}
                 <Link href="/shipping-policy">Shipping & Digital Delivery Policy</Link>.
               </p>
-            </article>
-
-            <article className="card legal-card legal-blocker-card">
-              <h2>Launch Blockers To Confirm</h2>
-              <ul>
-                {launchBlockers.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
             </article>
           </div>
         </div>
