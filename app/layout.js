@@ -4,6 +4,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { AccountAccessProvider } from "@/components/account-access-provider";
+import { SeyPromptPostHogProvider } from "@/components/posthog-provider";
 import { UTMTracker } from "@/components/UTMTracker";
 import { UserAuthProvider } from "@/components/user-auth-provider";
 import {
@@ -109,12 +111,16 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
         />
         <div className="shell">
-          <UserAuthProvider>
-            <UTMTracker />
-            <Navbar />
-            {children}
-            <Footer />
-          </UserAuthProvider>
+          <SeyPromptPostHogProvider>
+            <UserAuthProvider>
+              <AccountAccessProvider>
+                <UTMTracker />
+                <Navbar />
+                {children}
+                <Footer />
+              </AccountAccessProvider>
+            </UserAuthProvider>
+          </SeyPromptPostHogProvider>
         </div>
         {process.env.NEXT_PUBLIC_GA_ID ? (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />

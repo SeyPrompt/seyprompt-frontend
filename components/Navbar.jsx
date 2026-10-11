@@ -3,10 +3,12 @@
 import {
   BookmarkCheck,
   ChevronDown,
+  LayoutDashboard,
+  Library,
   LogIn,
   LogOut,
   Menu,
-  User,
+  ReceiptText,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -16,9 +18,8 @@ import { useState } from "react";
 import { useUserAuth } from "@/components/user-auth-provider";
 
 const primaryLinks = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Discover" },
   { href: "/prompts", label: "Prompts" },
-  { href: "/image-video-prompts", label: "Visuals" },
   { href: "/ai-prompt-guide", label: "Guide" },
   { href: "/ai-tools", label: "Tools" },
   { href: "/use-cases", label: "Use Cases" },
@@ -35,6 +36,18 @@ function isActive(pathname, href) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+function AccountAvatar({ initial, src }) {
+  return (
+    <span className="navbar-account-avatar" aria-hidden="true">
+      {src ? (
+        <img alt="" referrerPolicy="no-referrer" src={src} />
+      ) : (
+        initial
+      )}
+    </span>
+  );
+}
+
 function AccountDropdownContent({ auth, closeMenu }) {
   const name = auth.user?.name?.trim();
   const email = auth.user?.email?.trim();
@@ -47,12 +60,39 @@ function AccountDropdownContent({ auth, closeMenu }) {
       </div>
       <Link
         className="navbar-user-dropdown-item"
+        href="/dashboard"
+        onClick={closeMenu}
+        role="menuitem"
+      >
+        <LayoutDashboard aria-hidden="true" size={16} />
+        Dashboard
+      </Link>
+      <Link
+        className="navbar-user-dropdown-item"
         href="/saved"
         onClick={closeMenu}
         role="menuitem"
       >
         <BookmarkCheck aria-hidden="true" size={16} />
         Saved Prompts
+      </Link>
+      <Link
+        className="navbar-user-dropdown-item"
+        href="/unlocked-prompts"
+        onClick={closeMenu}
+        role="menuitem"
+      >
+        <Library aria-hidden="true" size={16} />
+        Unlocked Prompts
+      </Link>
+      <Link
+        className="navbar-user-dropdown-item"
+        href="/orders"
+        onClick={closeMenu}
+        role="menuitem"
+      >
+        <ReceiptText aria-hidden="true" size={16} />
+        Orders
       </Link>
       <button
         className="navbar-user-dropdown-item"
@@ -78,6 +118,9 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isAdminPath = pathname.startsWith("/admin");
   const moreActive = moreLinks.some((link) => isActive(pathname, link.href));
+  const accountName = auth.user?.name?.trim() || auth.user?.email?.trim() || "Account";
+  const accountInitial = accountName.slice(0, 1).toUpperCase();
+  const accountAvatarUrl = auth.user?.avatarUrl || "";
 
   function closeMenu() {
     setOpen(false);
@@ -147,14 +190,16 @@ export function Navbar() {
                   aria-expanded={userMenuOpen}
                   aria-haspopup="menu"
                   aria-label="Open account menu"
-                  className={`navbar-icon-button${userMenuOpen ? " active" : ""}`}
+                  className={`navbar-account-button${userMenuOpen || isActive(pathname, "/dashboard") || isActive(pathname, "/saved") || isActive(pathname, "/unlocked-prompts") || isActive(pathname, "/orders") ? " active" : ""}`}
                   onClick={() => {
                     setUserMenuOpen((current) => !current);
                     setMoreMenuOpen(false);
                   }}
                   type="button"
                 >
-                  <User aria-hidden="true" size={18} />
+                  <AccountAvatar initial={accountInitial} src={accountAvatarUrl} />
+                  <span className="navbar-account-label">Account</span>
+                  <ChevronDown aria-hidden="true" size={15} />
                 </button>
                 <div className={`navbar-user-dropdown${userMenuOpen ? " open" : ""}`} role="menu">
                   <AccountDropdownContent auth={auth} closeMenu={closeMenu} />
@@ -162,37 +207,17 @@ export function Navbar() {
               </div>
             ) : (
               <Link
-                aria-label="Login"
-                className={`login-button login-icon-button${isActive(pathname, "/login") ? " active" : ""}`}
+                className={`login-button navbar-login-button${isActive(pathname, "/login") ? " active" : ""}`}
                 href="/login"
                 onClick={closeMenu}
                 title="Login"
               >
                 <LogIn aria-hidden="true" size={18} />
+                Login
               </Link>
             )
           ) : null}
         </nav>
-        {!isAdminPath && auth.isAuthenticated ? (
-          <div className="navbar-user-menu navbar-mobile-user-trigger">
-            <button
-              aria-expanded={userMenuOpen}
-              aria-haspopup="menu"
-              aria-label="Open account menu"
-              className={`navbar-icon-button${userMenuOpen ? " active" : ""}`}
-              onClick={() => {
-                setUserMenuOpen((current) => !current);
-                setMoreMenuOpen(false);
-              }}
-              type="button"
-            >
-              <User aria-hidden="true" size={18} />
-            </button>
-            <div className={`navbar-user-dropdown${userMenuOpen ? " open" : ""}`} role="menu">
-              <AccountDropdownContent auth={auth} closeMenu={closeMenu} />
-            </div>
-          </div>
-        ) : null}
         <button
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           className="navbar-toggle"
@@ -230,11 +255,32 @@ export function Navbar() {
             auth.isAuthenticated ? (
               <>
                 <Link
+                  className={`mobile-nav-link${isActive(pathname, "/dashboard") ? " active" : ""}`}
+                  href="/dashboard"
+                  onClick={closeMenu}
+                >
+                  Dashboard
+                </Link>
+                <Link
                   className={`mobile-nav-link${isActive(pathname, "/saved") ? " active" : ""}`}
                   href="/saved"
                   onClick={closeMenu}
                 >
                   Saved Prompts
+                </Link>
+                <Link
+                  className={`mobile-nav-link${isActive(pathname, "/unlocked-prompts") ? " active" : ""}`}
+                  href="/unlocked-prompts"
+                  onClick={closeMenu}
+                >
+                  Unlocked Prompts
+                </Link>
+                <Link
+                  className={`mobile-nav-link${isActive(pathname, "/orders") ? " active" : ""}`}
+                  href="/orders"
+                  onClick={closeMenu}
+                >
+                  Orders
                 </Link>
                 <button
                   className="mobile-nav-link mobile-logout-button"

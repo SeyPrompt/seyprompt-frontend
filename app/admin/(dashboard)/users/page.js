@@ -60,6 +60,28 @@ function getBadgeClass(type, value) {
   return "status-badge";
 }
 
+function getMembershipBadgeClass(summary) {
+  if (summary?.status === "active") {
+    return "status-badge status-badge-success";
+  }
+
+  if (summary?.status === "expired") {
+    return "status-badge status-badge-muted";
+  }
+
+  return "status-badge";
+}
+
+function formatMembershipStatus(user) {
+  const summary = user.membershipSummary;
+
+  if (summary?.label) {
+    return summary.planName ? `${summary.label}: ${summary.planName}` : summary.label;
+  }
+
+  return user.membershipType || "free";
+}
+
 function buildHref(params, updates) {
   const nextParams = new URLSearchParams();
 
@@ -189,7 +211,11 @@ export default async function AdminUsersPage({ searchParams }) {
                       <td>
                         <span className="pill">{user.role || "user"}</span>
                       </td>
-                      <td>{user.membershipType || "free"}</td>
+                      <td>
+                        <span className={getMembershipBadgeClass(user.membershipSummary)}>
+                          {formatMembershipStatus(user)}
+                        </span>
+                      </td>
                       <td>
                         <span className={getBadgeClass("status", user.status)}>
                           {user.status || "active"}
@@ -217,7 +243,9 @@ export default async function AdminUsersPage({ searchParams }) {
                   </div>
                   <div className="admin-card-meta">
                     <span>{user.role || "user"}</span>
-                    <span>{user.membershipType || "free"}</span>
+                    <span className={getMembershipBadgeClass(user.membershipSummary)}>
+                      {formatMembershipStatus(user)}
+                    </span>
                     <span className={getBadgeClass("status", user.status)}>
                       {user.status || "active"}
                     </span>

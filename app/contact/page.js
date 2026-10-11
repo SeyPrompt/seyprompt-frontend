@@ -1,7 +1,12 @@
 import { ContactForm } from "@/components/contact-form";
 import { SocialLinks } from "@/components/SocialLinks";
-import { WandSparkles, Sparkles, Workflow, Bot } from "lucide-react";
-import { createPageMetadata } from "@/lib/seo";
+import { WandSparkles, Sparkles, Workflow, Bot, CreditCard, ShieldCheck } from "lucide-react";
+import { createPageMetadata, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
+import {
+  SUPPORT_EMAIL,
+  VERIFIED_BUSINESS_ADDRESS,
+  VERIFIED_LEGAL_NAME
+} from "@/lib/policy-info";
 
 export const metadata = createPageMetadata({
   title: "Contact SeyPrompt - Custom AI Prompts & Support",
@@ -35,6 +40,27 @@ const services = [
     description:
       "Turn repeatable tasks into prompt-driven systems that save time and reduce manual effort.",
   },
+];
+
+const supportDetails = [
+  {
+    label: "Operator",
+    value: VERIFIED_LEGAL_NAME || PARENT_COMPANY_NAME,
+    href: PARENT_COMPANY_URL
+  },
+  {
+    label: "Support email",
+    value: SUPPORT_EMAIL,
+    href: `mailto:${SUPPORT_EMAIL}`
+  },
+  {
+    label: "Business address",
+    value: VERIFIED_BUSINESS_ADDRESS || "Launch blocker: verified business address not configured."
+  },
+  {
+    label: "Payment support",
+    value: "Use the contact form for payment, subscription, prompt unlock, credit, refund, or delivery issues."
+  }
 ];
 
 export default function ContactPage() {
@@ -77,6 +103,42 @@ export default function ContactPage() {
           </div>
 
           <ContactForm />
+
+          <section className="panel contact-billing-card">
+            <div>
+              <div className="eyebrow">Support details</div>
+              <h2>Account, billing, and policy help</h2>
+              <p className="muted">
+                For payment support, include your SeyPrompt account email and
+                order or Razorpay reference if available. Never share card
+                numbers, CVV, OTPs, banking passwords, or account passwords.
+              </p>
+            </div>
+            <div className="contact-support-grid">
+              {supportDetails.map((detail) => (
+                <div className="contact-support-item" key={detail.label}>
+                  <span>{detail.label}</span>
+                  {detail.href ? (
+                    <a href={detail.href} rel="noopener noreferrer" target={detail.href.startsWith("http") ? "_blank" : undefined}>
+                      {detail.value}
+                    </a>
+                  ) : (
+                    <strong>{detail.value}</strong>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="contact-support-actions">
+              <span>
+                <CreditCard aria-hidden="true" size={18} />
+                Payment, subscription, and refund support
+              </span>
+              <span>
+                <ShieldCheck aria-hidden="true" size={18} />
+                Privacy requests and account safety
+              </span>
+            </div>
+          </section>
 
           <aside className="panel contact-social-card">
             <div>

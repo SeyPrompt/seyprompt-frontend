@@ -39,7 +39,7 @@ export default async function AdminDashboardLayout({ children }) {
         <div className="admin-header">
           <div>
             <h1>Admin</h1>
-            <p className="muted">Manage prompts, users, and library controls.</p>
+            <p className="muted">Manage prompts, users, pricing, and payment access.</p>
           </div>
           <AdminTabs />
         </div>

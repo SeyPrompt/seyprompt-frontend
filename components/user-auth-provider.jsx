@@ -4,10 +4,17 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   clearUserAuth,
+  fetchUserProfile,
   getStoredUserAuth,
   saveUserAuth
 } from "@/lib/user-auth";
-import { setAnalyticsUserIdFromHash, clearAnalyticsUserId, setAnalyticsUserProperty, clearAnalyticsUserProperty } from "@/lib/analytics";
+import {
+  clearAnalyticsUserId,
+  clearAnalyticsUserProperty,
+  setAnalyticsUserIdFromHash,
+  setAnalyticsUserProperty,
+  trackEvent
+} from "@/lib/analytics";
 
 const UserAuthContext = createContext(null);
 
@@ -17,9 +24,47 @@ export function UserAuthProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setAuth(getStoredUserAuth());
+    const storedAuth = getStoredUserAuth();
+    setAuth(storedAuth);
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!auth?.token) {
+      return undefined;
+    }
+
+    let active = true;
+
+    fetchUserProfile(auth.token)
+      .then((profile) => {
+        if (!active || !profile?.id) {
+          return;
+        }
+
+        setAuth((currentAuth) => {
+          if (!currentAuth?.token || currentAuth.token !== auth.token) {
+            return currentAuth;
+          }
+
+          const nextAuth = {
+            ...currentAuth,
+            user: {
+              ...currentAuth.user,
+              ...profile
+            }
+          };
+
+          saveUserAuth(nextAuth);
+          return nextAuth;
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [auth?.token]);
 
   function login(authResponse) {
     const nextAuth = {
@@ -34,9 +79,14 @@ export function UserAuthProvider({ children }) {
       setAnalyticsUserIdFromHash(authResponse.hashedUserId);
       setAnalyticsUserProperty(authResponse.hashedUserId);
     }
+    trackEvent("login_completed", {
+      auth_provider: authResponse.user?.authProvider || "password",
+      user_role: authResponse.user?.role || "user"
+    });
   }
 
   function logout() {
+    trackEvent("logout_completed");
     clearUserAuth();
     setAuth(null);
     router.replace("/login");

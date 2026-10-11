@@ -14,8 +14,8 @@ export const metadata = {
 
 export default function DashboardPage() {
   return (
-    <main className="section login-section">
-      <div className="container login-container">
+    <main className="section dashboard-section">
+      <div className="container dashboard-container">
         <UserDashboard />
       </div>
     </main>

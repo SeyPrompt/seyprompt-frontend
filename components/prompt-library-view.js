@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
+import { ArrowUpRight, ChevronDown, LayoutGrid, List, RotateCcw, Search, Table2 } from "lucide-react";
+import { PromptAccessLink } from "@/components/PromptAccessLink";
+import { useAccountAccess } from "@/components/account-access-provider";
 import { PromptCard } from "@/components/prompt-card";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { ToolBadges } from "@/components/tool-badges";
 import { trackEvent } from "@/lib/analytics";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
+import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import { apiUrl } from "@/utils/api";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 
@@ -102,7 +105,7 @@ function PromptMetaPills({ prompt, compact = false }) {
   );
 }
 
-function PromptListItem({ prompt }) {
+function PromptListItem({ isUnlocked = false, prompt }) {
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const description = prompt.description || "";
@@ -129,16 +132,19 @@ function PromptListItem({ prompt }) {
         </div>
       </div>
       <div className="library-list-actions">
+        <span className={`price-badge price-badge-${getPromptPricingType(prompt)}${isUnlocked && getPromptPricingType(prompt) === "premium" ? " price-badge-owned" : ""}`}>
+          <span className="price-badge-amount">{formatPromptPrice(prompt)}</span>
+        </span>
         <SavedPromptButton className="library-list-save" iconOnly prompt={prompt} />
-        <Link className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
+        <PromptAccessLink className="button compact library-row-link" href={`/prompts/${prompt.slug}`}>
           View <ArrowUpRight size={16} aria-hidden="true" />
-        </Link>
+        </PromptAccessLink>
       </div>
     </article>
   );
 }
 
-function PromptTable({ prompts }) {
+function PromptTable({ isPromptUnlocked, prompts }) {
   return (
     <div className="library-table-wrap">
       <table className="table library-table">
@@ -147,6 +153,7 @@ function PromptTable({ prompts }) {
             <th>Title</th>
             <th>Tags</th>
             <th>Tools</th>
+            <th>Price</th>
             <th>Status</th>
             <th aria-label="Actions"></th>
           </tr>
@@ -158,9 +165,9 @@ function PromptTable({ prompts }) {
             return (
               <tr key={prompt._id || prompt.id || prompt.slug}>
                 <td className="library-table-title-cell">
-                  <Link className="library-table-title" href={`/prompts/${prompt.slug}`}>
+                  <PromptAccessLink className="library-table-title" href={`/prompts/${prompt.slug}`}>
                     {prompt.title}
-                  </Link>
+                  </PromptAccessLink>
                   <div className="muted library-table-description">
                     {description.slice(0, 90)}
                     {description.length > 90 ? "..." : ""}
@@ -173,18 +180,23 @@ function PromptTable({ prompts }) {
                   <ToolBadges compact tools={prompt.tools || []} />
                 </td>
                 <td>
+                  <span className={`price-badge price-badge-${getPromptPricingType(prompt)}${isPromptUnlocked(prompt) && getPromptPricingType(prompt) === "premium" ? " price-badge-owned" : ""}`}>
+                    <span className="price-badge-amount">{formatPromptPrice(prompt)}</span>
+                  </span>
+                </td>
+                <td>
                   <span className="status-badge">Published</span>
                 </td>
                 <td>
                   <div className="library-table-actions">
                     <SavedPromptButton iconOnly prompt={prompt} />
-                    <Link
+                    <PromptAccessLink
                       aria-label={`View ${prompt.title}`}
                       className="library-table-view"
                       href={`/prompts/${prompt.slug}`}
                     >
                       <ArrowUpRight size={18} aria-hidden="true" />
-                    </Link>
+                    </PromptAccessLink>
                   </div>
                 </td>
               </tr>
@@ -196,21 +208,33 @@ function PromptTable({ prompts }) {
   );
 }
 
+function LibrarySelectControl({ children }) {
+  return (
+    <span className="library-select-control">
+      {children}
+      <ChevronDown size={15} aria-hidden="true" />
+    </span>
+  );
+}
+
 export function PromptLibraryView({
   prompts,
   q,
   category = "",
   tag = "",
   tool = "",
+  pricing = "",
   limit,
   loadFailed = false,
   total,
   children
 }) {
+  const { isPromptUnlocked } = useAccountAccess();
   const [view, setView] = useState("Card");
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [selectedTag, setSelectedTag] = useState(tag);
   const [selectedTool, setSelectedTool] = useState(tool);
+  const [selectedPricing, setSelectedPricing] = useState(pricing);
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     tags: [],
@@ -262,12 +286,13 @@ export function PromptLibraryView({
     setSelectedCategory(category);
     setSelectedTag(tag);
     setSelectedTool(tool);
-  }, [category, tag, tool]);
+    setSelectedPricing(pricing);
+  }, [category, tag, tool, pricing]);
 
   const categoryOptions = mergeSelectedOption(filterOptions.categories, selectedCategory);
   const tagOptions = mergeSelectedOption(filterOptions.tags, selectedTag);
   const toolOptions = mergeSelectedOption(filterOptions.tools, selectedTool);
-  const hasActiveFilters = Boolean(q || category || tag || tool);
+  const hasActiveFilters = Boolean(q || category || tag || tool || pricing);
 
   function renderFilterOptions(options, emptyLabel, selectedValue) {
     if (filterOptionsLoading) {
@@ -303,7 +328,8 @@ export function PromptLibraryView({
             search_term: formData.get("q") || "",
             category: formData.get("category") || "",
             tag: formData.get("tag") || "",
-            tool: formData.get("tool") || ""
+            tool: formData.get("tool") || "",
+            pricing: formData.get("pricing") || ""
           });
         }}
       >
@@ -313,52 +339,70 @@ export function PromptLibraryView({
           name="q"
           placeholder="Search prompts, tags, tools..."
         />
-        <select
-          className="library-filter-select"
-          disabled={filterOptionsLoading}
-          name="category"
-          onChange={(event) => {
-            setSelectedCategory(event.target.value);
-            trackEvent("category_filter_click", {
-              event_category: "Filter",
-              event_label: event.target.value || "All Categories"
-            });
-          }}
-          value={selectedCategory}
-        >
-          <option value="">{filterOptionRequests.categories.label}</option>
-          {renderFilterOptions(
-            categoryOptions,
-            filterOptionRequests.categories.emptyLabel,
-            selectedCategory
-          )}
-        </select>
-        <select
-          className="library-filter-select"
-          disabled={filterOptionsLoading}
-          name="tool"
-          onChange={(event) => {
-            setSelectedTool(event.target.value);
-            trackEvent("tool_filter_click", {
-              event_category: "Filter",
-              event_label: event.target.value || "All Tools"
-            });
-          }}
-          value={selectedTool}
-        >
-          <option value="">{filterOptionRequests.tools.label}</option>
-          {renderFilterOptions(toolOptions, filterOptionRequests.tools.emptyLabel, selectedTool)}
-        </select>
-        <select
-          className="library-filter-select"
-          disabled={filterOptionsLoading}
-          name="tag"
-          onChange={(event) => setSelectedTag(event.target.value)}
-          value={selectedTag}
-        >
-          <option value="">{filterOptionRequests.tags.label}</option>
-          {renderFilterOptions(tagOptions, filterOptionRequests.tags.emptyLabel, selectedTag)}
-        </select>
+        <LibrarySelectControl>
+          <select
+            className="library-filter-select"
+            disabled={filterOptionsLoading}
+            name="category"
+            onChange={(event) => {
+              setSelectedCategory(event.target.value);
+              trackEvent("category_filter_click", {
+                event_category: "Filter",
+                event_label: event.target.value || "All Categories"
+              });
+            }}
+            value={selectedCategory}
+          >
+            <option value="">{filterOptionRequests.categories.label}</option>
+            {renderFilterOptions(
+              categoryOptions,
+              filterOptionRequests.categories.emptyLabel,
+              selectedCategory
+            )}
+          </select>
+        </LibrarySelectControl>
+        <LibrarySelectControl>
+          <select
+            className="library-filter-select"
+            disabled={filterOptionsLoading}
+            name="tool"
+            onChange={(event) => {
+              setSelectedTool(event.target.value);
+              trackEvent("tool_filter_click", {
+                event_category: "Filter",
+                event_label: event.target.value || "All Tools"
+              });
+            }}
+            value={selectedTool}
+          >
+            <option value="">{filterOptionRequests.tools.label}</option>
+            {renderFilterOptions(toolOptions, filterOptionRequests.tools.emptyLabel, selectedTool)}
+          </select>
+        </LibrarySelectControl>
+        <LibrarySelectControl>
+          <select
+            className="library-filter-select"
+            name="pricing"
+            onChange={(event) => setSelectedPricing(event.target.value)}
+            value={selectedPricing}
+          >
+            <option value="">All prices</option>
+            <option value="free">Free</option>
+            <option value="premium">Premium</option>
+          </select>
+        </LibrarySelectControl>
+        <LibrarySelectControl>
+          <select
+            className="library-filter-select"
+            disabled={filterOptionsLoading}
+            name="tag"
+            onChange={(event) => setSelectedTag(event.target.value)}
+            value={selectedTag}
+          >
+            <option value="">{filterOptionRequests.tags.label}</option>
+            {renderFilterOptions(tagOptions, filterOptionRequests.tags.emptyLabel, selectedTag)}
+          </select>
+        </LibrarySelectControl>
         <input name="limit" type="hidden" value={limit} />
         <div className="library-filter-actions">
           <button
@@ -413,7 +457,11 @@ export function PromptLibraryView({
           {view === "Card" ? (
             <div className="grid prompt-grid">
               {prompts.map((prompt) => (
-                <PromptCard key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
+                <PromptCard
+                  isUnlocked={isPromptUnlocked(prompt)}
+                  key={prompt._id || prompt.id || prompt.slug}
+                  prompt={prompt}
+                />
               ))}
             </div>
           ) : null}
@@ -421,12 +469,16 @@ export function PromptLibraryView({
           {view === "List" ? (
             <div className="prompt-list library-list-view">
               {prompts.map((prompt) => (
-                <PromptListItem key={prompt._id || prompt.id || prompt.slug} prompt={prompt} />
+                <PromptListItem
+                  isUnlocked={isPromptUnlocked(prompt)}
+                  key={prompt._id || prompt.id || prompt.slug}
+                  prompt={prompt}
+                />
               ))}
             </div>
           ) : null}
 
-          {view === "Table" ? <PromptTable prompts={prompts} /> : null}
+          {view === "Table" ? <PromptTable isPromptUnlocked={isPromptUnlocked} prompts={prompts} /> : null}
 
           {children}
         </>

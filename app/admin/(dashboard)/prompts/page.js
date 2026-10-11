@@ -3,6 +3,7 @@ import { Eye, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
+import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import { DeletePromptButton } from "@/components/delete-prompt-button";
 
 export const metadata = {
@@ -25,6 +26,12 @@ function truncateDescription(description = "") {
   }
 
   return `${cleanDescription.slice(0, 89).trimEnd()}...`;
+}
+
+function formatAdminViewCount(viewsCount) {
+  const views = Math.max(Number(viewsCount || 0), 0);
+
+  return `${views.toLocaleString("en-IN")} ${views === 1 ? "view" : "views"}`;
 }
 
 function PromptViewLink({ prompt }) {
@@ -107,6 +114,8 @@ export default async function AdminPromptsPage({ searchParams }) {
                     <th>Category</th>
                     <th>Tools</th>
                     <th>Status</th>
+                    <th>Price</th>
+                    <th>Views</th>
                     <th>Featured</th>
                     <th>Actions</th>
                   </tr>
@@ -146,6 +155,14 @@ export default async function AdminPromptsPage({ searchParams }) {
                         </td>
                         <td>
                           <span className="status-badge">{prompt.status}</span>
+                        </td>
+                        <td>
+                          <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                        </td>
+                        <td>
+                          <span className="admin-readable-count">
+                            {formatAdminViewCount(prompt.viewsCount)}
+                          </span>
                         </td>
                         <td>
                           {prompt.isFeatured ? (
@@ -202,6 +219,8 @@ export default async function AdminPromptsPage({ searchParams }) {
                       {firstTool ? <span>{firstTool}</span> : null}
                       {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
+                      <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                      <span>{formatAdminViewCount(prompt.viewsCount)}</span>
                       {prompt.isFeatured ? (
                         <span className="status-badge featured-badge">
                           Featured

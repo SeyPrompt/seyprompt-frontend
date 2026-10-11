@@ -1,19 +1,24 @@
 "use client";
 
-import Link from "next/link";
+import { LockOpen } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { PromptAccessLink } from "@/components/PromptAccessLink";
+import { PromptCheckoutModal } from "@/components/PromptCheckoutModal";
+import { formatPromptPriceParts, getPromptPricingType } from "@/lib/prompt-pricing";
 import { getPromptCategories, getPrimaryPromptCategory } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import { ToolBadges } from "@/components/tool-badges";
 
-export function PromptCard({ prompt }) {
+export function PromptCard({ prompt, isUnlocked = false }) {
   const tools = prompt.tools || [];
   const categories = getPromptCategories(prompt);
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const description = prompt.description || prompt.prompt || "";
   const promptTags = prompt.tags || [];
+  const pricingType = getPromptPricingType(prompt);
+  const displayPrice = formatPromptPriceParts(prompt);
   const tagPills = promptTags.length
     ? promptTags.slice(0, 1).map((tag) => ({ label: `#${tag}`, key: `tag-${tag}` }))
     : (categories.length ? categories.slice(0, 2) : ["General"]).map((category) => ({
@@ -23,35 +28,32 @@ export function PromptCard({ prompt }) {
 
   return (
     <article className="card prompt-card">
-      <SavedPromptButton className="prompt-card-save" iconOnly prompt={prompt} />
-      <div className="prompt-card-main">
-        <div className="prompt-icon category-icon" aria-hidden="true">
-          <CategoryIcon size={22} />
+      <div className="prompt-card-top">
+        <div className="prompt-card-category">
+          <span className="prompt-icon category-icon" aria-hidden="true">
+            <CategoryIcon size={22} />
+          </span>
+          <span>
+            <span className="prompt-card-kicker">Prompt</span>
+            <span className="prompt-card-category-name">{primaryCategory || "General"}</span>
+          </span>
         </div>
-        <div className="prompt-card-copy">
-          <div className="eyebrow">{primaryCategory || "General"}</div>
-          <h3>{prompt.title}</h3>
-          <p className="muted prompt-card-description">
-            {description.slice(0, 150)}
-            {description.length > 150 ? "..." : ""}
-          </p>
-          <div className="pill-row prompt-card-tags">
-            {tagPills.map((tag) => (
-              <span className="pill" key={tag.key}>
-                {tag.label}
-              </span>
-            ))}
-          </div>
+        <div className="prompt-card-controls">
+          <span className={`price-badge stacked-price-badge prompt-card-price price-badge-${pricingType}${isUnlocked && pricingType === "premium" ? " price-badge-owned" : ""}`}>
+            <span>
+              <span className="price-badge-amount">{displayPrice.label}</span>
+              {displayPrice.suffix ? <small>{displayPrice.suffix}</small> : null}
+            </span>
+          </span>
         </div>
       </div>
-      <div className="prompt-card-footer">
-        <ToolBadges tools={tools} />
-        <div className="prompt-actions">
-          <Link
-            className="button compact"
+
+      <div className="prompt-card-copy">
+        <h3>
+          <PromptAccessLink
             href={`/prompts/${prompt.slug}`}
             onClick={() =>
-              trackEvent("prompt_card_click", {
+              trackEvent("prompt_card_title_click", {
                 event_category: "Prompt",
                 event_label: prompt.slug || prompt.title,
                 prompt_slug: prompt.slug,
@@ -59,8 +61,65 @@ export function PromptCard({ prompt }) {
               })
             }
           >
-            View
-          </Link>
+            {prompt.title}
+          </PromptAccessLink>
+        </h3>
+        <p className="muted prompt-card-description">
+          {description.slice(0, 170)}
+          {description.length > 170 ? "..." : ""}
+        </p>
+        <div className="pill-row prompt-card-tags">
+          {tagPills.map((tag) => (
+            <span className="pill" key={tag.key}>
+              {tag.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="prompt-card-footer">
+        <ToolBadges maxVisible={1} tools={tools} />
+        <div className="prompt-actions">
+          <SavedPromptButton className="prompt-card-save" iconOnly prompt={prompt} />
+          {pricingType === "premium" && isUnlocked ? (
+            <PromptAccessLink
+              className="button compact prompt-card-view-unlocked"
+              href={`/prompts/${prompt.slug}`}
+              onClick={() =>
+                trackEvent("prompt_card_unlocked_view_click", {
+                  event_category: "Prompt",
+                  event_label: prompt.slug || prompt.title,
+                  prompt_slug: prompt.slug,
+                  prompt_category: primaryCategory || "General"
+                })
+              }
+            >
+              <LockOpen aria-hidden="true" size={16} />
+              View unlocked
+            </PromptAccessLink>
+          ) : pricingType === "premium" ? (
+            <PromptCheckoutModal
+              initiallyUnlocked={isUnlocked}
+              prompt={prompt}
+              triggerClassName="button compact prompt-card-unlock"
+              triggerLabel="Unlock"
+            />
+          ) : (
+            <PromptAccessLink
+              className="button compact"
+              href={`/prompts/${prompt.slug}`}
+              onClick={() =>
+                trackEvent("prompt_card_click", {
+                  event_category: "Prompt",
+                  event_label: prompt.slug || prompt.title,
+                  prompt_slug: prompt.slug,
+                  prompt_category: primaryCategory || "General"
+                })
+              }
+            >
+              View
+            </PromptAccessLink>
+          )}
         </div>
       </div>
     </article>

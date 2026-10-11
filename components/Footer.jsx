@@ -4,6 +4,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
 import { appVersionLabel } from "@/lib/app-version";
 import { getCategoryPath, PARENT_COMPANY_NAME, PARENT_COMPANY_URL } from "@/lib/seo";
+import { policyLinks } from "@/lib/policy-info";
 import { apiUrl } from "@/utils/api";
 
 const quickLinks = [
@@ -30,10 +31,7 @@ const fallbackCategories = [
 ];
 const fallbackTools = ["ChatGPT", "Claude", "Midjourney", "Canva", "Gemini", "Perplexity"];
 
-const legalLinks = [
-  { href: "/privacy-policy", label: "Privacy Policy" },
-  { href: "/terms-of-use", label: "Terms of Use" },
-];
+const legalLinks = policyLinks;
 
 function toFooterItems(items, fallbackItems, limit = 6) {
   const uniqueItems = Array.from(new Set([...items, ...fallbackItems]));
@@ -160,7 +158,7 @@ export async function Footer() {
           </p>
           <p>
             A product of{" "}
-            <a href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
+            <a className="footer-company-link" href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
               {PARENT_COMPANY_NAME}
             </a>.
           </p>
