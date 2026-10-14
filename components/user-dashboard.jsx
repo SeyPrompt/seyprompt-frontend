@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Bookmark,
   Crown,
   Library,
   LogOut,
@@ -267,6 +268,7 @@ export function UserDashboard() {
         </div>
         <div className="dashboard-command-actions">
           <Link className="button-secondary compact" href="/saved">
+            <Bookmark aria-hidden="true" size={16} />
             Saved prompts
           </Link>
           <button className="button-danger compact" onClick={auth.logout} type="button">
@@ -281,11 +283,15 @@ export function UserDashboard() {
       <section className="dashboard-topology">
         <div className="dashboard-intro-panel">
           <p className="eyebrow">Creator workspace</p>
-          <h1>Build faster from prompts you already own.</h1>
-          <p>
+          <h1>
+            <span className="dashboard-desktop-copy">Build faster from prompts you already own.</span>
+            <span className="dashboard-mobile-copy">Your creative workspace.</span>
+          </h1>
+          <p className="dashboard-desktop-copy">
             Your unlocked prompts, subscription access, and premium library actions
             now live in one focused workspace.
           </p>
+          <p className="dashboard-mobile-copy">Your prompts, purchases, and access in one place.</p>
           <div className="dashboard-quick-actions">
             <Link className="button" href="/prompts">
               Explore prompt library

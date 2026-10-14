@@ -113,10 +113,6 @@ function getReferenceColumnCount() {
     return 4;
   }
 
-  if (window.innerWidth <= 560) {
-    return 1;
-  }
-
   if (window.innerWidth <= 860) {
     return 2;
   }
@@ -558,7 +554,7 @@ export default function HomeVisualFeed({
                   id="home-reference-search"
                   name="q"
                   onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Search portraits, posters, videos, ideas..."
+                  placeholder="Search images and videos..."
                   type="search"
                   value={searchValue}
                 />
