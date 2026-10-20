@@ -243,22 +243,22 @@ export default async function PromptDetailPage({ params }) {
             </section>
 
             <div className="prompt-workspace-side">
+              {promptTips ? (
+                <aside className="prompt-tips-box" aria-labelledby="prompt-tips-heading">
+                  <div className="prompt-tips-icon" aria-hidden="true">
+                    <Lightbulb size={18} />
+                  </div>
+                  <div>
+                    <h3 id="prompt-tips-heading">Tips</h3>
+                    <div className="prose">{promptTips}</div>
+                  </div>
+                </aside>
+              ) : null}
               <PremiumPromptUnlock
                 description={descriptionFromPrompt(prompt)}
                 prompt={prompt}
                 shareUrl={absoluteUrl(`/prompts/${prompt.slug}`)}
               />
-              {promptTips ? (
-                <aside className="prompt-tips-box" aria-label="Prompt tips">
-                  <div className="prompt-tips-icon" aria-hidden="true">
-                    <Lightbulb size={18} />
-                  </div>
-                  <div>
-                    <h3>Use it better</h3>
-                    <div className="prose">{promptTips}</div>
-                  </div>
-                </aside>
-              ) : null}
             </div>
           </div>
 
