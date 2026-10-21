@@ -15,7 +15,7 @@ import {
   isVisualPrompt,
   normalizeText
 } from "@/lib/prompt-visuals";
-import { API_BASE_URL } from "@/utils/api";
+import { apiUrl } from "@/utils/api";
 
 const pageSize = 30;
 
@@ -156,7 +156,7 @@ async function fetchPromptPage(source, page, filters) {
     params.set("pricing", filters.pricing);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/public/prompts?${params.toString()}`, {
+  const response = await fetch(apiUrl(`/api/public/prompts?${params.toString()}`), {
     cache: "no-store"
   });
 
@@ -359,7 +359,7 @@ export default function HomeVisualFeed({
       try {
         const responses = await Promise.allSettled(
           [1, 2, 3, 4, 5, 6, 7].map((pageNumber) =>
-            fetch(`${API_BASE_URL}/api/public/prompts?limit=${pageSize}&page=${pageNumber}`, {
+            fetch(apiUrl(`/api/public/prompts?limit=${pageSize}&page=${pageNumber}`), {
               cache: "no-store",
               signal: controller.signal
             }).then((response) => {

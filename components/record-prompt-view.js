@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { recordPromptView } from "@/lib/api";
+import { recordPromptView } from "@/lib/prompt-views";
 import { RECENTLY_VIEWED_PROMPTS_KEY, upsertPromptListItem } from "@/lib/prompt-storage";
 
 const PROMPT_VIEW_SESSION_PREFIX = "seyprompt_view_recorded:";
