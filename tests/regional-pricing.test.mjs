@@ -85,3 +85,21 @@ test("server-rendered public prompts forward the incoming country", async (t) =>
   });
   assert.equal((await fetchPromptBySlug("packaging-prompt")).pricing.displayAmount, 20);
 });
+
+test("localhost country override applies only in development and after edge headers", () => {
+  const savedNodeEnv = process.env.NODE_ENV;
+  const savedCountry = process.env.DEV_PRICING_COUNTRY;
+  try {
+    process.env.DEV_PRICING_COUNTRY = "IN";
+    process.env.NODE_ENV = "development";
+    assert.equal(pricingCountryHeaders(new Headers())["x-vercel-ip-country"], "IN");
+    assert.equal(pricingCountryHeaders(new Headers({ "x-vercel-ip-country": "US" }))["x-vercel-ip-country"], "US");
+    process.env.NODE_ENV = "production";
+    assert.deepEqual(pricingCountryHeaders(new Headers()), {});
+  } finally {
+    if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = savedNodeEnv;
+    if (savedCountry === undefined) delete process.env.DEV_PRICING_COUNTRY;
+    else process.env.DEV_PRICING_COUNTRY = savedCountry;
+  }
+});
