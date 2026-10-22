@@ -11,6 +11,7 @@ import { useUserAuth } from "@/components/user-auth-provider";
 import { trackEvent } from "@/lib/analytics";
 import {
   createCheckout,
+  closeSubscriptionCheckout,
   createCreditCheckout,
   createPromptCheckout,
   fetchCreditPlans,
@@ -244,7 +245,13 @@ export function PromptCheckoutModal({
             }
           },
           modal: {
-            ondismiss: () => reject(new Error("Checkout was closed."))
+            ondismiss: async () => {
+              try {
+                if (checkout.order?.type === "subscription") await closeSubscriptionCheckout(auth.token, checkout.order.id);
+                await refreshAccess();
+                resolve();
+              } catch (error) { reject(error); }
+            }
           },
           prefill: {
             name: auth.user?.name || "",

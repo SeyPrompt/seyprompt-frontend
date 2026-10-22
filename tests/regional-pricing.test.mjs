@@ -121,3 +121,28 @@ test("existing checkout resume is forwarded without a new checkout or cached res
   assert.equal(seen.options.body, "{}");
   assert.equal(seen.options.cache, "no-store");
 });
+
+test("discarding an old checkout uses the authenticated no-store proxy", async t => {
+  const id = "507f1f77bcf86cd799439011";
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.ok(url.endsWith(`/api/payments/checkout/${id}/close`));
+    assert.equal(options.headers.get("authorization"), "Bearer test");
+    return Response.json({ closed: true });
+  });
+  const result = await POST(new Request(`https://seyprompt.com/api/regional/payments/checkout/${id}/close`, {
+    method: "POST", headers: { authorization: "Bearer test" }, body: "{}"
+  }), context(`payments/checkout/${id}/close`));
+  assert.equal((await result.json()).closed, true);
+});
+
+test("new subscription attempts explicitly request a fresh checkout", async t => {
+  const paymentsSource = (await readFile(new URL("../lib/payments.js", import.meta.url), "utf8"))
+    .replace("@/utils/api", new URL("../utils/api.js", import.meta.url).href);
+  const { createCheckout } = await import(`data:text/javascript;base64,${Buffer.from(paymentsSource).toString("base64")}`);
+  let sent;
+  t.mock.method(globalThis, "fetch", async (_url, options) => { sent = JSON.parse(options.body); return Response.json({}); });
+  await createCheckout("test", { type: "subscription", planId: "p", freshCheckout: false });
+  assert.equal(sent.freshCheckout, true);
+  await createCheckout("test", { type: "single_prompt", promptId: "p" });
+  assert.equal(sent.freshCheckout, undefined);
+});

@@ -6,11 +6,11 @@ const vm = require('node:vm');
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const swc = require('next/dist/build/swc');
-async function loadComponent(file, overrides = {}) {
+async function loadComponent(file, overrides = {}, globals = {}) {
   const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const { code } = await swc.transform(source, { jsc: { parser: { syntax: 'ecmascript', jsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const exports = {};
-  vm.runInNewContext(`(function(require,module,exports){${code}\n})`, { console })(
+  vm.runInNewContext(`(function(require,module,exports){${code}\n})`, { console, ...globals })(
     (id) => overrides[id] || (id === 'next/link' ? ({ children, href }) => React.createElement('a', { href }, children) : require(id)), { exports }, exports);
   return exports;
 }
@@ -108,7 +108,7 @@ test('admin places gateway fields inside regional prices and removes the separat
   assert.doesNotMatch(html, /Recurring plans<|Gateway plans by currency|recurringPlan_INR/);
 });
 
-test('pending checkout shows original price and a resume action while blocking a replacement', async () => {
+test('pending checkout offers discard while keeping a fresh purchase available', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
   const pending = { id: 'saved-order', type: 'subscription', status: 'created', paymentMode: 'ONE_TIME',
     productNameSnapshot: 'Original Starter', amount: 5, currency: 'USD', plan: { id: 'p', name: 'Starter' }, priceSnapshot: { durationDays: 100 } };
@@ -125,7 +125,47 @@ test('pending checkout shows original price and a resume action while blocking a
   const html = renderToStaticMarkup(React.createElement(UserDashboard));
   assert.match(html, /Original Starter/);
   assert.match(html, /\$5/);
-  assert.match(html, /Resume checkout/);
+  assert.match(html, /Discard checkout/);
   assert.match(html, /saved-order/);
-  assert.match(html.match(/<button[^>]*class="button dashboard-plan-submit"[^>]*>/)?.[0] || '', /disabled/);
+  assert.doesNotMatch(html.match(/<button[^>]*class="button dashboard-plan-submit"[^>]*>/)?.[0] || '', /disabled/);
+});
+
+test('closing an unpaid Razorpay popup discards its checkout and refreshes without an error', async () => {
+  const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
+  let sdkOptions;
+  const closed = [], tracked = [];
+  let refreshes = 0;
+  const states = [false, [], false, [plan], [], [], 'p', false, false, ''];
+  let index = 0;
+  const { UserDashboard } = await loadComponent('components/user-dashboard.jsx', {
+    react: { ...React, useState: () => [states[index++], () => {}] },
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/subscription-renewal-options': { __esModule: true, default: Options },
+    '@/components/user-auth-provider': { useUserAuth: () => ({ ready: true, isAuthenticated: true, token: 'mock', user: { name: 'Test' } }) },
+    '@/lib/account-access': { buildUnlockedPromptItems: () => [], isActiveEntitlement: () => false },
+    '@/lib/analytics': { trackEvent: name => tracked.push(name) }, '@/lib/policy-info': { POLICY_VERSION: 'test' },
+    '@/lib/payments': {
+      createCheckout: async () => ({ order: { id: 'draft', type: 'subscription' }, razorpay: { keyId: 'test', orderId: 'order_test' } }),
+      closeSubscriptionCheckout: async (_token, id) => { closed.push(id); return { closed: true }; },
+      fetchPaymentPlans: async () => { refreshes++; return [plan]; },
+      fetchMyPaymentOrders: async () => [], fetchMyEntitlements: async () => [], fetchMySubscriptions: async () => [],
+    }
+  }, { window: { Razorpay: class { constructor(options) { sdkOptions = options; } on() {} open() {} } } });
+  let tree;
+  function Capture() { tree = UserDashboard(); return tree; }
+  renderToStaticMarkup(React.createElement(Capture));
+  const findButton = node => {
+    if (!node || typeof node !== 'object') return null;
+    if (node.props?.className === 'button dashboard-plan-submit') return node;
+    for (const child of React.Children.toArray(node.props?.children)) { const found = findButton(child); if (found) return found; }
+    return null;
+  };
+  const action = findButton(tree).props.onClick();
+  await new Promise(setImmediate);
+  assert.ok(sdkOptions);
+  await sdkOptions.modal.ondismiss();
+  await action;
+  assert.deepEqual(closed, ['draft']);
+  assert.equal(refreshes, 1);
+  assert.ok(!tracked.includes('checkout_failed'));
 });

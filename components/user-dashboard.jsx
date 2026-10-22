@@ -22,7 +22,7 @@ import { trackEvent } from "@/lib/analytics";
 import { POLICY_VERSION } from "@/lib/policy-info";
 import {
   createCheckout,
-  resumeSubscriptionCheckout,
+  closeSubscriptionCheckout,
   fetchMySubscriptions,
   subscriptionAction,
   fetchMyEntitlements,
@@ -180,10 +180,18 @@ export function UserDashboard() {
     } catch (err) { setError(err.message); } finally { setSubscriptionBusy(false); }
   }
 
-  async function subscribeToPlan(resume = null, pending = null) {
+  async function discardCheckout() {
+    if (!pendingCheckout || !auth.token) return;
+    setCheckoutLoading(true);
+    setError("");
+    try { await closeSubscriptionCheckout(auth.token, pendingCheckout.id); }
+    catch (error) { setError(error.message); }
+    finally { await loadAccountPayments(auth.token).catch(() => {}); setCheckoutLoading(false); }
+  }
+
+  async function subscribeToPlan(resume = null) {
     let checkoutPlan = selectedPlan;
-    if (pending) checkoutPlan = { id: pending.plan?.id, name: pending.productNameSnapshot || pending.plan?.name || "Saved checkout" };
-    else if (resume) checkoutPlan = plans.find((p) => p.id === resume.planId) || { name: resume.planName, id: resume.planId };
+    if (resume) checkoutPlan = plans.find((p) => p.id === resume.planId) || { name: resume.planName, id: resume.planId };
     if (!auth.token || !checkoutPlan) {
       return;
     }
@@ -197,7 +205,7 @@ export function UserDashboard() {
 
     try {
       await loadRazorpayScript();
-      const checkout = pending ? await resumeSubscriptionCheckout(auth.token, pending.id) : resume ? await subscriptionAction(auth.token, resume.id, "") : await createCheckout(auth.token, {
+      const checkout = resume ? await subscriptionAction(auth.token, resume.id, "") : await createCheckout(auth.token, {
         type: "subscription",
         planId: checkoutPlan.id,
         paymentMode: autoPay && checkoutPlan.autoPay?.eligible ? "AUTO_RENEW" : "ONE_TIME",
@@ -239,7 +247,13 @@ export function UserDashboard() {
             }
           },
           modal: {
-            ondismiss: () => reject(new Error("Checkout was closed before payment."))
+            ondismiss: async () => {
+              try {
+                if (checkout.order?.type === "subscription") await closeSubscriptionCheckout(auth.token, checkout.order.id);
+                await loadAccountPayments(auth.token);
+                resolve();
+              } catch (error) { reject(error); }
+            }
           },
           prefill: {
             name: auth.user?.name || "",
@@ -391,12 +405,12 @@ export function UserDashboard() {
           </div>)}
           {pendingCheckout ? (
             <section className="subscription-summary" aria-label="Unfinished checkout">
-              <strong>Finish your existing checkout</strong>
+              <strong>Unfinished checkout</strong>
               <p>{pendingCheckout.productNameSnapshot || pendingCheckout.plan?.name || "All-access"} · {formatCurrency(pendingCheckout.amount, pendingCheckout.currency)} · One-time payment</p>
               {pendingCheckout.priceSnapshot?.durationDays ? <p>{pendingCheckout.priceSnapshot.durationDays} days of access</p> : null}
-              <p>Resume at the saved price and currency. If payment already succeeded, we’ll confirm it before reopening checkout.</p>
-              <button className="button-secondary compact" disabled={checkoutLoading} onClick={() => subscribeToPlan(null, pendingCheckout)} type="button">
-                {checkoutLoading ? "Checking payment…" : "Resume checkout"}
+              <p>Discard this unpaid checkout, or choose a plan below to start fresh at its current price. Any payment already in progress must finish first.</p>
+              <button className="button-secondary compact" disabled={checkoutLoading} onClick={discardCheckout} type="button">
+                {checkoutLoading ? "Checking payment…" : "Discard checkout"}
               </button>
               <p>Order ID: {pendingCheckout.id}</p>
             </section>
@@ -428,21 +442,20 @@ export function UserDashboard() {
                   </label>
                 ))}
               </div>
-              <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading || Boolean(pendingCheckout)} />
+              <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading} />
               <p className="dashboard-policy-note">
                 All plans include the full premium library. One-time renewal adds to your remaining paid access.
                 {selectedPlan?.autoPay?.eligible ? " AutoPay renews at the amount and interval you authorize in checkout." : ""}
               </p>
               <button
                 className="button dashboard-plan-submit"
-                disabled={checkoutLoading || Boolean(pendingCheckout) || subscriptions.some((s) => !["cancelled", "completed", "expired"].includes(s.status))}
+                disabled={checkoutLoading || subscriptions.some((s) => !["cancelled", "completed", "expired"].includes(s.status))}
                 onClick={() => subscribeToPlan()}
                 type="button"
               >
                 <ShieldCheck aria-hidden="true" size={17} />
                 {checkoutLoading
                     ? "Opening Checkout..."
-                    : pendingCheckout ? "Resume your existing checkout above"
                     : autoPaySelected
                       ? "Continue with AutoPay"
                       : activeSubscription || paidOrderCount ? "Renew access" : "Continue to payment"}
