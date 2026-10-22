@@ -60,33 +60,50 @@ test('paid order access fallback respects purchased renewal period rather than e
   assert.equal(getOrderAccessExpiry(order).toISOString(), '2027-02-09T00:00:00.000Z');
 });
 
-test('currency text fields produce the existing API mapping without JSON input', async () => {
-  const { buildRecurringPlans } = await loadComponent('lib/recurring-plan-fields.js');
-  const fields = new Map([['recurringPlan_INR', ' plan_testINR '], ['recurringPlan_USD', 'plan_testUSD']]);
-  assert.equal(JSON.stringify(buildRecurringPlans(fields)), JSON.stringify([
-    { currency: 'INR', razorpayPlanId: 'plan_testINR' }, { currency: 'USD', razorpayPlanId: 'plan_testUSD' }
-  ]));
-  fields.set('recurringPlan_USD', '');
-  assert.equal(buildRecurringPlans(fields).length, 1);
-  fields.set('recurringPlan_INR', 'order_wrong');
-  assert.throws(() => buildRecurringPlans(fields), /valid Razorpay plan ID for INR/);
+test('regional rows save independent IDs and preserve an explicit manual-only blank', async () => {
+  const { buildRegionalPrices } = await loadComponent('lib/recurring-plan-fields.js');
+  const rows = [
+    { region: 'DEFAULT', currency: 'USD', amount: 5, isActive: true, razorpayPlanId: ' plan_default ' },
+    { region: 'US', currency: 'USD', amount: 7, isActive: true, razorpayPlanId: 'plan_us' },
+    { region: 'IN', currency: 'INR', amount: 249, isActive: true, razorpayPlanId: '' }
+  ];
+  const result = buildRegionalPrices(rows);
+  assert.equal(result[0].razorpayPlanId, 'plan_default');
+  assert.equal(result[1].razorpayPlanId, 'plan_us');
+  assert.equal(result[2].razorpayPlanId, '');
+  rows[0].razorpayPlanId = 'order_wrong';
+  assert.throws(() => buildRegionalPrices(rows), /valid Razorpay plan ID for DEFAULT/);
 });
 
-test('admin recurring table shows separate currency fields and existing mappings while editing', async () => {
+test('legacy mappings migrate only for unambiguous prices and never override an empty regional ID', async () => {
+  const { regionalGatewayPlanId } = await loadComponent('lib/recurring-plan-fields.js');
+  const india = { region: 'IN', currency: 'INR', amountMinor: 24900 };
+  const existing = { regionalPrices: [india], recurringPlans: [{ currency: 'INR', razorpayPlanId: 'plan_saved' }] };
+  assert.equal(regionalGatewayPlanId(existing, india), 'plan_saved');
+  assert.equal(regionalGatewayPlanId(existing, { ...india, razorpayPlanId: '' }), '');
+  existing.regionalPrices.push({ region: 'DEFAULT', currency: 'INR', amountMinor: 35000 });
+  assert.equal(regionalGatewayPlanId(existing, india), '');
+});
+
+test('admin places gateway fields inside regional prices and removes the separate recurring table', async () => {
   const fields = await loadComponent('lib/recurring-plan-fields.js');
+  const rows = [
+    { id: 'india', region: 'IN', currency: 'INR', amount: 249, isActive: true, razorpayPlanId: 'plan_savedINR' },
+    { id: 'default', region: 'DEFAULT', currency: 'USD', amount: 5, isActive: true, razorpayPlanId: 'plan_savedUSD' }
+  ];
   const existing = { id: 'existing', name: 'Starter', slug: 'starter', price: 249, currency: 'INR', durationDays: 100,
-    autoPayEnabled: true, recurringPlans: [{ currency: 'INR', razorpayPlanId: 'plan_savedINR' }, { currency: 'USD', razorpayPlanId: 'plan_savedUSD' }] };
-  const states = [[existing], existing, '', '', []];
+    autoPayEnabled: true, regionalPrices: rows };
+  const states = [[existing], existing, '', '', rows];
   let index = 0;
   const { AdminPlanManager } = await loadComponent('components/admin-payment-management.js', {
     react: { ...React, useState: () => [states[index++], () => {}] },
     'next/navigation': { useRouter: () => ({}) }, '@/lib/recurring-plan-fields': fields
   });
   const html = renderToStaticMarkup(React.createElement(AdminPlanManager));
-  assert.match(html, /aria-label="INR Razorpay plan ID"/);
-  assert.match(html, /aria-label="USD Razorpay plan ID"/);
-  assert.match(html, /name="recurringPlan_INR"[^>]*value="plan_savedINR"/);
-  assert.match(html, /name="recurringPlan_USD"[^>]*value="plan_savedUSD"/);
-  assert.doesNotMatch(html, /Gateway plans by currency \(JSON\)/);
-  assert.match(html, /<th>Recurring plans<\/th>/);
+  assert.match(html, /aria-label="Regional prices"/);
+  assert.match(html, /aria-label="India Razorpay plan ID"/);
+  assert.match(html, /aria-label="Default \/ International Razorpay plan ID"/);
+  assert.match(html, /name="regionalPlan_india"[^>]*value="plan_savedINR"/);
+  assert.match(html, /name="regionalPlan_default"[^>]*value="plan_savedUSD"/);
+  assert.doesNotMatch(html, /Recurring plans<|Gateway plans by currency|recurringPlan_INR/);
 });

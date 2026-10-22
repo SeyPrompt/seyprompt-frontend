@@ -17,10 +17,10 @@ function PostHogPageViews() {
   useEffect(() => {
     if (!pathname || !posthog.__loaded) return;
 
-    const query = searchParams?.toString();
     posthog.capture("page_viewed", {
       path: pathname,
-      url: query ? `${pathname}?${query}` : pathname,
+      url: pathname,
+      $geoip_disable: true,
     });
   }, [pathname, searchParams]);
 
@@ -38,6 +38,15 @@ export function SeyPromptPostHogProvider({ children }) {
     posthog.init(token, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
       autocapture: false,
+      ip: false,
+      save_referrer: false,
+      store_google: false,
+      respect_dnt: true,
+      property_denylist: ["$current_url", "$referrer", "$initial_current_url", "$initial_referrer", "$ip", "$geoip_city_name", "$geoip_subdivision_1_name", "$geoip_country_code"],
+      before_send: (event) => {
+        if (event) event.properties.$geoip_disable = true;
+        return event;
+      },
       capture_pageview: false,
       disable_session_recording: true,
       loaded: (client) => {

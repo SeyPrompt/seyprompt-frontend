@@ -18,13 +18,13 @@ export const metadata = {
 
 function formatDate(value) {
   if (!value) {
-    return "Never";
+    return "Not Available";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return String(value);
+    return "Not Available";
   }
 
   return new Intl.DateTimeFormat("en", {
@@ -34,7 +34,7 @@ function formatDate(value) {
 }
 
 function formatBoolean(value) {
-  return value ? "Yes" : "No";
+  return value == null ? "Not Available" : value ? "Yes" : "No";
 }
 
 function formatCreatedByAdmin(value) {
@@ -84,12 +84,18 @@ function formatPurchaseStatus(status) {
 export default async function UserDetailPage({ params }) {
   const token = await requireAdminToken();
   const { id } = await params;
-  const user = await fetchAdminUserById(token, id).catch(() => null);
+  if (!/^[a-fA-F0-9]{24}$/.test(id)) notFound();
+  const user = await fetchAdminUserById(token, id).catch((error) => {
+    if (error.status === 404) return null;
+    throw error;
+  });
 
   if (!user) {
     notFound();
   }
 
+  const latest = user.loginHistory?.[0];
+  const available = (value) => value ?? "Not Available";
   return (
     <div className="stack">
       <div>
@@ -98,14 +104,18 @@ export default async function UserDetailPage({ params }) {
         <p className="muted">Review this account before making changes.</p>
       </div>
       <div className="panel form-card stack">
+        <h3>Account Details</h3>
+        {user.avatarUrl && /^https:\/\//.test(user.avatarUrl) ? (
+          <img src={user.avatarUrl} alt="Account profile" width={64} height={64} referrerPolicy="no-referrer" />
+        ) : <p className="muted">Profile picture: Not Available</p>}
         <dl className="admin-detail-grid">
           <div>
             <dt>Name</dt>
-            <dd>{user.name || "Unnamed user"}</dd>
+            <dd>{user.name || "Not Available"}</dd>
           </div>
           <div>
             <dt>Email</dt>
-            <dd>{user.email || "No email"}</dd>
+            <dd>{user.email || "Not Available"}</dd>
           </div>
           <div>
             <dt>Role</dt>
@@ -146,9 +156,60 @@ export default async function UserDetailPage({ params }) {
             </div>
           ) : null}
         </dl>
+        <section className="stack">
+          <h3>Location</h3>
+          <p className="muted">Approximate IP location can reflect a VPN, proxy or network provider and may be inaccurate.</p>
+          <dl className="admin-detail-grid">
+            <div><dt>Country (IP)</dt><dd>{available(latest?.location?.country)}</dd></div>
+            <div><dt>State / region (IP)</dt><dd>{available(latest?.location?.state)}</dd></div>
+            <div><dt>City (IP)</dt><dd>{available(latest?.location?.city)}</dd></div>
+            <div><dt>Precise location (permission-based)</dt><dd>Not Available</dd></div>
+          </dl>
+          <p className="muted">SeyPrompt does not request GPS permission or store precise coordinates.</p>
+        </section>
+        <section className="stack">
+          <h3>Device &amp; Browser</h3>
+          <p className="muted">Reported information from the last retained login; it is not proof of device identity.</p>
+          <dl className="admin-detail-grid">
+            <div><dt>Device type</dt><dd>{available(latest?.deviceType)}</dd></div>
+            <div><dt>Operating system</dt><dd>{available(latest?.os)}</dd></div>
+            <div><dt>Browser</dt><dd>{available(latest?.browser)}</dd></div>
+            <div><dt>Browser language</dt><dd>{available(latest?.language)}</dd></div>
+            <div><dt>Timezone</dt><dd>{available(latest?.timezone)}</dd></div>
+          </dl>
+        </section>
+        <section className="stack">
+          <h3>Login Activity</h3>
+          <dl className="admin-detail-grid">
+            <div><dt>Successful logins observed</dt><dd>{available(user.loginCount)}</dd></div>
+            <div><dt>Tracking started</dt><dd>{formatDate(user.loginTrackingStartedAt)}</dd></div>
+            <div><dt>Last successful login</dt><dd>{formatDate(user.lastLoginAt)}</dd></div>
+            <div><dt>Last login method</dt><dd>{available(latest?.method)}</dd></div>
+            <div><dt>IP address (7-day retention)</dt><dd>{available(latest?.ip)}</dd></div>
+            <div><dt>First referral domain</dt><dd>{available(user.firstReferral?.source)}</dd></div>
+            {["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].map((key) => (
+              <div key={key}><dt>{key}</dt><dd>{available(user.firstReferral?.[key])}</dd></div>
+            ))}
+          </dl>
+          <p className="muted">Counts start when tracking begins; earlier login totals are unknown. History is limited to 50 events within 90 days.</p>
+          {user.loginHistory?.length ? (
+            <div className="admin-accordion-list">
+              {user.loginHistory.map((event) => (
+                <details className="admin-accordion" key={event.id}>
+                  <summary>{formatDate(event.at)} · {event.method}</summary>
+                  <dl className="admin-detail-grid">
+                    <div><dt>Approximate IP location</dt><dd>{[event.location?.city, event.location?.state, event.location?.country].filter(Boolean).join(", ") || "Not Available"}</dd></div>
+                    <div><dt>IP address</dt><dd>{available(event.ip)}</dd></div>
+                    <div><dt>Device / OS / browser</dt><dd>{[event.deviceType, event.os, event.browser].filter(Boolean).join(" / ") || "Not Available"}</dd></div>
+                  </dl>
+                </details>
+              ))}
+            </div>
+          ) : <p className="muted">No retained login activity. Not Available for accounts that have not logged in since tracking began.</p>}
+        </section>
         <section className="admin-user-membership-panel">
           <div>
-            <h3>Membership details</h3>
+            <h3>Membership</h3>
             <p className="muted">
               {formatMembershipStatus(user.membershipDetails || user.membershipSummary, user.membershipType || "free")}
             </p>

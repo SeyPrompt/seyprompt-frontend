@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { buildRecurringPlans, RECURRING_PLAN_CURRENCIES } from "@/lib/recurring-plan-fields";
+import { buildRegionalPrices, regionalGatewayPlanId } from "@/lib/recurring-plan-fields";
 
 const EMPTY_PLAN = {
   name: "",
@@ -105,7 +105,8 @@ function getInitialPlanRegionalPrices(plan) {
 
   return prices.map((price, index) => ({
     id: `${price?.region || "region"}-${index}`,
-    ...normalizeRegionalPriceForAdmin(price)
+    ...normalizeRegionalPriceForAdmin(price),
+    razorpayPlanId: regionalGatewayPlanId(plan || {}, price)
   }));
 }
 
@@ -222,16 +223,12 @@ function buildPlanPayload(formData, regionalPriceRows = []) {
     currency: String(formData.get("currency") || "INR").trim() || "INR",
     durationDays: Number(formData.get("durationDays") || 0),
     autoPayEnabled: formData.get("autoPayEnabled") === "on",
-    recurringPlans: buildRecurringPlans(formData),
     badge: String(formData.get("badge") || "").trim(),
     sortOrder: Number(formData.get("sortOrder") || 0),
     isActive: boolFromSelect(formData.get("isActive")),
-    regionalPrices: regionalPriceRows.map((row) => ({
-      region: String(row.region || "").trim().toUpperCase(),
-      currency: getCurrencyForRegion(row.region, row.currency),
-      amount: Number(row.amount || 0),
-      isActive: Boolean(row.isActive)
-    }))
+    regionalPrices: buildRegionalPrices(regionalPriceRows.map((row) => ({
+      ...row, currency: getCurrencyForRegion(row.region, row.currency)
+    })))
   };
 }
 
@@ -277,12 +274,13 @@ function StatusBadge({ children, tone = "default" }) {
   return <span className={className}>{children}</span>;
 }
 
-function RecurringPlanSummary({ plan }) {
+function RegionalPlanSummary({ plan }) {
+  const linkedRows = getInitialPlanRegionalPrices(plan).filter((row) => row.razorpayPlanId);
   return <div className="recurring-plan-summary">
     <span>{plan.autoPayEnabled ? "AutoPay offered" : "AutoPay not offered"}</span>
-    {plan.recurringPlans?.length ? plan.recurringPlans.map((mapping) => (
-      <span key={mapping.currency}>{mapping.currency}: <code>{mapping.razorpayPlanId}</code></span>
-    )) : <span className="muted">No Razorpay plans linked</span>}
+    {linkedRows.map((row) => (
+      <span key={row.region}>{getRegionLabel(row.region)} ({row.currency}): <code>{row.razorpayPlanId}</code></span>
+    ))}
   </div>;
 }
 
@@ -325,13 +323,15 @@ export function AdminPlanManager({ initialPlans = [] }) {
           return {
             ...row,
             region: nextRegion,
-            currency: getCurrencyForRegion(nextRegion, row.currency)
+            currency: getCurrencyForRegion(nextRegion, row.currency),
+            razorpayPlanId: getCurrencyForRegion(nextRegion, row.currency) === row.currency ? row.razorpayPlanId : ""
           };
         }
 
         return {
           ...row,
-          [field]: value
+          [field]: value,
+          ...(field === "currency" && value !== row.currency ? { razorpayPlanId: "" } : {})
         };
       })
     );
@@ -352,7 +352,8 @@ export function AdminPlanManager({ initialPlans = [] }) {
           region: nextRegion.value,
           currency: getCurrencyForRegion(nextRegion.value),
           amount: 0,
-          isActive: false
+          isActive: false,
+          razorpayPlanId: ""
         }
       ];
     });
@@ -518,43 +519,22 @@ export function AdminPlanManager({ initialPlans = [] }) {
         <div className="field">
           <label className="recurring-plan-optin"><input key={`autopay-${getRecordId(editingPlan) || "new"}`} type="checkbox" name="autoPayEnabled" defaultChecked={formValues.autoPayEnabled === true} /> Offer optional AutoPay</label>
           <p className="muted">Requires the backend feature flag, account capability verification, and an exact matching gateway plan. Existing customers remain on manual renewal.</p>
-          <strong id="recurring-plans-heading">Recurring plans</strong>
-          <p className="muted">Enter the Razorpay subscription plan ID for each currency. Leave a field empty if AutoPay is not offered in that currency.</p>
-          <div className="regional-prices-table-wrap">
-            <table className="regional-prices-table recurring-plans-table" aria-labelledby="recurring-plans-heading">
-              <thead><tr><th scope="col">Currency</th><th scope="col">Razorpay plan ID</th></tr></thead>
-              <tbody>
-                {RECURRING_PLAN_CURRENCIES.map((currency) => (
-                  <tr key={currency}>
-                    <th scope="row">{currency}</th>
-                    <td>
-                      <input aria-label={`${currency} Razorpay plan ID`} type="text"
-                        key={`recurring-${getRecordId(editingPlan) || "new"}-${currency}`}
-                        name={`recurringPlan_${currency}`} placeholder="plan_…"
-                        pattern="plan_[a-zA-Z0-9]+" title="Razorpay plan ID starting with plan_"
-                        autoComplete="off" spellCheck={false}
-                        defaultValue={formValues.recurringPlans?.find((mapping) => mapping.currency === currency)?.razorpayPlanId || ""} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <small>Use a Razorpay plan matching this plan’s price, currency and exact day interval.</small>
+
         </div>
         <div className="field pricing-region-field">
           <div className="pricing-table-title-row">
             <label>Regional prices</label>
-            <span className="muted">Currency follows the selected region. Active rows are used at checkout.</span>
+            <span className="muted">Add a Razorpay plan ID to offer AutoPay for a region. Leave it blank for one-time payments only.</span>
           </div>
           <div className="regional-prices-table-wrap">
-            <table className="regional-prices-table">
+            <table className="regional-prices-table regional-plan-prices-table" aria-label="Regional prices">
               <thead>
                 <tr>
                   <th>Active</th>
                   <th>Region</th>
                   <th>Currency</th>
                   <th>Amount</th>
+                  <th>Razorpay plan ID (optional)</th>
                   <th>Remove</th>
                 </tr>
               </thead>
@@ -622,6 +602,13 @@ export function AdminPlanManager({ initialPlans = [] }) {
                         />
                       </td>
                       <td>
+                        <input aria-label={`${getRegionLabel(row.region)} Razorpay plan ID`}
+                          name={`regionalPlan_${row.id}`} type="text" placeholder="plan_…"
+                          pattern="plan_[a-zA-Z0-9]+" title="Razorpay plan ID starting with plan_"
+                          autoComplete="off" spellCheck={false} value={row.razorpayPlanId || ""}
+                          onChange={(event) => updateRegionalPriceRow(row.id, "razorpayPlanId", event.target.value)} />
+                      </td>
+                      <td>
                         <button
                           aria-label={`Remove ${getRegionLabel(row.region)} price`}
                           className="button-secondary compact button-icon"
@@ -678,7 +665,6 @@ export function AdminPlanManager({ initialPlans = [] }) {
                 <th>Plan</th>
                 <th>Price</th>
                 <th>Duration</th>
-                <th>Recurring plans</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -690,9 +676,8 @@ export function AdminPlanManager({ initialPlans = [] }) {
                     <strong>{plan.name}</strong>
                     <div className="muted">{plan.slug}</div>
                   </td>
-                  <td>{summarizePlanPrice(plan)}</td>
+                  <td>{summarizePlanPrice(plan)}<RegionalPlanSummary plan={plan} /></td>
                   <td>{plan.durationDays} days</td>
-                  <td><RecurringPlanSummary plan={plan} /></td>
                   <td><StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge></td>
                   <td>
                     <div className="toolbar admin-table-actions">
@@ -719,7 +704,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
               <div className="admin-card-meta">
                 <span>{summarizePlanPrice(plan)}</span>
                 <span>{plan.durationDays} days</span>
-                <RecurringPlanSummary plan={plan} />
+                <RegionalPlanSummary plan={plan} />
                 <StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge>
               </div>
               <div className="toolbar admin-table-actions">

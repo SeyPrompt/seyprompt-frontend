@@ -27,6 +27,7 @@ async function harness(profileResult = () => Promise.resolve({ id: 'user-1' })) 
   };
   const mocks = {
     react,
+    "@/lib/login-metadata": { captureFirstReferral: () => null },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
     'next/navigation': { useRouter: () => ({ replace: path => calls.push(path) }) },
     '@/lib/user-auth': {

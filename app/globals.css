@@ -9926,8 +9926,8 @@ select:not([multiple]) {
 .subscription-renewal-options input { margin-top: .25rem; flex-shrink: 0; }
 .subscription-summary button { margin: .25rem; }
 
-.recurring-plans-table { min-width: 360px; }
-.recurring-plans-table input[type="text"] { min-height: 38px; width: 100%; }
+.regional-plan-prices-table { min-width: 850px; }
+.regional-plan-prices-table input[type="text"] { min-height: 38px; min-width: 230px; width: 100%; }
 .recurring-plan-summary { display: grid; gap: 4px; overflow-wrap: anywhere; }
 .recurring-plan-summary code { font-size: .8rem; }
 

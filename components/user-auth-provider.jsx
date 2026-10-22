@@ -18,6 +18,8 @@ import {
   trackEvent
 } from "@/lib/analytics";
 
+import { captureFirstReferral } from "@/lib/login-metadata";
+
 const UserAuthContext = createContext(null);
 
 export function UserAuthProvider({ children }) {
@@ -26,6 +28,7 @@ export function UserAuthProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    captureFirstReferral();
     const storedAuth = getStoredUserAuth();
     setAuth(storedAuth);
     setReady(true);

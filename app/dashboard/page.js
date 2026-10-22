@@ -1,3 +1,4 @@
+import { LoginMetadataPrivacy } from "@/components/login-metadata-privacy";
 import { UserDashboard } from "@/components/user-dashboard";
 
 export const metadata = {
@@ -17,6 +18,7 @@ export default function DashboardPage() {
     <main className="section dashboard-section">
       <div className="container dashboard-container">
         <UserDashboard />
+        <LoginMetadataPrivacy />
       </div>
     </main>
   );
