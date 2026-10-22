@@ -9917,3 +9917,11 @@ select:not([multiple]) {
     width: 100%;
   }
 }
+
+.subscription-renewal-options, .subscription-summary {
+  padding: 1rem; margin: 1rem 0; border: 1px solid #cde3d8; border-radius: 12px;
+  overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5;
+}
+.subscription-renewal-options label { display: flex; align-items: flex-start; gap: .5rem; }
+.subscription-renewal-options input { margin-top: .25rem; flex-shrink: 0; }
+.subscription-summary button { margin: .25rem; }

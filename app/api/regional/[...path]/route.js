@@ -7,12 +7,12 @@ function isAllowed(path, method) {
   if (method === "GET") {
     return /^public\/(prompts(?:\/[^/]+(?:\/metadata)?)?|categories)$/.test(path) ||
       /^user\/prompts\/[^/]+$/.test(path) ||
-      /^payments\/(plans|credit-plans|wallet(?:\/ledger)?|orders|entitlements|access|pricing\/context)$/.test(path);
+      /^payments\/(plans|credit-plans|wallet(?:\/ledger)?|orders|entitlements|subscriptions(?:\/[a-fA-F0-9]{24})?|access|pricing\/context)$/.test(path);
   }
 
   return method === "POST" && (
     /^public\/prompts\/[^/]+\/view$/.test(path) ||
-    /^payments\/(checkout(?:\/(prompt|credits))?|verify|prompts\/[^/]+\/unlock)$/.test(path)
+    /^payments\/(checkout(?:\/(prompt|credits))?|verify|subscriptions(?:\/[a-fA-F0-9]{24}\/(?:verify|cancel))?|prompts\/[^/]+\/unlock)$/.test(path)
   );
 }
 

@@ -1,5 +1,7 @@
 "use client";
 
+import SubscriptionRenewalOptions from "@/components/subscription-renewal-options";
+
 import { Lock, LockOpen, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -17,6 +19,7 @@ import {
   fetchWallet,
   fetchUserPrompt,
   unlockPromptWithCredits,
+  subscriptionAction,
   verifyCheckout
 } from "@/lib/payments";
 import { formatPromptPrice } from "@/lib/prompt-pricing";
@@ -67,6 +70,7 @@ export function PromptCheckoutModal({
   const auth = useUserAuth();
   const { refreshAccess } = useAccountAccess();
   const router = useRouter();
+  const [autoPay, setAutoPay] = useState(false);
   const [open, setOpen] = useState(false);
   const [plans, setPlans] = useState([]);
   const [accessPlans, setAccessPlans] = useState([]);
@@ -201,6 +205,7 @@ export function PromptCheckoutModal({
     try {
       await loadRazorpayScript();
       const checkout = await createOrder();
+      if (checkout.alreadyPaid) { await refreshAccess(); setError("Your previous payment was confirmed. Refresh to see your access."); return; }
       const razorpay = checkout.razorpay;
 
       await new Promise((resolve, reject) => {
@@ -210,10 +215,12 @@ export function PromptCheckoutModal({
           currency: razorpay.currency,
           name: "SeyPrompt",
           description: prompt.title,
-          order_id: razorpay.orderId,
+          ...(razorpay.subscriptionId ? { subscription_id: razorpay.subscriptionId, method: razorpay.method } : { order_id: razorpay.orderId }),
           handler: async (response) => {
             try {
-              await verifyCheckout(auth.token, {
+              if (checkout.subscription) {
+                await subscriptionAction(auth.token, checkout.subscription.id, "verify", response);
+              } else await verifyCheckout(auth.token, {
                 paymentOrderId: checkout.order.id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -224,7 +231,7 @@ export function PromptCheckoutModal({
               trackEvent(
                 target === "subscription" ? "subscription_activated" : "prompt_purchased",
                 {
-                  event_id: `checkout:${checkout.order.id}`,
+                  event_id: `checkout:${checkout.order?.id || checkout.subscription?.id}`,
                   checkout_target: target,
                   prompt_id: prompt.id || prompt._id || "",
                 }
@@ -383,20 +390,19 @@ export function PromptCheckoutModal({
                   <input
                     checked={selectedAccessPlanId === plan.id}
                     name="checkoutAccessPlan"
-                    onChange={() => setSelectedAccessPlanId(plan.id)}
+                    onChange={() => { setSelectedAccessPlanId(plan.id); setAutoPay(false); }}
                     type="radio"
                     value={plan.id}
                   />
                   <span>{plan.badge || plan.name}</span>
                   <strong>{formatAccessPlanPrice(plan)}</strong>
                   <small>
-                    {Number(plan.durationDays || 0) >= 365
-                      ? "All prompts for 1 year"
-                      : `${plan.durationDays || 30} days all-access`}
+                    {plan.durationDays} days all-access
                   </small>
                 </label>
               ))}
             </div>
+            <SubscriptionRenewalOptions plan={selectedAccessPlan} enabled={autoPay} onChange={setAutoPay} disabled={Boolean(loadingTarget)} />
             <button
               className="button-secondary checkout-plan-button"
               disabled={!selectedAccessPlanId || Boolean(loadingTarget)}
@@ -405,6 +411,8 @@ export function PromptCheckoutModal({
                   createCheckout(auth.token, {
                     type: "subscription",
                     planId: selectedAccessPlanId,
+                    paymentMode: autoPay && selectedAccessPlan?.autoPay?.eligible ? "AUTO_RENEW" : "ONE_TIME",
+                    autoPayConsent: autoPay && selectedAccessPlan?.autoPay?.eligible === true,
                     acceptedTerms: true,
                     termsVersion: POLICY_VERSION
                   })
@@ -490,7 +498,7 @@ export function PromptCheckoutModal({
 
   return (
     <>
-      <button className={triggerClassName} onClick={() => setOpen(true)} type="button">
+      <button className={triggerClassName} onClick={() => { setAutoPay(false); setOpen(true); }} type="button">
         <Lock aria-hidden="true" size={16} />
         {triggerLabel}
       </button>

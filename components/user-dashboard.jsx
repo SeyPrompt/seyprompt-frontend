@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SubscriptionRenewalOptions from "@/components/subscription-renewal-options";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -21,6 +22,8 @@ import { trackEvent } from "@/lib/analytics";
 import { POLICY_VERSION } from "@/lib/policy-info";
 import {
   createCheckout,
+  fetchMySubscriptions,
+  subscriptionAction,
   fetchMyEntitlements,
   fetchMyPaymentOrders,
   fetchPaymentPlans,
@@ -80,6 +83,9 @@ function DashboardAvatar({ initial, src }) {
 export function UserDashboard() {
   const router = useRouter();
   const auth = useUserAuth();
+  const [autoPay, setAutoPay] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptionBusy, setSubscriptionBusy] = useState(false);
   const [plans, setPlans] = useState([]);
   const [orders, setOrders] = useState([]);
   const [entitlements, setEntitlements] = useState([]);
@@ -89,12 +95,14 @@ export function UserDashboard() {
   const [error, setError] = useState("");
 
   async function loadAccountPayments(token) {
-    const [nextPlans, nextOrders, nextEntitlements] = await Promise.all([
+    const [nextPlans, nextOrders, nextEntitlements, nextSubscriptions] = await Promise.all([
       fetchPaymentPlans(),
       fetchMyPaymentOrders(token),
-      fetchMyEntitlements(token)
+      fetchMyEntitlements(token),
+      fetchMySubscriptions(token)
     ]);
 
+    setSubscriptions(nextSubscriptions);
     setPlans(nextPlans);
     setOrders(nextOrders);
     setEntitlements(nextEntitlements);
@@ -160,27 +168,41 @@ export function UserDashboard() {
       : "Lifetime all-access active"
     : "Free account";
 
-  async function subscribeToPlan() {
-    if (!auth.token || !selectedPlan) {
+  async function manageSubscription(subscription, cancel) {
+    if (cancel && !window.confirm("Cancel future automatic renewals? Your existing paid access will remain until expiry.")) return;
+    setSubscriptionBusy(true); setError("");
+    try {
+      await subscriptionAction(auth.token, subscription.id, cancel ? "cancel" : "", cancel ? { confirm: true } : {});
+      await loadAccountPayments(auth.token);
+    } catch (err) { setError(err.message); } finally { setSubscriptionBusy(false); }
+  }
+
+  async function subscribeToPlan(resume = null) {
+    const checkoutPlan = resume ? plans.find((p) => p.id === resume.planId) || { name: resume.planName, id: resume.planId } : selectedPlan;
+    if (!auth.token || !checkoutPlan) {
       return;
     }
 
     setCheckoutLoading(true);
     setError("");
     trackEvent("subscription_checkout_started", {
-      plan_id: selectedPlan.id,
-      plan_slug: selectedPlan.slug || "",
+      plan_id: checkoutPlan.id,
+      plan_slug: checkoutPlan.slug || "",
     });
 
     try {
       await loadRazorpayScript();
-      const checkout = await createCheckout(auth.token, {
+      const checkout = resume ? await subscriptionAction(auth.token, resume.id, "") : await createCheckout(auth.token, {
         type: "subscription",
-        planId: selectedPlan.id,
+        planId: checkoutPlan.id,
+        paymentMode: autoPay && checkoutPlan.autoPay?.eligible ? "AUTO_RENEW" : "ONE_TIME",
+        autoPayConsent: autoPay && checkoutPlan.autoPay?.eligible === true,
         acceptedTerms: true,
         termsVersion: POLICY_VERSION
       });
+      if (checkout.alreadyPaid) { await loadAccountPayments(auth.token); return; }
       const razorpay = checkout.razorpay;
+      if (!razorpay) throw new Error("This authorization cannot be resumed. Refresh its status or contact support.");
 
       await new Promise((resolve, reject) => {
         const instance = new window.Razorpay({
@@ -188,20 +210,22 @@ export function UserDashboard() {
           amount: razorpay.amount,
           currency: razorpay.currency,
           name: "SeyPrompt",
-          description: selectedPlan.name,
-          order_id: razorpay.orderId,
+          description: checkoutPlan.name,
+          ...(razorpay.subscriptionId ? { subscription_id: razorpay.subscriptionId, method: razorpay.method } : { order_id: razorpay.orderId }),
           handler: async (response) => {
             try {
-              await verifyCheckout(auth.token, {
+              if (checkout.subscription) {
+                await subscriptionAction(auth.token, checkout.subscription.id, "verify", response);
+              } else await verifyCheckout(auth.token, {
                 paymentOrderId: checkout.order.id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature
               });
               trackEvent("subscription_activated", {
-                event_id: `subscription:${checkout.order.id}`,
-                plan_id: selectedPlan.id,
-                plan_slug: selectedPlan.slug || "",
+                event_id: `subscription:${checkout.order?.id || checkout.subscription?.id}`,
+                plan_id: checkoutPlan.id,
+                plan_slug: checkoutPlan.slug || "",
               });
               await loadAccountPayments(auth.token);
               resolve();
@@ -236,7 +260,7 @@ export function UserDashboard() {
       setError(message);
       trackEvent("checkout_failed", {
         checkout_target: "subscription",
-        plan_id: selectedPlan.id,
+        plan_id: checkoutPlan.id,
         reason: message,
       });
     } finally {
@@ -337,6 +361,29 @@ export function UserDashboard() {
               : "Unlock every premium prompt plus future paid drops from one place."}
           </p>
 
+          {entitlements.filter((e) => e.type === "subscription" && e.paymentMode !== "AUTO_RENEW").slice(0, 1).map((e) => {
+            const days = e.expiresAt ? Math.ceil((new Date(e.expiresAt) - Date.now()) / 86400000) : null;
+            return <div className="subscription-summary" key={e.id}>
+              <strong>{e.plan?.name || "All-access"} · {isActiveEntitlement(e) ? "Active" : "Expired"}</strong>
+              <p>Paid {formatCurrency(e.amountPaid, e.currency || "INR")} · One-time · AutoPay disabled</p>
+              <p>Started {formatDate(e.startsAt)} · Expires {formatDate(e.expiresAt)}</p>
+              {days !== null && days > 0 && days <= 7 ? <p role="status">Your subscription expires {days <= 1 ? "within 1 day" : `in ${days} days`}. Renew below to keep access.</p> : null}
+            </div>;
+          })}
+          {subscriptions.map((s) => <div className="subscription-summary" key={s.id}>
+            <strong>{s.planName} · {s.status}</strong>
+            <p>AutoPay {s.autoRenewEnabled ? "enabled" : "disabled"} · {formatCurrency(s.billingAmount / 100, s.billingCurrency)} every {s.billingInterval} days</p>
+            <p>Started {formatDate(s.startsAt)} · Paid access until {formatDate(s.expiresAt)}</p>
+            {s.nextBillingDate ? <p>Next billing date: {formatDate(s.nextBillingDate)}</p> : null}
+            {s.lastPaymentFailureAt ? <p>Last failed payment: {formatDate(s.lastPaymentFailureAt)}. Razorpay manages retries; access extends after a verified successful payment.</p> : null}
+            {s.cancelAtPeriodEnd ? <p>{s.status === "cancelled" ? "AutoPay cancelled." : "Cancellation requested; awaiting gateway completion."} Paid access is retained until expiry.</p> : null}
+            <button className="button-secondary compact" disabled={subscriptionBusy} onClick={() => manageSubscription(s, false)} type="button">Refresh status and payments</button>
+            {!["cancelled", "completed", "expired", "creating"].includes(s.status) && !s.cancelAtPeriodEnd ? <button className="button-secondary compact" disabled={subscriptionBusy} onClick={() => manageSubscription(s, true)} type="button">Cancel AutoPay</button> : null}
+            {s.status === "created" ? <button className="button-secondary compact" disabled={checkoutLoading} onClick={() => {
+              if (window.confirm(`Authorize AutoPay at ${formatCurrency(s.billingAmount / 100, s.billingCurrency)} every ${s.billingInterval} days?`)) subscribeToPlan(s);
+            }} type="button">Resume AutoPay authorization</button> : null}
+            {s.status === "creating" ? <p>Authorization is being reconciled. Contact support before starting another checkout.</p> : null}
+          </div>)}
           {plans.length ? (
             <>
               <div className="dashboard-plan-stack">
@@ -348,7 +395,7 @@ export function UserDashboard() {
                     <input
                       checked={selectedPlanId === plan.id}
                       name="dashboardWorkbenchPlan"
-                      onChange={() => setSelectedPlanId(plan.id)}
+                      onChange={() => { setSelectedPlanId(plan.id); setAutoPay(false); }}
                       type="radio"
                       value={plan.id}
                     />
@@ -358,32 +405,29 @@ export function UserDashboard() {
                     <span>
                       <strong>{formatPlanPrice(plan)} - {plan.name}</strong>
                       <small>
-                        {plan.durationDays >= 365
-                          ? `${formatPlanPrice(plan)}/year`
-                          : `${formatPlanPrice(plan)}/${plan.durationDays} days`}
+                        {formatPlanPrice(plan)} / {plan.durationDays} days
                       </small>
                     </span>
                   </label>
                 ))}
               </div>
+              <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading} />
               <p className="dashboard-policy-note">
                 Prices shown are the SeyPrompt checkout total before payment.
-                All-access starts when payment is confirmed and does not renew
-                automatically.
+                Manual renewal adds the selected duration after your remaining paid access.
+                All plans unlock the same library; changing plans follows this same rule.
               </p>
               <button
                 className="button dashboard-plan-submit"
-                disabled={checkoutLoading || Boolean(activeSubscription)}
-                onClick={subscribeToPlan}
+                disabled={checkoutLoading || subscriptions.some((s) => !["cancelled", "completed", "expired"].includes(s.status))}
+                onClick={() => subscribeToPlan()}
                 type="button"
               >
                 <ShieldCheck aria-hidden="true" size={17} />
-                {activeSubscription
-                  ? "Plan Active"
-                  : checkoutLoading
+                {checkoutLoading
                     ? "Opening Checkout..."
-                    : paidOrderCount
-                      ? "Upgrade Access"
+                    : activeSubscription || paidOrderCount
+                      ? "Renew Subscription"
                       : "Subscribe Now"}
               </button>
             </>

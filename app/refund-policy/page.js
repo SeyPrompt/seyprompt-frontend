@@ -13,7 +13,7 @@ const sections = [
   {
     title: "Cancellation",
     items: [
-      "SeyPrompt all-access plans are fixed-duration manual purchases and do not renew automatically. Cancellation generally means choosing not to buy another plan after the current access period ends.",
+      "SeyPrompt all-access plans do not renew automatically by default. Optional AutoPay requires explicit authorization. Cancel AutoPay from your account to stop future charges; cancellation status is confirmed by Razorpay and existing paid access remains until expiry. Cancellation does not itself refund a completed payment.",
       "Single-prompt unlocks and credit packs are digital purchases delivered to your account after payment confirmation and do not have a recurring cancellation cycle.",
       "A failed-payment reversal or bank chargeback is different from choosing not to renew and may be handled by your bank, card network, wallet, Razorpay, or SeyPrompt depending on the issue."
     ]

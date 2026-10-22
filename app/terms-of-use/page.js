@@ -59,7 +59,7 @@ const terms = [
     items: [
       "All-access plans grant access to premium prompts during the plan duration shown at checkout.",
       "Plans start when payment is confirmed and end when the purchased duration expires.",
-      "Plans do not renew automatically. Buying another plan is a separate manual purchase.",
+      "Plans are one-time purchases by default. Where offered, AutoPay requires explicit consent and recurring card authorization through Razorpay at the displayed amount, currency and exact billing interval.",
       "If you already have active all-access, SeyPrompt does not offer another all-access purchase from the account dashboard. If an all-access purchase is completed, the access period starts from that payment confirmation and does not add remaining time from another plan."
     ]
   },
@@ -98,7 +98,7 @@ const terms = [
   {
     title: "Cancellations, Refunds, And Failed Payments",
     items: [
-      "Because all-access plans are fixed-duration manual purchases, cancellation generally means choosing not to buy another plan after the current access period ends.",
+      "For manual plans, choose not to renew. For AutoPay, use Cancel AutoPay in your account to request cancellation of future gateway charges. Paid access continues until expiry. Re-enabling AutoPay requires a new authorization.",
       "Single-prompt unlocks and credit packs are digital purchases and do not have a recurring cancellation cycle.",
       "Pending, failed, or reversed payments do not grant access. If money is deducted but the purchase is not confirmed, contact support so the order can be reviewed.",
       "Refund handling is described in the Refund & Cancellation Policy. Approved refunds may remove the related access or credits for the refunded purchase."
@@ -140,7 +140,7 @@ export default function TermsOfUsePage() {
               </a>
               . Review the checkout details before paying: paid products are
               digital, external AI tools are separate, and all-access plans do
-              not renew automatically.
+              not renew automatically unless you explicitly authorize AutoPay.
             </p>
             <span className="legal-updated">{policyDateLabel}</span>
           </div>

@@ -220,6 +220,8 @@ function buildPlanPayload(formData, regionalPriceRows = []) {
     price: Number(formData.get("price") || 0),
     currency: String(formData.get("currency") || "INR").trim() || "INR",
     durationDays: Number(formData.get("durationDays") || 0),
+    autoPayEnabled: formData.get("autoPayEnabled") === "on",
+    recurringPlans: JSON.parse(String(formData.get("recurringPlans") || "[]")),
     badge: String(formData.get("badge") || "").trim(),
     sortOrder: Number(formData.get("sortOrder") || 0),
     isActive: boolFromSelect(formData.get("isActive")),
@@ -387,7 +389,9 @@ export function AdminPlanManager({ initialPlans = [] }) {
       return;
     }
 
-    const payload = buildPlanPayload(new FormData(form), regionalPriceRows);
+    let payload;
+    try { payload = buildPlanPayload(new FormData(form), regionalPriceRows); }
+    catch { setError("Gateway plans must contain valid JSON."); setLoadingAction(""); return; }
     const planId = getRecordId(editingPlan);
     const endpoint = planId ? `/api/admin/plans/${planId}` : "/api/admin/plans";
     const method = planId ? "PUT" : "POST";
@@ -500,6 +504,13 @@ export function AdminPlanManager({ initialPlans = [] }) {
               <option value="false">Inactive</option>
             </select>
           </div>
+        </div>
+        <div className="field">
+          <label><input key={`autopay-${getRecordId(editingPlan) || "new"}`} type="checkbox" name="autoPayEnabled" defaultChecked={formValues.autoPayEnabled === true} /> Offer optional AutoPay</label>
+          <p className="muted">Requires the backend feature flag, account capability verification, and an exact matching gateway plan. Existing customers remain on manual renewal.</p>
+          <label htmlFor="plan-recurring">Gateway plans by currency (JSON)</label>
+          <textarea id="plan-recurring" key={`recurring-${getRecordId(editingPlan) || "new"}`} name="recurringPlans" rows={3} defaultValue={JSON.stringify(formValues.recurringPlans || [])} />
+          <small>Each entry needs currency and razorpayPlanId. The backend checks amount, currency, and exact day interval with Razorpay before authorization.</small>
         </div>
         <div className="field pricing-region-field">
           <div className="pricing-table-title-row">
@@ -1200,6 +1211,12 @@ export function AdminPaymentsManager({
                     <span>Expires {formatDate(entitlement.expiresAt)}</span>
                     <StatusBadge tone={revoked ? "danger" : "success"}>{revoked ? "Revoked" : "Active"}</StatusBadge>
                   </div>
+                  <p className="muted">{entitlement.paymentMode || "ONE_TIME"} · AutoPay {entitlement.autoRenewEnabled ? "enabled" : "disabled"}</p>
+                  {entitlement.razorpaySubscriptionId ? <p className="muted">Gateway: {entitlement.razorpaySubscriptionId} · {entitlement.subscriptionStatus}
+                    {" · "}{formatCurrency(entitlement.billingAmount / 100, entitlement.billingCurrency)}
+                    {entitlement.cancelAtPeriodEnd ? " · Cancellation requested" : ""}
+                    {entitlement.lastPaymentFailureAt ? ` · Last failed payment ${formatDate(entitlement.lastPaymentFailureAt)}` : ""}
+                  </p> : null}
                   {entitlement.notes ? <p className="muted">{entitlement.notes}</p> : null}
                   <button className="button-danger compact" disabled={revoked || Boolean(loadingAction)} onClick={() => revokeEntitlement(entitlement)} type="button">
                     Revoke
