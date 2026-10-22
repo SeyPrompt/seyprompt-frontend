@@ -7673,51 +7673,13 @@ select:not([multiple]) {
 }
 
 .google-login-button {
-  position: relative;
-  min-height: 42px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #4285f4;
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.24);
+  min-height: 44px;
   width: 100%;
 }
 
-.google-login-surface {
-  display: grid;
-  min-height: 42px;
-  align-items: center;
-  grid-template-columns: 58px minmax(0, 1fr);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 760;
-  line-height: 1;
-  pointer-events: none;
-  text-align: center;
-}
-
-.google-login-logo {
-  display: grid;
-  height: 42px;
-  place-items: center;
-  background: #fff;
-}
-
-.google-login-logo svg {
-  display: block;
-  height: 26px;
-  width: 26px;
-}
-
 .google-login-native {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-
-.google-login-native > div,
-.google-login-native iframe {
-  height: 100% !important;
-  width: 100% !important;
+  min-height: 44px;
+  width: 100%;
 }
 
 .google-login-button.disabled {
