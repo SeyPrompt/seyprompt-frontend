@@ -12,7 +12,7 @@ function isAllowed(path, method) {
 
   return method === "POST" && (
     /^public\/prompts\/[^/]+\/view$/.test(path) ||
-    /^payments\/(checkout(?:\/(prompt|credits))?|verify|subscriptions(?:\/[a-fA-F0-9]{24}\/(?:verify|cancel))?|prompts\/[^/]+\/unlock)$/.test(path)
+    /^payments\/(checkout(?:\/(?:prompt|credits|[a-fA-F0-9]{24}\/resume))?|verify|subscriptions(?:\/[a-fA-F0-9]{24}\/(?:verify|cancel))?|prompts\/[^/]+\/unlock)$/.test(path)
   );
 }
 

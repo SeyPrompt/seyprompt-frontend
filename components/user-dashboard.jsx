@@ -22,6 +22,7 @@ import { trackEvent } from "@/lib/analytics";
 import { POLICY_VERSION } from "@/lib/policy-info";
 import {
   createCheckout,
+  resumeSubscriptionCheckout,
   fetchMySubscriptions,
   subscriptionAction,
   fetchMyEntitlements,
@@ -159,6 +160,7 @@ export function UserDashboard() {
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || plans[0];
   const paidOrderCount = orders.filter((order) => order.status === "paid").length;
+  const pendingCheckout = orders.find((order) => order.type === "subscription" && order.status === "created" && order.paymentMode !== "AUTO_RENEW");
   const autoPaySelected = Boolean(autoPay && selectedPlan?.autoPay?.eligible);
   const accountName = auth.user?.name || auth.user?.email || "SeyPrompt user";
   const accountInitial = accountName.slice(0, 1).toUpperCase();
@@ -178,8 +180,10 @@ export function UserDashboard() {
     } catch (err) { setError(err.message); } finally { setSubscriptionBusy(false); }
   }
 
-  async function subscribeToPlan(resume = null) {
-    const checkoutPlan = resume ? plans.find((p) => p.id === resume.planId) || { name: resume.planName, id: resume.planId } : selectedPlan;
+  async function subscribeToPlan(resume = null, pending = null) {
+    let checkoutPlan = selectedPlan;
+    if (pending) checkoutPlan = { id: pending.plan?.id, name: pending.productNameSnapshot || pending.plan?.name || "Saved checkout" };
+    else if (resume) checkoutPlan = plans.find((p) => p.id === resume.planId) || { name: resume.planName, id: resume.planId };
     if (!auth.token || !checkoutPlan) {
       return;
     }
@@ -193,7 +197,7 @@ export function UserDashboard() {
 
     try {
       await loadRazorpayScript();
-      const checkout = resume ? await subscriptionAction(auth.token, resume.id, "") : await createCheckout(auth.token, {
+      const checkout = pending ? await resumeSubscriptionCheckout(auth.token, pending.id) : resume ? await subscriptionAction(auth.token, resume.id, "") : await createCheckout(auth.token, {
         type: "subscription",
         planId: checkoutPlan.id,
         paymentMode: autoPay && checkoutPlan.autoPay?.eligible ? "AUTO_RENEW" : "ONE_TIME",
@@ -264,6 +268,7 @@ export function UserDashboard() {
         plan_id: checkoutPlan.id,
         reason: message,
       });
+      await loadAccountPayments(auth.token).catch(() => {});
     } finally {
       setCheckoutLoading(false);
     }
@@ -384,6 +389,18 @@ export function UserDashboard() {
             }} type="button">Resume AutoPay authorization</button> : null}
             {s.status === "creating" ? <p>Authorization is being reconciled. Contact support before starting another checkout.</p> : null}
           </div>)}
+          {pendingCheckout ? (
+            <section className="subscription-summary" aria-label="Unfinished checkout">
+              <strong>Finish your existing checkout</strong>
+              <p>{pendingCheckout.productNameSnapshot || pendingCheckout.plan?.name || "All-access"} · {formatCurrency(pendingCheckout.amount, pendingCheckout.currency)} · One-time payment</p>
+              {pendingCheckout.priceSnapshot?.durationDays ? <p>{pendingCheckout.priceSnapshot.durationDays} days of access</p> : null}
+              <p>Resume at the saved price and currency. If payment already succeeded, we’ll confirm it before reopening checkout.</p>
+              <button className="button-secondary compact" disabled={checkoutLoading} onClick={() => subscribeToPlan(null, pendingCheckout)} type="button">
+                {checkoutLoading ? "Checking payment…" : "Resume checkout"}
+              </button>
+              <p>Order ID: {pendingCheckout.id}</p>
+            </section>
+          ) : null}
           {plans.length ? (
             <>
               <div className="dashboard-plan-stack">
@@ -411,20 +428,21 @@ export function UserDashboard() {
                   </label>
                 ))}
               </div>
-              <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading} />
+              <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading || Boolean(pendingCheckout)} />
               <p className="dashboard-policy-note">
                 All plans include the full premium library. One-time renewal adds to your remaining paid access.
                 {selectedPlan?.autoPay?.eligible ? " AutoPay renews at the amount and interval you authorize in checkout." : ""}
               </p>
               <button
                 className="button dashboard-plan-submit"
-                disabled={checkoutLoading || subscriptions.some((s) => !["cancelled", "completed", "expired"].includes(s.status))}
+                disabled={checkoutLoading || Boolean(pendingCheckout) || subscriptions.some((s) => !["cancelled", "completed", "expired"].includes(s.status))}
                 onClick={() => subscribeToPlan()}
                 type="button"
               >
                 <ShieldCheck aria-hidden="true" size={17} />
                 {checkoutLoading
                     ? "Opening Checkout..."
+                    : pendingCheckout ? "Resume your existing checkout above"
                     : autoPaySelected
                       ? "Continue with AutoPay"
                       : activeSubscription || paidOrderCount ? "Renew access" : "Continue to payment"}

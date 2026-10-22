@@ -107,3 +107,25 @@ test('admin places gateway fields inside regional prices and removes the separat
   assert.match(html, /name="regionalPlan_default"[^>]*value="plan_savedUSD"/);
   assert.doesNotMatch(html, /Recurring plans<|Gateway plans by currency|recurringPlan_INR/);
 });
+
+test('pending checkout shows original price and a resume action while blocking a replacement', async () => {
+  const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
+  const pending = { id: 'saved-order', type: 'subscription', status: 'created', paymentMode: 'ONE_TIME',
+    productNameSnapshot: 'Original Starter', amount: 5, currency: 'USD', plan: { id: 'p', name: 'Starter' }, priceSnapshot: { durationDays: 100 } };
+  const states = [false, [], false, [plan], [pending], [], 'p', false, false, ''];
+  let index = 0;
+  const { UserDashboard } = await loadComponent('components/user-dashboard.jsx', {
+    react: { ...React, useState: () => [states[index++], () => {}] },
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/subscription-renewal-options': { __esModule: true, default: Options },
+    '@/components/user-auth-provider': { useUserAuth: () => ({ ready: true, isAuthenticated: true, token: 'mock', user: { name: 'Test' } }) },
+    '@/lib/account-access': { buildUnlockedPromptItems: () => [], isActiveEntitlement: () => false },
+    '@/lib/analytics': { trackEvent() {} }, '@/lib/policy-info': { POLICY_VERSION: 'test' }, '@/lib/payments': {}
+  });
+  const html = renderToStaticMarkup(React.createElement(UserDashboard));
+  assert.match(html, /Original Starter/);
+  assert.match(html, /\$5/);
+  assert.match(html, /Resume checkout/);
+  assert.match(html, /saved-order/);
+  assert.match(html.match(/<button[^>]*class="button dashboard-plan-submit"[^>]*>/)?.[0] || '', /disabled/);
+});
