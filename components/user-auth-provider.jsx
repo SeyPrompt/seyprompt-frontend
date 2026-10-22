@@ -6,6 +6,8 @@ import {
   clearUserAuth,
   fetchUserProfile,
   getStoredUserAuth,
+  logoutUser,
+  USER_AUTH_STORAGE_KEY,
   saveUserAuth
 } from "@/lib/user-auth";
 import {
@@ -27,6 +29,14 @@ export function UserAuthProvider({ children }) {
     const storedAuth = getStoredUserAuth();
     setAuth(storedAuth);
     setReady(true);
+
+    function syncAuth(event) {
+      if (event.key === USER_AUTH_STORAGE_KEY || event.key === null) {
+        setAuth(getStoredUserAuth());
+      }
+    }
+    window.addEventListener("storage", syncAuth);
+    return () => window.removeEventListener("storage", syncAuth);
   }, []);
 
   useEffect(() => {
@@ -59,7 +69,15 @@ export function UserAuthProvider({ children }) {
           return nextAuth;
         });
       })
-      .catch(() => {});
+      .catch((error) => {
+        // Keep saved sessions during outages; clear only rejected credentials.
+        if (active && error.status === 401) {
+          clearUserAuth();
+          setAuth(null);
+          clearAnalyticsUserId();
+          clearAnalyticsUserProperty();
+        }
+      });
 
     return () => {
       active = false;
@@ -85,7 +103,8 @@ export function UserAuthProvider({ children }) {
     });
   }
 
-  function logout() {
+  async function logout() {
+    const token = auth?.token;
     trackEvent("logout_completed");
     clearUserAuth();
     setAuth(null);
@@ -93,6 +112,15 @@ export function UserAuthProvider({ children }) {
     // clear analytics user id when logging out
     clearAnalyticsUserId();
     clearAnalyticsUserProperty();
+    if (token) {
+      try {
+        await logoutUser(token);
+      } catch (error) {
+        if (error.status !== 401) {
+          console.error("Unable to revoke the server session during logout.", error);
+        }
+      }
+    }
   }
 
   const value = useMemo(
