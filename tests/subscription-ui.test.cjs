@@ -15,6 +15,20 @@ async function loadComponent(file, overrides = {}, globals = {}) {
   return exports;
 }
 const plan = { id: 'p', name: 'Starter', durationDays: 100, pricing: { displayPrice: '₹249', currency: 'INR' }, autoPay: { eligible: false, reason: 'Account eligibility not verified.' } };
+test('website reporting keeps currencies separate and missing net collections unavailable', async () => {
+  const Summary = (await loadComponent('components/payment-website-summary.jsx')).default;
+  const html = renderToStaticMarkup(React.createElement(Summary, { summary: [
+    { currency: 'INR', transactionCount: 3, successfulPaymentCount: 2, grossPaymentsMinor: 49800, refundsMinor: 24900, refundCount: 1, knownFeesMinor: 1000, unknownFeeCount: 0, netCollectionsMinor: 23900 },
+    { currency: 'USD', transactionCount: 1, successfulPaymentCount: 1, grossPaymentsMinor: 500, refundsMinor: 0, refundCount: 0, pendingRefundCount: 1, knownFeesMinor: 0, unknownFeeCount: 1, netCollectionsMinor: null }
+  ] }));
+  assert.match(html, /₹498\.00/);
+  assert.match(html, /₹239\.00/);
+  assert.match(html, /\$5\.00/);
+  assert.match(html, /Unavailable/);
+  assert.match(html, /1 pending/);
+  assert.match(html, /Known fees only; 1 unavailable/);
+  assert.match(html, /remain unattributed/);
+});
 test('unavailable AutoPay shows one-time billing without a dead checkbox or internal setup reasons', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
   const html = renderToStaticMarkup(React.createElement(Options, { plan, enabled: false, onChange() {} }));

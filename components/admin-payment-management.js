@@ -1075,6 +1075,7 @@ export function AdminPaymentsManager({
             <thead>
               <tr>
                 <th>Order</th>
+                <th>Website</th>
                 <th>User</th>
                 <th>Item</th>
                 <th>Amount</th>
@@ -1094,6 +1095,8 @@ export function AdminPaymentsManager({
                       <strong>{order.providerOrderId || getRecordId(order)}</strong>
                       <div className="muted">{order.providerPaymentId || "No payment id"}</div>
                     </td>
+                    <td><strong>{order.websiteName || order.websiteId || "Unattributed"}</strong>
+                      <div className="muted">{order.websiteDomain || "Historical / unknown origin"}</div></td>
                     <td>
                       <strong>{order.user?.email || "Unknown user"}</strong>
                       {order.user?.name ? <div className="muted">{order.user.name}</div> : null}
@@ -1108,7 +1111,8 @@ export function AdminPaymentsManager({
                         <div className="muted">Discount {formatCurrency(order.discountAmount, order.currency)}</div>
                       ) : null}
                     </td>
-                    <td><StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge></td>
+                    <td><StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
+                      {order.refundStatus ? <div className="muted">Refund: {order.refundStatus}</div> : null}</td>
                     <td>{formatDate(order.createdAt)}</td>
                     <td>
                       <button className="button-secondary compact" disabled={!refundable || Boolean(loadingAction)} onClick={() => refundOrder(order)} type="button">
@@ -1133,6 +1137,8 @@ export function AdminPaymentsManager({
                   <p className="muted">{order.user?.email || order.providerOrderId || getRecordId(order)}</p>
                 </div>
                 <div className="admin-card-meta">
+                  <span>{order.websiteName || order.websiteId || "Unattributed"}</span>
+                  {order.websiteDomain ? <span>{order.websiteDomain}</span> : null}
                   <span>{formatCurrency(order.amount, order.currency)}</span>
                   <StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
                   <span>{formatDate(order.createdAt)}</span>
