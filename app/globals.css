@@ -5381,6 +5381,38 @@ select:not([multiple]) {
   max-width: 430px;
 }
 
+.admin-prompt-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-prompt-thumbnail {
+  display: flex;
+  flex: 0 0 72px;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--muted);
+}
+
+.admin-prompt-thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-prompt-summary-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .admin-card-meta {
   display: flex;
   gap: 8px;

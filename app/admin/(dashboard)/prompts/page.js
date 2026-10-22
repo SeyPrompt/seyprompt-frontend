@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { Eye, Pencil } from "lucide-react";
+import { Eye, ImageIcon, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
 import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
+import { getPromptImageSource } from "@/lib/prompt-visuals";
+import { ProtectedImage } from "@/components/protected-media";
 import { DeletePromptButton } from "@/components/delete-prompt-button";
 
 export const metadata = {
@@ -32,6 +34,31 @@ function formatAdminViewCount(viewsCount) {
   const views = Math.max(Number(viewsCount || 0), 0);
 
   return `${views.toLocaleString("en-IN")} ${views === 1 ? "view" : "views"}`;
+}
+
+function PromptSummary({ prompt }) {
+  const thumbnail = getPromptImageSource(prompt);
+
+  return (
+    <div className="admin-prompt-summary">
+      <div className="admin-prompt-thumbnail">
+        {thumbnail ? (
+          <ProtectedImage alt="" height={72} src={thumbnail} width={72} />
+        ) : (
+          <ImageIcon aria-hidden="true" size={24} />
+        )}
+      </div>
+      <div className="admin-prompt-summary-copy">
+        <strong>{prompt.title}</strong>
+        <div className="muted">{prompt.slug}</div>
+        {prompt.description ? (
+          <div className="muted admin-prompt-description">
+            {truncateDescription(prompt.description)}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function PromptViewLink({ prompt }) {
@@ -112,11 +139,9 @@ export default async function AdminPromptsPage({ searchParams }) {
                   <tr>
                     <th>Title</th>
                     <th>Category</th>
-                    <th>Tools</th>
                     <th>Status</th>
                     <th>Price</th>
                     <th>Views</th>
-                    <th>Featured</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -124,32 +149,17 @@ export default async function AdminPromptsPage({ searchParams }) {
                   {response.data.map((prompt) => {
                     const categories = getPromptCategories(prompt);
                     const [primaryCategory, ...remainingCategories] = categories;
-                    const [firstTool, ...remainingTools] = prompt.tools || [];
 
                     return (
                       <tr key={prompt._id || prompt.id}>
                         <td>
-                          <strong>{prompt.title}</strong>
-                          <div className="muted">{prompt.slug}</div>
-                          {prompt.description ? (
-                            <div className="muted admin-prompt-description">
-                              {truncateDescription(prompt.description)}
-                            </div>
-                          ) : null}
+                          <PromptSummary prompt={prompt} />
                         </td>
                         <td>
                           <div className="pill-row">
                             <span className="pill">{primaryCategory || "General"}</span>
                             {remainingCategories.length ? (
                               <span className="pill pill-count">+{remainingCategories.length}</span>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="pill-row">
-                            {firstTool ? <span className="pill pill-alt">{firstTool}</span> : null}
-                            {remainingTools.length ? (
-                              <span className="pill pill-alt pill-count">+{remainingTools.length}</span>
                             ) : null}
                           </div>
                         </td>
@@ -163,18 +173,6 @@ export default async function AdminPromptsPage({ searchParams }) {
                           <span className="admin-readable-count">
                             {formatAdminViewCount(prompt.viewsCount)}
                           </span>
-                        </td>
-                        <td>
-                          {prompt.isFeatured ? (
-                            <span className="status-badge featured-badge">
-                              Featured
-                              {prompt.featuredOrder !== undefined && prompt.featuredOrder !== null
-                                ? ` #${prompt.featuredOrder}`
-                                : ""}
-                            </span>
-                          ) : (
-                            <span className="muted">-</span>
-                          )}
                         </td>
                         <td>
                           <div className="admin-icon-actions">
@@ -200,35 +198,16 @@ export default async function AdminPromptsPage({ searchParams }) {
               {response.data.map((prompt) => {
                 const categories = getPromptCategories(prompt);
                 const [primaryCategory, ...remainingCategories] = categories;
-                const [firstTool, ...remainingTools] = prompt.tools || [];
 
                 return (
                   <article className="admin-prompt-card" key={prompt._id || prompt.id}>
-                    <div>
-                      <strong>{prompt.title}</strong>
-                      <p className="muted">{prompt.slug}</p>
-                      {prompt.description ? (
-                        <p className="muted admin-prompt-description">
-                          {truncateDescription(prompt.description)}
-                        </p>
-                      ) : null}
-                    </div>
+                    <PromptSummary prompt={prompt} />
                     <div className="admin-card-meta">
                       <span>{primaryCategory || "General"}</span>
                       {remainingCategories.length ? <span>+{remainingCategories.length}</span> : null}
-                      {firstTool ? <span>{firstTool}</span> : null}
-                      {remainingTools.length ? <span>+{remainingTools.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
                       <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
                       <span>{formatAdminViewCount(prompt.viewsCount)}</span>
-                      {prompt.isFeatured ? (
-                        <span className="status-badge featured-badge">
-                          Featured
-                          {prompt.featuredOrder !== undefined && prompt.featuredOrder !== null
-                            ? ` #${prompt.featuredOrder}`
-                            : ""}
-                        </span>
-                      ) : null}
                     </div>
                     <div className="admin-icon-actions">
                       <PromptViewLink prompt={prompt} />
