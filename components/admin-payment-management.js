@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { buildRecurringPlans, RECURRING_PLAN_CURRENCIES } from "@/lib/recurring-plan-fields";
 
 const EMPTY_PLAN = {
   name: "",
@@ -221,7 +222,7 @@ function buildPlanPayload(formData, regionalPriceRows = []) {
     currency: String(formData.get("currency") || "INR").trim() || "INR",
     durationDays: Number(formData.get("durationDays") || 0),
     autoPayEnabled: formData.get("autoPayEnabled") === "on",
-    recurringPlans: JSON.parse(String(formData.get("recurringPlans") || "[]")),
+    recurringPlans: buildRecurringPlans(formData),
     badge: String(formData.get("badge") || "").trim(),
     sortOrder: Number(formData.get("sortOrder") || 0),
     isActive: boolFromSelect(formData.get("isActive")),
@@ -274,6 +275,15 @@ function StatusBadge({ children, tone = "default" }) {
         : "status-badge status-badge-success";
 
   return <span className={className}>{children}</span>;
+}
+
+function RecurringPlanSummary({ plan }) {
+  return <div className="recurring-plan-summary">
+    <span>{plan.autoPayEnabled ? "AutoPay offered" : "AutoPay not offered"}</span>
+    {plan.recurringPlans?.length ? plan.recurringPlans.map((mapping) => (
+      <span key={mapping.currency}>{mapping.currency}: <code>{mapping.razorpayPlanId}</code></span>
+    )) : <span className="muted">No Razorpay plans linked</span>}
+  </div>;
 }
 
 export function AdminPlanManager({ initialPlans = [] }) {
@@ -391,7 +401,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
 
     let payload;
     try { payload = buildPlanPayload(new FormData(form), regionalPriceRows); }
-    catch { setError("Gateway plans must contain valid JSON."); setLoadingAction(""); return; }
+    catch (payloadError) { setError(payloadError.message); setLoadingAction(""); return; }
     const planId = getRecordId(editingPlan);
     const endpoint = planId ? `/api/admin/plans/${planId}` : "/api/admin/plans";
     const method = planId ? "PUT" : "POST";
@@ -506,11 +516,31 @@ export function AdminPlanManager({ initialPlans = [] }) {
           </div>
         </div>
         <div className="field">
-          <label><input key={`autopay-${getRecordId(editingPlan) || "new"}`} type="checkbox" name="autoPayEnabled" defaultChecked={formValues.autoPayEnabled === true} /> Offer optional AutoPay</label>
+          <label className="recurring-plan-optin"><input key={`autopay-${getRecordId(editingPlan) || "new"}`} type="checkbox" name="autoPayEnabled" defaultChecked={formValues.autoPayEnabled === true} /> Offer optional AutoPay</label>
           <p className="muted">Requires the backend feature flag, account capability verification, and an exact matching gateway plan. Existing customers remain on manual renewal.</p>
-          <label htmlFor="plan-recurring">Gateway plans by currency (JSON)</label>
-          <textarea id="plan-recurring" key={`recurring-${getRecordId(editingPlan) || "new"}`} name="recurringPlans" rows={3} defaultValue={JSON.stringify(formValues.recurringPlans || [])} />
-          <small>Each entry needs currency and razorpayPlanId. The backend checks amount, currency, and exact day interval with Razorpay before authorization.</small>
+          <strong id="recurring-plans-heading">Recurring plans</strong>
+          <p className="muted">Enter the Razorpay subscription plan ID for each currency. Leave a field empty if AutoPay is not offered in that currency.</p>
+          <div className="regional-prices-table-wrap">
+            <table className="regional-prices-table recurring-plans-table" aria-labelledby="recurring-plans-heading">
+              <thead><tr><th scope="col">Currency</th><th scope="col">Razorpay plan ID</th></tr></thead>
+              <tbody>
+                {RECURRING_PLAN_CURRENCIES.map((currency) => (
+                  <tr key={currency}>
+                    <th scope="row">{currency}</th>
+                    <td>
+                      <input aria-label={`${currency} Razorpay plan ID`} type="text"
+                        key={`recurring-${getRecordId(editingPlan) || "new"}-${currency}`}
+                        name={`recurringPlan_${currency}`} placeholder="plan_…"
+                        pattern="plan_[a-zA-Z0-9]+" title="Razorpay plan ID starting with plan_"
+                        autoComplete="off" spellCheck={false}
+                        defaultValue={formValues.recurringPlans?.find((mapping) => mapping.currency === currency)?.razorpayPlanId || ""} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <small>Use a Razorpay plan matching this plan’s price, currency and exact day interval.</small>
         </div>
         <div className="field pricing-region-field">
           <div className="pricing-table-title-row">
@@ -648,6 +678,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
                 <th>Plan</th>
                 <th>Price</th>
                 <th>Duration</th>
+                <th>Recurring plans</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -661,6 +692,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
                   </td>
                   <td>{summarizePlanPrice(plan)}</td>
                   <td>{plan.durationDays} days</td>
+                  <td><RecurringPlanSummary plan={plan} /></td>
                   <td><StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge></td>
                   <td>
                     <div className="toolbar admin-table-actions">
@@ -687,6 +719,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
               <div className="admin-card-meta">
                 <span>{summarizePlanPrice(plan)}</span>
                 <span>{plan.durationDays} days</span>
+                <RecurringPlanSummary plan={plan} />
                 <StatusBadge tone={plan.isActive === false ? "muted" : "success"}>{plan.isActive === false ? "Inactive" : "Active"}</StatusBadge>
               </div>
               <div className="toolbar admin-table-actions">

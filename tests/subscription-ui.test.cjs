@@ -59,3 +59,34 @@ test('paid order access fallback respects purchased renewal period rather than e
   const order = { paidAt: '2026-10-22', plan: { durationDays: 1 }, priceSnapshot: { durationDays: 100, periodEnd: '2027-02-09' } };
   assert.equal(getOrderAccessExpiry(order).toISOString(), '2027-02-09T00:00:00.000Z');
 });
+
+test('currency text fields produce the existing API mapping without JSON input', async () => {
+  const { buildRecurringPlans } = await loadComponent('lib/recurring-plan-fields.js');
+  const fields = new Map([['recurringPlan_INR', ' plan_testINR '], ['recurringPlan_USD', 'plan_testUSD']]);
+  assert.equal(JSON.stringify(buildRecurringPlans(fields)), JSON.stringify([
+    { currency: 'INR', razorpayPlanId: 'plan_testINR' }, { currency: 'USD', razorpayPlanId: 'plan_testUSD' }
+  ]));
+  fields.set('recurringPlan_USD', '');
+  assert.equal(buildRecurringPlans(fields).length, 1);
+  fields.set('recurringPlan_INR', 'order_wrong');
+  assert.throws(() => buildRecurringPlans(fields), /valid Razorpay plan ID for INR/);
+});
+
+test('admin recurring table shows separate currency fields and existing mappings while editing', async () => {
+  const fields = await loadComponent('lib/recurring-plan-fields.js');
+  const existing = { id: 'existing', name: 'Starter', slug: 'starter', price: 249, currency: 'INR', durationDays: 100,
+    autoPayEnabled: true, recurringPlans: [{ currency: 'INR', razorpayPlanId: 'plan_savedINR' }, { currency: 'USD', razorpayPlanId: 'plan_savedUSD' }] };
+  const states = [[existing], existing, '', '', []];
+  let index = 0;
+  const { AdminPlanManager } = await loadComponent('components/admin-payment-management.js', {
+    react: { ...React, useState: () => [states[index++], () => {}] },
+    'next/navigation': { useRouter: () => ({}) }, '@/lib/recurring-plan-fields': fields
+  });
+  const html = renderToStaticMarkup(React.createElement(AdminPlanManager));
+  assert.match(html, /aria-label="INR Razorpay plan ID"/);
+  assert.match(html, /aria-label="USD Razorpay plan ID"/);
+  assert.match(html, /name="recurringPlan_INR"[^>]*value="plan_savedINR"/);
+  assert.match(html, /name="recurringPlan_USD"[^>]*value="plan_savedUSD"/);
+  assert.doesNotMatch(html, /Gateway plans by currency \(JSON\)/);
+  assert.match(html, /<th>Recurring plans<\/th>/);
+});
