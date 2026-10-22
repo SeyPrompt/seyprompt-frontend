@@ -299,6 +299,7 @@ export default function HomeVisualFeed({
   const [heroBackground, setHeroBackground] = useState("");
   const [columnCount, setColumnCount] = useState(4);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [showMobileIntro, setShowMobileIntro] = useState(false);
   const sentinelRef = useRef(null);
   const activeFilters = useMemo(
     () => ({
@@ -530,8 +531,21 @@ export default function HomeVisualFeed({
 
   return (
     <>
+      <div className="container home-mobile-intro">
+        <p>Discover prompts. Create something amazing.</p>
+        <button
+          aria-controls="home-introduction"
+          aria-expanded={showMobileIntro}
+          onClick={() => setShowMobileIntro((isOpen) => !isOpen)}
+          type="button"
+        >
+          {showMobileIntro ? "Close introduction" : "How it works"}
+          <ChevronDown size={16} aria-hidden="true" />
+        </button>
+      </div>
       <section
-        className="home-reference-hero"
+        className={`home-reference-hero${showMobileIntro ? " mobile-intro-open" : ""}`}
+        id="home-introduction"
         style={heroBackground ? { "--hero-bg-image": `url(${heroBackground})` } : undefined}
       >
         <div className="container home-reference-hero-inner">
