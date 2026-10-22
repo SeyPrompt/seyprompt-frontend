@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Lightbulb } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { fetchPromptBySlug, fetchPromptMetadataBySlug, fetchPublicPrompts } from "@/lib/api";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
 import { PromptLoginGate } from "@/components/PromptLoginGate";
 import { PremiumPromptUnlock } from "@/components/PremiumPromptUnlock";
 import { PromptDetailPriceBadge } from "@/components/prompt-detail-price-badge";
-import { ProtectedImage, ProtectedMediaFrame, ProtectedVideo } from "@/components/protected-media";
+import { PromptSamplePanel, PromptTips } from "@/components/prompt-detail-sections";
 import { RecordPromptView } from "@/components/record-prompt-view";
 import { SavedPromptButton } from "@/components/saved-prompt-button";
 import {
@@ -28,83 +28,6 @@ import {
 function descriptionFromPrompt(prompt) {
   const source = prompt.description || prompt.prompt || prompt.title;
   return truncateDescription(source);
-}
-
-function getPromptTips(prompt) {
-  return String(prompt?.tips || prompt?.notes || "").trim();
-}
-
-function SampleOutputDisplay({ prompt }) {
-  const sampleOutput = prompt.sampleOutput;
-
-  if (!sampleOutput) {
-    return (
-      <div className="sample-empty-state">
-        <span>Sample output</span>
-        <strong>Preview not added yet</strong>
-        <p>The reusable prompt is still available after unlock.</p>
-      </div>
-    );
-  }
-
-  if (typeof sampleOutput === "string") {
-    return <div className="prose content-box sample-box">{sampleOutput}</div>;
-  }
-
-  if (sampleOutput.type === "text") {
-    return <div className="prose content-box sample-box">{sampleOutput.value}</div>;
-  }
-
-  if (sampleOutput.type === "image") {
-    const previewUrl =
-      sampleOutput.watermarkedPreviewUrl || prompt.watermarkedPreviewUrl || sampleOutput.value;
-
-    return (
-      <ProtectedMediaFrame className="sample-media-box">
-        <ProtectedImage
-          alt={sampleOutput.fileName || `${prompt.title} sample output`}
-          className="sample-output-image"
-          fetchPriority="high"
-          height={900}
-          loading="eager"
-          sizes="(max-width: 760px) 100vw, (max-width: 1180px) 62vw, 900px"
-          src={previewUrl}
-          width={1200}
-          widths={[480, 720, 960, 1200, 1440]}
-        />
-      </ProtectedMediaFrame>
-    );
-  }
-
-  if (sampleOutput.type === "video") {
-    const previewUrl =
-      sampleOutput.watermarkedPreviewUrl || prompt.watermarkedPreviewUrl || sampleOutput.value;
-
-    return (
-      <ProtectedMediaFrame className="sample-media-box">
-        <ProtectedVideo className="sample-output-video" controls preload="metadata" src={previewUrl} />
-      </ProtectedMediaFrame>
-    );
-  }
-
-  if (sampleOutput.type === "pdf" || sampleOutput.type === "file") {
-    const label = sampleOutput.type === "pdf" ? "Open PDF" : "Open File";
-
-    return (
-      <div className="sample-media-box">
-        <a
-          className="button-secondary"
-          href={sampleOutput.value}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {label}
-        </a>
-      </div>
-    );
-  }
-
-  return null;
 }
 
 async function fetchRelatedPrompts(prompt) {
@@ -171,7 +94,6 @@ export default async function PromptDetailPage({ params }) {
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
-  const promptTips = getPromptTips(prompt);
   const isPremium = getPromptPricingType(prompt) === "premium";
   const schemas = [
     promptSchema(prompt),
@@ -236,37 +158,26 @@ export default async function PromptDetailPage({ params }) {
             </div>
           ) : null}
 
-          <div className={`prompt-detail-workspace${isPremium ? " prompt-detail-workspace-premium" : ""}`}>
-            {!isPremium ? (
-              <section className="prompt-workspace-panel prompt-workspace-sample">
-                <div className="prompt-workspace-heading">
-                  <div>
-                    <p className="eyebrow">Sample output</p>
-                  </div>
-                </div>
-                <SampleOutputDisplay prompt={prompt} />
-              </section>
-            ) : null}
-
-            <div className="prompt-workspace-side">
-              {!isPremium && promptTips ? (
-                <aside className="prompt-tips-box" aria-labelledby="prompt-tips-heading">
-                  <div className="prompt-tips-icon" aria-hidden="true">
-                    <Lightbulb size={18} />
-                  </div>
-                  <div>
-                    <h3 id="prompt-tips-heading">Tips</h3>
-                    <div className="prose">{promptTips}</div>
-                  </div>
-                </aside>
-              ) : null}
-              <PremiumPromptUnlock
-                description={descriptionFromPrompt(prompt)}
-                prompt={prompt}
-                shareUrl={absoluteUrl(`/prompts/${prompt.slug}`)}
-              />
+          {isPremium ? (
+            <PremiumPromptUnlock
+              description={descriptionFromPrompt(prompt)}
+              includeDetails
+              prompt={prompt}
+              shareUrl={absoluteUrl(`/prompts/${prompt.slug}`)}
+            />
+          ) : (
+            <div className="prompt-detail-workspace">
+              <PromptSamplePanel prompt={prompt} />
+              <div className="prompt-workspace-side">
+                <PromptTips prompt={prompt} />
+                <PremiumPromptUnlock
+                  description={descriptionFromPrompt(prompt)}
+                  prompt={prompt}
+                  shareUrl={absoluteUrl(`/prompts/${prompt.slug}`)}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {relatedPrompts.length ? (
             <section className="prompt-related-strip" aria-label="Related prompts">

@@ -2,6 +2,7 @@
 
 import { Lock, LockOpen, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PromptSamplePanel, PromptTips } from "@/components/prompt-detail-sections";
 import { CopyButton } from "@/components/CopyButton";
 import { CopyOpenButton } from "@/components/CopyOpenButton";
 import { PromptCheckoutModal } from "@/components/PromptCheckoutModal";
@@ -10,7 +11,7 @@ import { useUserAuth } from "@/components/user-auth-provider";
 import { fetchUserPrompt } from "@/lib/payments";
 import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 
-export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
+export function PremiumPromptUnlock({ prompt, description, shareUrl, includeDetails = false }) {
   const auth = useUserAuth();
   const { isPromptUnlocked } = useAccountAccess();
   const [currentPrompt, setCurrentPrompt] = useState(prompt);
@@ -39,7 +40,7 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
     return () => {
       active = false;
     };
-  }, [auth.ready, auth.token, currentPrompt?.slug, hasPromptText]);
+  }, [auth.ready, auth.token, currentPrompt?.slug, hasPromptText, hasPremiumAccess]);
 
   async function loadUnlockedPrompt() {
     if (!auth.token || !currentPrompt?.slug) {
@@ -59,7 +60,7 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
   }
 
   if (!locked) {
-    return (
+    const consolePanel = (
       <section className="prompt-workspace-panel prompt-workspace-prompt">
         <div className="prompt-workspace-heading">
           <div>
@@ -87,6 +88,20 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
         </div>
       </section>
     );
+
+    if (includeDetails) {
+      return (
+        <div className="prompt-detail-workspace prompt-detail-workspace-unlocked">
+          <PromptSamplePanel prompt={currentPrompt} />
+          <div className="prompt-workspace-side">
+            <PromptTips prompt={currentPrompt} />
+            {consolePanel}
+          </div>
+        </div>
+      );
+    }
+
+    return consolePanel;
   }
 
   return (

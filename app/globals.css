@@ -4043,14 +4043,6 @@ h2 {
   grid-template-columns: minmax(0, 1.06fr) minmax(340px, 0.58fr);
 }
 
-.prompt-detail-workspace-premium {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.prompt-detail-workspace-premium .prompt-workspace-side {
-  position: static;
-}
-
 .prompt-workspace-side {
   display: grid;
   gap: 16px;
@@ -4229,14 +4221,27 @@ h2 {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   overflow-wrap: anywhere;
-  gap: 12px;
+  gap: 8px;
   border: 1px solid rgba(5, 135, 81, 0.18);
   border-radius: 18px;
   background:
     radial-gradient(circle at 0% 0%, rgba(183, 243, 61, 0.18), transparent 34%),
     rgba(255, 255, 255, 0.9);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
-  padding: 18px;
+  padding: 10px 12px;
+}
+
+.prompt-tips-copy {
+  min-width: 0;
+}
+
+.prompt-tips-scroll {
+  max-height: 64px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .prompt-tips-icon {
@@ -9927,6 +9932,10 @@ select:not([multiple]) {
   .prompt-detail-workspace,
   .prompt-related-grid {
     grid-template-columns: 1fr;
+  }
+
+  .prompt-detail-workspace-unlocked .prompt-workspace-side {
+    grid-row: 1;
   }
 
   .prompt-workspace-side {
