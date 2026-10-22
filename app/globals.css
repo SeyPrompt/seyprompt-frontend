@@ -4043,6 +4043,14 @@ h2 {
   grid-template-columns: minmax(0, 1.06fr) minmax(340px, 0.58fr);
 }
 
+.prompt-detail-workspace-premium {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.prompt-detail-workspace-premium .prompt-workspace-side {
+  position: static;
+}
+
 .prompt-workspace-side {
   display: grid;
   gap: 16px;

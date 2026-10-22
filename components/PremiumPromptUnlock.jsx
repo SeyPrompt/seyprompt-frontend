@@ -97,7 +97,7 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl }) {
         </span>
         <div>
           <h2>Unlock the prompt console</h2>
-          <p>Use the sample as proof, then unlock the exact reusable text.</p>
+          <p>Unlock the exact reusable prompt and create your own result.</p>
         </div>
       </div>
 

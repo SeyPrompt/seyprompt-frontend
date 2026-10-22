@@ -15,6 +15,7 @@ import {
   getPromptCategoryLabel
 } from "@/lib/prompt-metadata";
 import { getCategoryIcon } from "@/utils/categoryIcons";
+import { getPromptPricingType } from "@/lib/prompt-pricing";
 import {
   absoluteUrl,
   breadcrumbSchema,
@@ -171,6 +172,7 @@ export default async function PromptDetailPage({ params }) {
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
   const promptTips = getPromptTips(prompt);
+  const isPremium = getPromptPricingType(prompt) === "premium";
   const schemas = [
     promptSchema(prompt),
     breadcrumbSchema([
@@ -226,24 +228,28 @@ export default async function PromptDetailPage({ params }) {
             </div>
           </header>
 
-          <div className="prompt-flow-steps" aria-label="How to use this prompt">
-            <span>1. Inspect the sample</span>
-            <span>2. Copy the reusable prompt</span>
-            <span>3. Open it in your AI tool</span>
-          </div>
+          {!isPremium ? (
+            <div className="prompt-flow-steps" aria-label="How to use this prompt">
+              <span>1. Inspect the sample</span>
+              <span>2. Copy the reusable prompt</span>
+              <span>3. Open it in your AI tool</span>
+            </div>
+          ) : null}
 
-          <div className="prompt-detail-workspace">
-            <section className="prompt-workspace-panel prompt-workspace-sample">
-              <div className="prompt-workspace-heading">
-                <div>
-                  <p className="eyebrow">Sample output</p>
+          <div className={`prompt-detail-workspace${isPremium ? " prompt-detail-workspace-premium" : ""}`}>
+            {!isPremium ? (
+              <section className="prompt-workspace-panel prompt-workspace-sample">
+                <div className="prompt-workspace-heading">
+                  <div>
+                    <p className="eyebrow">Sample output</p>
+                  </div>
                 </div>
-              </div>
-              <SampleOutputDisplay prompt={prompt} />
-            </section>
+                <SampleOutputDisplay prompt={prompt} />
+              </section>
+            ) : null}
 
             <div className="prompt-workspace-side">
-              {promptTips ? (
+              {!isPremium && promptTips ? (
                 <aside className="prompt-tips-box" aria-labelledby="prompt-tips-heading">
                   <div className="prompt-tips-icon" aria-hidden="true">
                     <Lightbulb size={18} />
