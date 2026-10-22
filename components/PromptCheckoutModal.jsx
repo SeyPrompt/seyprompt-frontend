@@ -420,7 +420,7 @@ export function PromptCheckoutModal({
               }
               type="button"
             >
-              {loadingTarget === "access-plan" ? "Opening..." : "Choose all-access"}
+              {loadingTarget === "access-plan" ? "Opening checkout..." : autoPay && selectedAccessPlan?.autoPay?.eligible ? "Continue with AutoPay" : "Continue to payment"}
             </button>
           </div>
         ) : null}

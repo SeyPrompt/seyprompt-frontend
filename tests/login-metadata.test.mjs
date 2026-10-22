@@ -58,3 +58,18 @@ test("tab-session referral strips paths; storage errors and all GPS states prese
   window.sessionStorage.getItem = () => { throw new Error("Storage denied"); };
   assert.equal(collectLoginMetadata().referral, null);
 });
+
+ test("login location can use the configured pricing proxy key and the dedicated key takes precedence", t => {
+  const keys = ["VERCEL", "LOGIN_METADATA_PROXY_SECRET", "PRICING_PROXY_SECRET"];
+  const old = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  t.after(() => { for (const [key, value] of Object.entries(old)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  process.env.VERCEL = "1";
+  delete process.env.LOGIN_METADATA_PROXY_SECRET;
+  process.env.PRICING_PROXY_SECRET = "test-pricing-key";
+  const headers = new Headers({ "x-vercel-ip-country": "IN", "x-vercel-ip-city": "Bengaluru" });
+  const signed = loginProxyHeaders(headers, "/user/google", {});
+  assert.equal(JSON.parse(Buffer.from(signed["x-login-context"], "base64url")).country, "IN");
+  process.env.LOGIN_METADATA_PROXY_SECRET = "dedicated-login-key";
+  const dedicated = loginProxyHeaders(headers, "/user/google", {});
+  assert.notEqual(dedicated["x-login-signature"], signed["x-login-signature"]);
+});

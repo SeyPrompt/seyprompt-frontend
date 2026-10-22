@@ -163,9 +163,8 @@ export default async function UserDetailPage({ params }) {
             <div><dt>Country (IP)</dt><dd>{available(latest?.location?.country)}</dd></div>
             <div><dt>State / region (IP)</dt><dd>{available(latest?.location?.state)}</dd></div>
             <div><dt>City (IP)</dt><dd>{available(latest?.location?.city)}</dd></div>
-            <div><dt>Precise location (permission-based)</dt><dd>Not Available</dd></div>
           </dl>
-          <p className="muted">SeyPrompt does not request GPS permission or store precise coordinates.</p>
+          <p className="muted">Location is recorded at sign-in. A session restored from your browser does not create a new location record. SeyPrompt does not request GPS permission or store precise coordinates.</p>
         </section>
         <section className="stack">
           <h3>Device &amp; Browser</h3>

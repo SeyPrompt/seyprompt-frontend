@@ -15,11 +15,11 @@ async function loadComponent(file, overrides = {}) {
   return exports;
 }
 const plan = { id: 'p', name: 'Starter', durationDays: 100, pricing: { displayPrice: '₹249', currency: 'INR' }, autoPay: { eligible: false, reason: 'Account eligibility not verified.' } };
-test('AutoPay defaults unchecked, unavailable intervals stay disabled, and manual explanation and terms render', async () => {
+test('unavailable AutoPay shows one-time billing without a dead checkbox or internal setup reasons', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
   const html = renderToStaticMarkup(React.createElement(Options, { plan, enabled: false, onChange() {} }));
-  assert.match(html, /disabled=""/); assert.doesNotMatch(html, /checked=""/);
-  assert.match(html, /One-time payment/); assert.match(html, /100/); assert.match(html, /Account eligibility/);
+  assert.doesNotMatch(html, /type="checkbox"/); assert.doesNotMatch(html, /checked=""/);
+  assert.match(html, /One-time payment/); assert.match(html, /100/); assert.match(html, /No automatic charges/);
   assert.match(html, /href="\/terms-of-use"/); assert.match(html, /href="\/refund-policy"/);
 });
 test('eligible checkout requires opt-in and shows agreed currency, exact interval and expected renewal date', async () => {
@@ -27,13 +27,13 @@ test('eligible checkout requires opt-in and shows agreed currency, exact interva
   const eligiblePlan = { ...plan, autoPay: { eligible: true, interval: 100, currency: 'INR', nextExpectedBillingDate: '2027-02-01' } };
   const manual = renderToStaticMarkup(React.createElement(Options, { plan: eligiblePlan, enabled: false, onChange() {} }));
   const recurring = renderToStaticMarkup(React.createElement(Options, { plan: eligiblePlan, enabled: true, onChange() {} }));
-  assert.doesNotMatch(manual, /checked=""/); assert.match(recurring, /checked=""/);
+  assert.doesNotMatch(manual, /checked=""|disabled=""/); assert.match(recurring, /checked=""/);
   assert.match(recurring, /every 100 days/); assert.match(recurring, /INR/); assert.match(recurring, /Next expected renewal/);
 });
 test('an invalidated plan cannot retain a checked AutoPay state', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
   const html = renderToStaticMarkup(React.createElement(Options, { plan, enabled: true, onChange() {} }));
-  assert.doesNotMatch(html, /checked=""/); assert.match(html, /disabled=""/);
+  assert.doesNotMatch(html, /checked=""/); assert.doesNotMatch(html, /type="checkbox"/);
 });
 test('dashboard allows early manual renewal for an active paid plan', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
@@ -48,7 +48,7 @@ test('dashboard allows early manual renewal for an active paid plan', async () =
     '@/lib/analytics': { trackEvent() {} }, '@/lib/policy-info': { POLICY_VERSION: 'test' }, '@/lib/payments': {}
   })).UserDashboard;
   const html = renderToStaticMarkup(React.createElement(Dashboard));
-  assert.match(html, /Renew Subscription/);
+  assert.match(html, /Renew access/);
   const button = html.match(/<button[^>]*class="button dashboard-plan-submit"[^>]*>/)?.[0];
   assert.ok(button); assert.doesNotMatch(button, /disabled/);
   assert.match(html, /remaining paid access/);

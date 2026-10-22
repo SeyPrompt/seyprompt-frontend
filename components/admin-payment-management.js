@@ -277,7 +277,7 @@ function StatusBadge({ children, tone = "default" }) {
 function RegionalPlanSummary({ plan }) {
   const linkedRows = getInitialPlanRegionalPrices(plan).filter((row) => row.razorpayPlanId);
   return <div className="recurring-plan-summary">
-    <span>{plan.autoPayEnabled ? "AutoPay offered" : "AutoPay not offered"}</span>
+    <span>{plan.autoPayEnabled ? "AutoPay enabled for plan" : "One-time billing only"}</span>
     {linkedRows.map((row) => (
       <span key={row.region}>{getRegionLabel(row.region)} ({row.currency}): <code>{row.razorpayPlanId}</code></span>
     ))}
@@ -518,6 +518,7 @@ export function AdminPlanManager({ initialPlans = [] }) {
         </div>
         <div className="field">
           <label className="recurring-plan-optin"><input key={`autopay-${getRecordId(editingPlan) || "new"}`} type="checkbox" name="autoPayEnabled" defaultChecked={formValues.autoPayEnabled === true} /> Offer optional AutoPay</label>
+          <p className="field-hint">Requires store-wide AutoPay activation and a matching Razorpay plan for each supported currency and billing interval.</p>
           <p className="muted">Requires the backend feature flag, account capability verification, and an exact matching gateway plan. Existing customers remain on manual renewal.</p>
 
         </div>

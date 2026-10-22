@@ -159,6 +159,7 @@ export function UserDashboard() {
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || plans[0];
   const paidOrderCount = orders.filter((order) => order.status === "paid").length;
+  const autoPaySelected = Boolean(autoPay && selectedPlan?.autoPay?.eligible);
   const accountName = auth.user?.name || auth.user?.email || "SeyPrompt user";
   const accountInitial = accountName.slice(0, 1).toUpperCase();
   const accountAvatarUrl = auth.user?.avatarUrl || "";
@@ -312,8 +313,7 @@ export function UserDashboard() {
             <span className="dashboard-mobile-copy">Your creative workspace.</span>
           </h1>
           <p className="dashboard-desktop-copy">
-            Your unlocked prompts, subscription access, and premium library actions
-            now live in one focused workspace.
+            Find your unlocked prompts, manage your plan, and keep creating.
           </p>
           <p className="dashboard-mobile-copy">Your prompts, purchases, and access in one place.</p>
           <div className="dashboard-quick-actions">
@@ -352,7 +352,7 @@ export function UserDashboard() {
             </span>
             <div>
               <p className="eyebrow">All-access pass</p>
-              <h2>{activeSubscription ? "Access is active" : "Choose your unlock"}</h2>
+              <h2>{activeSubscription ? "Access is active" : "Choose your plan"}</h2>
             </div>
           </div>
           <p>
@@ -413,9 +413,8 @@ export function UserDashboard() {
               </div>
               <SubscriptionRenewalOptions plan={selectedPlan} enabled={autoPay} onChange={setAutoPay} disabled={checkoutLoading} />
               <p className="dashboard-policy-note">
-                Prices shown are the SeyPrompt checkout total before payment.
-                Manual renewal adds the selected duration after your remaining paid access.
-                All plans unlock the same library; changing plans follows this same rule.
+                All plans include the full premium library. One-time renewal adds to your remaining paid access.
+                {selectedPlan?.autoPay?.eligible ? " AutoPay renews at the amount and interval you authorize in checkout." : ""}
               </p>
               <button
                 className="button dashboard-plan-submit"
@@ -426,9 +425,9 @@ export function UserDashboard() {
                 <ShieldCheck aria-hidden="true" size={17} />
                 {checkoutLoading
                     ? "Opening Checkout..."
-                    : activeSubscription || paidOrderCount
-                      ? "Renew Subscription"
-                      : "Subscribe Now"}
+                    : autoPaySelected
+                      ? "Continue with AutoPay"
+                      : activeSubscription || paidOrderCount ? "Renew access" : "Continue to payment"}
               </button>
             </>
           ) : (
