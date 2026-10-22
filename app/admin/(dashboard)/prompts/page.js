@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Eye, ImageIcon, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
@@ -90,20 +91,34 @@ function PromptViewLink({ prompt }) {
   );
 }
 
+function buildPageHref(page, q, status) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (q) params.set("q", q);
+  if (status) params.set("status", status);
+  return `/admin/prompts?${params.toString()}`;
+}
+
 export default async function AdminPromptsPage({ searchParams }) {
   const token = await requireAdminToken();
   const resolvedSearchParams = await searchParams;
   const q = resolvedSearchParams?.q || "";
   const status = resolvedSearchParams?.status || "";
+  const requestedPage = Number(resolvedSearchParams?.page || 1);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const response = await fetchAdminPrompts(token, {
     q,
     status,
+    page: String(page),
     limit: "50"
   }).catch(() => ({
     data: [],
     pagination: { total: 0 }
   }));
+  const totalPages = Math.max(Number(response.pagination?.pages || 1), 1);
+  if (response.pagination?.pages !== undefined && page > totalPages) {
+    redirect(buildPageHref(totalPages, q, status));
+  }
 
   return (
     <div className="stack">
@@ -232,6 +247,25 @@ export default async function AdminPromptsPage({ searchParams }) {
             <p className="muted">Create your first prompt or broaden the filters.</p>
           </div>
         )}
+        {totalPages > 1 ? (
+          <nav className="admin-pagination" aria-label="Prompt list pages">
+            {page > 1 ? (
+              <Link className="button-secondary compact" href={buildPageHref(page - 1, q, status)}>
+                Previous
+              </Link>
+            ) : (
+              <button className="button-secondary compact" disabled type="button">Previous</button>
+            )}
+            <span>Page {page} of {totalPages}</span>
+            {page < totalPages ? (
+              <Link className="button-secondary compact" href={buildPageHref(page + 1, q, status)}>
+                Next
+              </Link>
+            ) : (
+              <button className="button-secondary compact" disabled type="button">Next</button>
+            )}
+          </nav>
+        ) : null}
       </div>
     </div>
   );
