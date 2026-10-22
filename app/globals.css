@@ -6888,6 +6888,7 @@ select:not([multiple]) {
   .home-mobile-intro p {
     margin: 0;
     font-size: 0.82rem;
+    font-weight: 700;
     line-height: 1.4;
   }
 
