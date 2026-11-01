@@ -75,6 +75,7 @@ export function PremiumPromptUnlock({ prompt, description, shareUrl, includeDeta
             trackingLabel={currentPrompt.title || "prompt"}
           />
         </div>
+        {currentPrompt.samplePromptMode === "per-image" ? <p className="field-hint">This is a prompt set. Select a sample in the gallery to copy its instructions together with this shared prompt.</p> : null}
         <div className="prose prompt-scroll-box">{currentPrompt.prompt}</div>
         <div className="prompt-actions-section" aria-label="Prompt actions">
           <CopyOpenButton

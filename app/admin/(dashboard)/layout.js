@@ -1,3 +1,4 @@
+import "@/app/admin-taxonomy.css";
 import { LogoutButton } from "@/components/logout-button";
 import AdminTabs from "@/components/admin-tabs";
 import { requireAdminToken } from "@/lib/auth";

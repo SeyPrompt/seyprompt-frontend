@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { fetchPublicPrompts } from "@/lib/api";
+import { fetchPublicPrompts, fetchPublicTaxonomyRecord, fetchPublicTaxonomy } from "@/lib/api";
 import { PromptLibraryView } from "@/components/prompt-library-view";
 import { RecentlyViewedPrompts } from "@/components/recently-viewed-prompts";
 import { createCategoryMetadata, createPageMetadata } from "@/lib/seo";
@@ -22,16 +22,13 @@ export async function generateMetadata({ searchParams }) {
   const tool = resolvedSearchParams?.tool || "";
   const q = resolvedSearchParams?.q || "";
 
-  if (category) {
-    return createCategoryMetadata(category);
-  }
-
-  if (tag) {
-    return createPageMetadata({
-      title: `#${tag} AI Prompts`,
-      description: `Browse SeyPrompt prompts tagged ${tag} for ChatGPT, Claude, Midjourney, and more.`,
-      path: `/prompts?tag=${encodeURIComponent(tag)}`
-    });
+  if (category || tag) {
+    let record = category ? await fetchPublicTaxonomyRecord('categories', category) : await fetchPublicTaxonomyRecord('tags', tag);
+    if (!record) {
+      const catalog = await fetchPublicTaxonomy();
+      record = (category ? catalog.categories : catalog.tags).find(r => r.name.toLowerCase() === (category || tag).toLowerCase());
+    }
+    return { ...createPageMetadata({ title: record ? `${record.name} AI Prompts` : 'Prompt Library', description: record?.seoDescription || record?.description || 'Browse AI prompts.', path: record?.path || '/prompts' }), robots: { index: false, follow: true } };
   }
 
   if (tool) {
@@ -43,11 +40,11 @@ export async function generateMetadata({ searchParams }) {
   }
 
   if (q) {
-    return createPageMetadata({
+    return { ...createPageMetadata({
       title: `Search AI Prompts for ${q}`,
       description: `Search SeyPrompt for AI prompts related to ${q}.`,
-      path: `/prompts?q=${encodeURIComponent(q)}`
-    });
+      path: "/prompts"
+    }), robots: { index: false, follow: true } };
   }
 
   return createPageMetadata({
@@ -81,9 +78,7 @@ export default async function PromptsPage({ searchParams }) {
     pagination: { total: 0, page: 1, pages: 0 }
   }));
 
-  if (category && !response.loadFailed && !response.data?.length && !categoryDescriptions[category]) {
-    notFound();
-  }
+
 
   const visiblePrompts = tool
     ? (response.data || []).filter((prompt) => (prompt.tools || []).includes(tool))

@@ -48,6 +48,7 @@ const appVersion = getAppVersion();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: process.env.SEYPROMPT_BUILD_DIR || ".next",
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion
   },

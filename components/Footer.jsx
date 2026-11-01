@@ -1,150 +1,72 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { SocialLinks } from "@/components/SocialLinks";
-import { fetchPromptCategories, fetchPromptTools } from "@/lib/api";
-import { getCategoryPath, PARENT_COMPANY_URL } from "@/lib/seo";
+import { fetchPublicDiscovery } from "@/lib/api";
+import { discoveryCategories } from "@/lib/discovery-categories";
+import { PARENT_COMPANY_URL } from "@/lib/seo";
 import { LEGAL_OPERATOR_DISPLAY, policyLinks } from "@/lib/policy-info";
 
-const quickLinks = [
-  { href: "/", label: "Home" },
-  { href: "/prompts", label: "Prompt Library" },
-  { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
-  { href: "/ai-tools", label: "AI Tools" },
-  { href: "/use-cases", label: "Use Cases" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+const exploreLinks = [
+  { href: "/", label: "Discover" },
+  { href: "/prompts", label: "All prompts" },
+  { href: "/collections", label: "Collections" },
+  { href: "/saved", label: "Saved prompts" },
 ];
-
-const footerCategoryLimit = 8;
-
-const fallbackCategories = [
-  "Marketing",
-  "Coding",
-  "Resume",
-  "Business",
-  "Social Media",
-  "Design",
-  "Image Prompts",
-  "Productivity"
+const resourceLinks = [
+  { href: "/ai-prompt-guide", label: "User guide" },
+  { href: "/ai-tools", label: "AI tools" },
+  { href: "/use-cases", label: "Use cases" },
+  { href: "/about", label: "About SeyPrompt" },
+  { href: "/contact", label: "Get in touch" },
 ];
-const fallbackTools = ["ChatGPT", "Claude", "Midjourney", "Canva", "Gemini", "Perplexity"];
-
-const legalLinks = policyLinks;
-
-function toFooterItems(items, fallbackItems, limit = 6) {
-  const uniqueItems = Array.from(new Set([...items, ...fallbackItems]));
-  return uniqueItems.slice(0, limit);
-}
-
-function formatFooterCategoryLabel(category) {
-  const label = String(category || "")
-    .trim()
-    .replace(/\bprompts\s+prompts$/i, "Prompts");
-
-  if (!label) {
-    return "";
-  }
-
-  return /\bprompts$/i.test(label) ? label : `${label} Prompts`;
-}
 
 export async function Footer() {
-  const [categoryItems, toolItems] = await Promise.all([
-    fetchPromptCategories(footerCategoryLimit).catch(() => []),
-    fetchPromptTools(6).catch(() => [])
-  ]);
-  const categories = toFooterItems(categoryItems, fallbackCategories, footerCategoryLimit);
-  const tools = toFooterItems(toolItems, fallbackTools);
+  const catalog = await fetchPublicDiscovery().catch(() => null);
+  const categories = discoveryCategories(catalog);
 
   return (
-    <footer className="footer">
-      <div className="container footer-inner">
-        <div className="footer-grid">
-          <div className="footer-brand">
-            <div className="footer-brand-heading">
-              <a href="/" className="navbar-brand">
-                <span className="logo-wrap">
-                  <Image
-                    alt="SeyPrompt logo"
-                    className="navbar-logo-image"
-                    height={42}
-                    src="/images/seyprompt-logo.png"
-                    width={135}
-                  />
-                </span>
-              </a>
-            </div>
-            <p className="footer-tagline">Smart Prompts. Better Results.</p>
-            <p>
-              Discover, copy, and use the best AI prompts for ChatGPT, Claude,
-              and more.
-            </p>
-            <SocialLinks className="footer-social-links" />
+    <footer className="site-footer-v2">
+      <div className="container footer-v2-inner">
+        <div className="footer-v2-invitation">
+          <div>
+            <p className="footer-v2-eyebrow">A little inspiration goes a long way</p>
+            <h2>What will you create next?</h2>
           </div>
-
-          <div className="footer-column">
-            <h3>Quick Links</h3>
-            <nav>
-              {quickLinks.map((link) => (
-                <Link href={link.href} key={link.href}>
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          <div className="footer-column">
-            <h3>Categories</h3>
-            <nav>
-              {categories.map((category) => {
-                const label = formatFooterCategoryLabel(category);
-
-                return (
-                  <Link
-                    href={getCategoryPath(category)}
-                    key={category}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          <div className="footer-column">
-            <h3>Tools</h3>
-            <nav>
-              {tools.map((tool) => (
-                <Link
-                  href={{ pathname: "/prompts", query: { tool } }}
-                  key={tool}
-                >
-                  {tool}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <Link className="footer-v2-explore" href="/prompts">
+            Find your next prompt <ArrowUpRight aria-hidden="true" size={18} />
+          </Link>
         </div>
 
-        <div className="footer-bottom">
-          <p>
-            © 2026 SeyPrompt. All rights reserved.
-          </p>
-          <p>
-            A product of{" "}
-            <a className="footer-company-link" href={PARENT_COMPANY_URL} rel="noopener noreferrer" target="_blank">
-              {LEGAL_OPERATOR_DISPLAY}
-            </a>.
-          </p>
-          <nav className="footer-legal-links" aria-label="Legal links">
-            {legalLinks.map((link) => (
-              <Link href={link.href} key={link.href}>
-                {link.label}
-              </Link>
-            ))}
+        <div className="footer-v2-grid">
+          <div className="footer-v2-brand">
+            <Link href="/" aria-label="SeyPrompt home">
+              <Image alt="SeyPrompt" src="/images/seyprompt-logo.png" width={172} height={54} />
+            </Link>
+            <p>Better prompts. More possibilities.<br />Bring your ideas to life, one prompt at a time.</p>
+            <SocialLinks className="footer-v2-socials" />
+          </div>
+          <nav className="footer-v2-column" aria-label="Explore SeyPrompt">
+            <h3>Explore</h3>
+            {exploreLinks.map(link => <Link href={link.href} key={link.href}>{link.label}</Link>)}
           </nav>
-          <p>Built for creators, developers, and businesses using AI.</p>
+          <nav className="footer-v2-column" aria-label="SeyPrompt resources">
+            <h3>Resources</h3>
+            {resourceLinks.map(link => <Link href={link.href} key={link.href}>{link.label}</Link>)}
+          </nav>
+          <nav className="footer-v2-column footer-v2-categories" aria-label="Explore prompt categories">
+            <h3>Find your inspiration</h3>
+            {categories.slice(0, 8).map(category => <Link href={`/categories/${category.slug}`} key={category.slug}>{category.name}</Link>)}
+          </nav>
         </div>
+
+        <div className="footer-v2-bottom">
+          <p>© {new Date().getFullYear()} SeyPrompt. All rights reserved.</p>
+          <nav aria-label="Legal links">
+            {policyLinks.map(link => <Link href={link.href} key={link.href}>{link.label}</Link>)}
+          </nav>
+        </div>
+        <p className="footer-v2-company">A product of <a href={PARENT_COMPANY_URL} target="_blank" rel="noopener noreferrer">{LEGAL_OPERATOR_DISPLAY}<ArrowUpRight aria-hidden="true" size={11} /></a></p>
       </div>
     </footer>
   );

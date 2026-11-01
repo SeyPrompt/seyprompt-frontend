@@ -1,3 +1,4 @@
+import { jsonLd } from '@/lib/taxonomy-seo';
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -35,7 +36,7 @@ async function fetchRelatedPrompts(prompt) {
   const primaryCategory = getPrimaryPromptCategory(prompt);
 
   if (primaryCategory) {
-    requests.push(fetchPublicPrompts({ category: primaryCategory, limit: "6" }));
+    requests.push(fetchPublicPrompts({ category: prompt.taxonomy?.primary?.slug || primaryCategory, limit: "6" }));
   }
 
   for (const tool of (prompt.tools || []).slice(0, 2)) {
@@ -99,18 +100,17 @@ export default async function PromptDetailPage({ params }) {
     promptSchema(prompt),
     breadcrumbSchema([
       { name: "Discover", path: "/" },
-      ...(primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
+      ...(prompt.taxonomy?.primary ? [...(prompt.taxonomy.primary.parent ? [{ name: prompt.taxonomy.primary.parent.name, path: prompt.taxonomy.primary.parent.path }] : []), { name: prompt.taxonomy.primary.name, path: prompt.taxonomy.primary.path }] : primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
       { name: prompt.title, path: `/prompts/${prompt.slug}` }
     ])
   ];
 
   return (
     <main className="prompt-detail-page">
-      <PromptLoginGate />
       <RecordPromptView prompt={prompt} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(schemas) }}
       />
       <div className="container prompt-detail-container">
         <article className="prompt-detail-shell">
@@ -131,11 +131,9 @@ export default async function PromptDetailPage({ params }) {
               <h1 className="page-title">{prompt.title}</h1>
               {prompt.description ? <p className="page-subtitle">{prompt.description}</p> : null}
               <div className="prompt-detail-meta-row">
-                {categories.slice(0, 4).map((category) => (
-                  <span className="pill" key={`category-${category}`}>
-                    {category}
-                  </span>
-                ))}
+                {prompt.taxonomy ? prompt.taxonomy.categories.map(c => <Link className="pill" key={c.id} href={c.path}>{c.name}</Link>) : categories.slice(0, 4).map(category => <span className="pill" key={category}>{category}</span>)}
+                {(prompt.taxonomy?.tags || []).map(tag => <Link className="pill" key={tag.id} href={tag.path}>#{tag.name}</Link>)}
+                {(prompt.taxonomy?.collections || []).map(collection => <Link className="pill pill-alt" key={collection.id} href={collection.path}>{collection.name}</Link>)}
                 {(prompt.tools || []).slice(0, 3).map((tool) => (
                   <span className="pill pill-alt" key={tool}>
                     {tool}
@@ -150,6 +148,7 @@ export default async function PromptDetailPage({ params }) {
             </div>
           </header>
 
+          <PromptLoginGate>
           {!isPremium ? (
             <div className="prompt-flow-steps" aria-label="How to use this prompt">
               <span>1. Inspect the sample</span>
@@ -179,6 +178,7 @@ export default async function PromptDetailPage({ params }) {
             </div>
           )}
 
+          </PromptLoginGate>
           {relatedPrompts.length ? (
             <section className="prompt-related-strip" aria-label="Related prompts">
               <div className="prompt-workspace-heading">

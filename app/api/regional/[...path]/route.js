@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 function isAllowed(path, method) {
   if (method === "GET") {
-    return /^public\/(prompts(?:\/[^/]+(?:\/metadata)?)?|categories)$/.test(path) ||
+    return /^public\/(prompts(?:\/[^/]+(?:\/metadata)?)?|categories|discovery)$/.test(path) ||
       /^user\/prompts\/[^/]+$/.test(path) ||
       /^payments\/(plans|credit-plans|wallet(?:\/ledger)?|orders|entitlements|subscriptions(?:\/[a-fA-F0-9]{24})?|access|pricing\/context)$/.test(path);
   }

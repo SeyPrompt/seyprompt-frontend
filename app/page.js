@@ -1,74 +1,28 @@
 import HomeVisualFeed from "@/components/HomeVisualFeed";
-import {
-  fetchPublicCategories,
-  fetchPublicFeaturedPrompts,
-  fetchPublicPrompts
-} from "@/lib/api";
-import {
-  buildCategoryChips,
-  buildTrendingTags,
-  dedupePrompts,
-  isVideoPrompt,
-  isVisualPrompt
-} from "@/lib/prompt-visuals";
-import {
-  createPageMetadata,
-  DEFAULT_TITLE,
-  SITE_DESCRIPTION
-} from "@/lib/seo";
+import { fetchPublicDiscovery, fetchPublicPrompts, fetchPublicTaxonomyRecord } from "@/lib/api";
+import { discoveryCategories } from "@/lib/discovery-categories";
+import { createPageMetadata, DEFAULT_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 
-export const metadata = createPageMetadata({
-  absoluteTitle: DEFAULT_TITLE,
-  description: SITE_DESCRIPTION,
-  path: "/"
-});
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams || {};
+  const kind = params.collection ? 'collections' : params.category ? 'categories' : null;
+  const record = kind ? await fetchPublicTaxonomyRecord(kind, params.collection || params.category) : null;
+  return { ...createPageMetadata({ absoluteTitle: DEFAULT_TITLE, description: SITE_DESCRIPTION, path: record?.path || '/' }), ...(Object.keys(params).length ? { robots: { index: false, follow: true } } : {}) };
+}
 
-export default async function HomePage() {
-  const [imageResponse, promptResponse, featuredResponse, categoryResponse] =
-    await Promise.all([
-      fetchPublicPrompts({ category: "Image Prompts", limit: "30" }).catch(() => ({
-        data: [],
-        pagination: { total: 0 }
-      })),
-      fetchPublicPrompts({ limit: "30" }).catch(() => ({
-        data: [],
-        pagination: { total: 0 }
-      })),
-      fetchPublicFeaturedPrompts().catch(() => ({
-        data: [],
-        pagination: { total: 0 }
-      })),
-      fetchPublicCategories(100).catch(() => [])
-    ]);
-
-  const allPrompts = promptResponse.data || [];
-  const visualPrompts = dedupePrompts([
-    ...(featuredResponse.data || []).filter(isVisualPrompt),
-    ...(imageResponse.data || []).filter(isVisualPrompt),
-    ...allPrompts.filter(isVisualPrompt)
-  ]).filter((prompt) => prompt?.slug);
-  const initialPrompts = visualPrompts.slice(0, 30);
-  const chips = buildCategoryChips(categoryResponse, visualPrompts, 15, {
-    requireDbCategory: true,
-    requirePromptMatch: true
-  });
-  const trendings = buildTrendingTags(visualPrompts, categoryResponse, 5);
-  const heroVideos = visualPrompts.filter(isVideoPrompt);
-  const initialHasMore = [
-    imageResponse.pagination,
-    promptResponse.pagination
-  ].some((pagination) => Number(pagination?.page || 1) < Number(pagination?.pages || 1));
-
+export default async function HomePage({ searchParams }) {
+  const params = await searchParams;
+  const catalog = await fetchPublicDiscovery().catch(() => null);
+  const categories = discoveryCategories(catalog);
+  const collection = catalog?.collections?.find(row => row.slug === params?.collection);
+  const category = collection || params?.q && !params?.category ? "" : categories.some(row => row.slug === params?.category) ? params.category : categories[0]?.slug || "";
+  const query = typeof params?.q === "string" ? params.q.slice(0, 200) : "";
+  const response = await fetchPublicPrompts({ discoverCategory: category, discoverCollection: collection?.slug, q: query, discoverSort: "newest", limit: "30" }).catch(() => ({ data: [], loadFailed: true }));
   return (
-    <main className="home-reference-page">
-      <HomeVisualFeed
-        categories={chips}
-        heroVideos={heroVideos.slice(0, 4)}
-        initialHasMore={initialHasMore}
-        initialPage={1}
-        initialPrompts={initialPrompts}
-        trendings={trendings}
-      />
+    <main className="home-reference-page discover-page">
+      <HomeVisualFeed categories={categories} collection={collection || null}
+        initialCategory={category} initialQuery={query} initialPrompts={response.data || []}
+        initialHasMore={Number(response.pagination?.pages || 0) > 1} initialLoadFailed={Boolean(response.loadFailed)} />
     </main>
   );
 }

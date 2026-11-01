@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
-export function DeletePromptButton({ id, iconOnly = false }) {
+export function DeletePromptButton({ id, iconOnly = false, onDeleted }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +34,7 @@ export function DeletePromptButton({ id, iconOnly = false }) {
       console.warn(data.warning);
     }
 
+    onDeleted?.();
     router.refresh();
   }
 

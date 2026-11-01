@@ -9,9 +9,9 @@
     "prestart": "npm run sync-version",
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test tests/*.test.cjs tests/*.test.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^15.3.1",

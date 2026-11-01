@@ -1,4 +1,8 @@
 import "./globals.css";
+import "./discover.css";
+import "./gallery.css";
+import { fetchPublicDiscovery } from "@/lib/api";
+import { discoveryCategories } from "@/lib/discovery-categories";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -100,7 +104,9 @@ export const viewport = {
   themeColor: "#5B8E2D"
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const discovery = await fetchPublicDiscovery().catch(() => null);
+  const categories = discoveryCategories(discovery);
   const schemas = [organizationSchema(), websiteSchema()];
 
   return (
@@ -115,7 +121,7 @@ export default function RootLayout({ children }) {
             <UserAuthProvider>
               <AccountAccessProvider>
                 <UTMTracker />
-                <Navbar />
+                <Navbar categories={categories} />
                 {children}
                 <Footer />
               </AccountAccessProvider>

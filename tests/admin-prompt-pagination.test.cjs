@@ -15,6 +15,7 @@ async function renderPage(params, pages = 5) {
     module: { type: 'commonjs' }
   });
   const mocks = {
+    "@/components/admin-prompt-list-taxonomy": { AdminPromptFilters: () => null, AdminPromptBulkActions: () => null },
     'next/link': ({ children, href, ...props }) => React.createElement('a', { href, ...props }, children),
     'next/navigation': { redirect: (href) => { throw new Error(`redirect:${href}`); } },
     '@/lib/auth': { requireAdminToken: async () => 'test-token' },

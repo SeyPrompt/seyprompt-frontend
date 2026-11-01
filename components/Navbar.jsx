@@ -5,32 +5,31 @@ import {
   ChevronDown,
   LayoutDashboard,
   Library,
-  LogIn,
   LogOut,
   Menu,
   ReceiptText,
+  Search,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { categoryImage } from "@/lib/discovery-categories";
 import { useUserAuth } from "@/components/user-auth-provider";
 
 const primaryLinks = [
   { href: "/", label: "Discover" },
   { href: "/prompts", label: "Prompts" },
-  { href: "/ai-prompt-guide", label: "Guide" },
-  { href: "/ai-tools", label: "Tools" },
-  { href: "/use-cases", label: "Use Cases" },
 ];
-
 const moreLinks = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/ai-tools", label: "Tools" },
+  { href: "/ai-prompt-guide", label: "User Guide" },
+  { href: "/use-cases", label: "Use Cases" },
 ];
-
-const mobileLinks = [...primaryLinks, ...moreLinks];
+const mobileLinks = [{ href: "/collections", label: "Collections" }];
 
 function isActive(pathname, href) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -110,11 +109,15 @@ function AccountDropdownContent({ auth, closeMenu }) {
   );
 }
 
-export function Navbar() {
+export function Navbar({ categories = [] }) {
   const pathname = usePathname();
+  const headerRef = useRef(null);
   const auth = useUserAuth();
   const [open, setOpen] = useState(false);
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [resourceMenuOpen, setResourceMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isAdminPath = pathname.startsWith("/admin");
   const moreActive = moreLinks.some((link) => isActive(pathname, link.href));
@@ -123,13 +126,25 @@ export function Navbar() {
   const accountAvatarUrl = auth.user?.avatarUrl || "";
 
   function closeMenu() {
+    setSearchOpen(false);
     setOpen(false);
-    setMoreMenuOpen(false);
+    setCategoryMenuOpen(false);
+    setResourceMenuOpen(false);
     setUserMenuOpen(false);
   }
 
+  useEffect(() => {
+    const dismiss = event => { if (event.key === "Escape" || (event.type === "pointerdown" && !headerRef.current?.contains(event.target))) closeMenu(); };
+    document.addEventListener("keydown", dismiss); document.addEventListener("pointerdown", dismiss);
+    return () => { document.removeEventListener("keydown", dismiss); document.removeEventListener("pointerdown", dismiss); };
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
   return (
-    <header className="navbar">
+    <header className="navbar discover-navbar" ref={headerRef}>
       <div className="container navbar-inner">
         <Link className="brand navbar-brand" href="/" onClick={closeMenu}>
           <span className="logo-wrap">
@@ -157,32 +172,35 @@ export function Navbar() {
           ))}
           <div className="navbar-more-menu">
             <button
-              aria-expanded={moreMenuOpen}
-              aria-haspopup="menu"
-              className={`nav-link navbar-more-button${moreActive || moreMenuOpen ? " active" : ""}`}
+              aria-expanded={categoryMenuOpen}
+              aria-controls="navbar-category-menu"
+              className={`nav-link navbar-more-button${categoryMenuOpen ? " active" : ""}`}
               onClick={() => {
-                setMoreMenuOpen((current) => !current);
+                setCategoryMenuOpen((current) => !current);
+                setResourceMenuOpen(false);
                 setUserMenuOpen(false);
               }}
               type="button"
             >
-              More
+              Categories
               <ChevronDown aria-hidden="true" size={15} />
             </button>
-            <div className={`navbar-more-dropdown${moreMenuOpen ? " open" : ""}`} role="menu">
-              {moreLinks.map((link) => (
-                <Link
-                  className="navbar-user-dropdown-item"
-                  href={link.href}
-                  key={link.href}
-                  onClick={closeMenu}
-                  role="menuitem"
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div id="navbar-category-menu" className={`navbar-more-dropdown${categoryMenuOpen ? " open" : ""}`}>
+              <div className="navbar-category-grid">
+                {categories.map(category => <Link className="navbar-category-link" href={`/categories/${category.slug}`} key={category.slug} onClick={closeMenu}><img src={categoryImage(category)} alt="" loading="lazy" /><span>{category.name}</span></Link>)}
+              </div>
             </div>
           </div>
+          <Link className={`nav-link${isActive(pathname, "/collections") ? " active" : ""}`} href="/collections" onClick={closeMenu}>Collections</Link>
+          <div className="navbar-more-menu">
+            <button className={`nav-link navbar-more-button${moreActive || resourceMenuOpen ? " active" : ""}`} type="button" aria-expanded={resourceMenuOpen} aria-controls="navbar-more-links" onClick={() => { setResourceMenuOpen(current => !current); setCategoryMenuOpen(false); setUserMenuOpen(false); }}>
+              More <ChevronDown aria-hidden="true" size={15} />
+            </button>
+            <div id="navbar-more-links" className={`navbar-resource-dropdown${resourceMenuOpen ? " open" : ""}`}>
+              {moreLinks.map(link => <Link className="navbar-user-dropdown-item" href={link.href} key={link.href} onClick={closeMenu}>{link.label}</Link>)}
+            </div>
+          </div>
+          <form className="navbar-discover-search" action="/" role="search"><Search size={16} aria-hidden="true" /><label className="visually-hidden" htmlFor="navbar-search">Search prompts</label><input id="navbar-search" name="q" type="search" maxLength={200} placeholder="Search prompts…" /></form>
           {!isAdminPath ? (
             auth.isAuthenticated ? (
               <div className="navbar-user-menu">
@@ -193,7 +211,8 @@ export function Navbar() {
                   className={`navbar-account-button${userMenuOpen || isActive(pathname, "/dashboard") || isActive(pathname, "/saved") || isActive(pathname, "/unlocked-prompts") || isActive(pathname, "/orders") ? " active" : ""}`}
                   onClick={() => {
                     setUserMenuOpen((current) => !current);
-                    setMoreMenuOpen(false);
+                    setCategoryMenuOpen(false);
+                    setResourceMenuOpen(false);
                   }}
                   type="button"
                 >
@@ -206,24 +225,23 @@ export function Navbar() {
                 </div>
               </div>
             ) : (
-              <Link
+              <><Link
                 className={`login-button navbar-login-button${isActive(pathname, "/login") ? " active" : ""}`}
-                href="/login"
-                onClick={closeMenu}
-                title="Login"
-              >
-                <LogIn aria-hidden="true" size={18} />
-                Login
-              </Link>
+                href="/login" onClick={closeMenu}>Login</Link><Link className="navbar-create-account" href="/register" onClick={closeMenu}>Get Started</Link></>
             )
           ) : null}
         </nav>
+        <button type="button" className="navbar-icon-button navbar-search-toggle" aria-label={searchOpen ? "Close search" : "Open search"} aria-expanded={searchOpen} aria-controls="navbar-search-panel" onClick={() => { setSearchOpen(current => !current); setOpen(false); setCategoryMenuOpen(false); setResourceMenuOpen(false); setUserMenuOpen(false); }}><Search size={20} aria-hidden="true" /></button>
         <button
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={open}
+          aria-controls="mobile-navigation"
           className="navbar-toggle"
           onClick={() => {
             setOpen((current) => !current);
-            setMoreMenuOpen(false);
+            setCategoryMenuOpen(false);
+            setResourceMenuOpen(false);
+            setSearchOpen(false);
             setUserMenuOpen(false);
           }}
           type="button"
@@ -236,12 +254,15 @@ export function Navbar() {
         </button>
       </div>
 
-      <div className={`navbar-mobile-menu${open ? " open" : ""}`}>
+      <div id="navbar-search-panel" className="navbar-search-panel" hidden={!searchOpen}>
+        <form className="container navbar-compact-search" action="/" role="search"><label className="visually-hidden" htmlFor="compact-navbar-search">Search prompts</label><input ref={searchInputRef} id="compact-navbar-search" name="q" type="search" maxLength={200} placeholder="Search prompts, categories, or use cases…" /><button type="submit" onClick={closeMenu}>Search</button></form>
+      </div>
+      <div id="mobile-navigation" hidden={!open} className={`navbar-mobile-menu${open ? " open" : ""}`}>
         <nav
           className="container navbar-mobile-links"
           aria-label="Mobile navigation"
         >
-          {mobileLinks.map((link) => (
+          {primaryLinks.map((link) => (
             <Link
               className={`mobile-nav-link${isActive(pathname, link.href) ? " active" : ""}`}
               href={link.href}
@@ -251,6 +272,10 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          <details className="navbar-mobile-categories"><summary>Categories <ChevronDown size={16} /></summary>{categories.map(category => <Link href={`/categories/${category.slug}`} key={category.slug} onClick={closeMenu}>{category.name}</Link>)}</details>
+          {mobileLinks.map(link => <Link className="mobile-nav-link" href={link.href} key={link.href} onClick={closeMenu}>{link.label}</Link>)}
+          <details className="navbar-mobile-categories"><summary>More <ChevronDown size={16} /></summary>{moreLinks.map(link => <Link href={link.href} key={link.href} onClick={closeMenu}>{link.label}</Link>)}</details>
+
           {!isAdminPath ? (
             auth.isAuthenticated ? (
               <>
@@ -294,6 +319,7 @@ export function Navbar() {
                 </button>
               </>
             ) : (
+              <>
               <Link
                 className={`mobile-nav-link mobile-login-link${isActive(pathname, "/login") ? " active" : ""}`}
                 href="/login"
@@ -301,6 +327,8 @@ export function Navbar() {
               >
                 Login
               </Link>
+              <Link className="mobile-nav-link mobile-get-started" href="/register" onClick={closeMenu}>Get Started</Link>
+              </>
             )
           ) : null}
         </nav>

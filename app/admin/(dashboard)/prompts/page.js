@@ -1,3 +1,4 @@
+import { AdminPromptFilters, AdminPromptBulkActions } from "@/components/admin-prompt-list-taxonomy";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Eye, ImageIcon, Pencil } from "lucide-react";
@@ -91,8 +92,8 @@ function PromptViewLink({ prompt }) {
   );
 }
 
-function buildPageHref(page, q, status) {
-  const params = new URLSearchParams({ page: String(page) });
+function buildPageHref(page, q, status, taxonomyFilters = {}) {
+  const params = new URLSearchParams({ ...taxonomyFilters, page: String(page) });
   if (q) params.set("q", q);
   if (status) params.set("status", status);
   return `/admin/prompts?${params.toString()}`;
@@ -103,10 +104,12 @@ export default async function AdminPromptsPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const q = resolvedSearchParams?.q || "";
   const status = resolvedSearchParams?.status || "";
+  const taxonomyFilters = Object.fromEntries(["categoryId", "subcategoryId", "tagId", "collectionId", "classificationStatus", "pricing"].map(key => [key, resolvedSearchParams?.[key] || ""]).filter(([, value]) => value));
   const requestedPage = Number(resolvedSearchParams?.page || 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const response = await fetchAdminPrompts(token, {
+    ...taxonomyFilters,
     q,
     status,
     page: String(page),
@@ -117,7 +120,7 @@ export default async function AdminPromptsPage({ searchParams }) {
   }));
   const totalPages = Math.max(Number(response.pagination?.pages || 1), 1);
   if (response.pagination?.pages !== undefined && page > totalPages) {
-    redirect(buildPageHref(totalPages, q, status));
+    redirect(buildPageHref(totalPages, q, status, taxonomyFilters));
   }
 
   return (
@@ -130,6 +133,7 @@ export default async function AdminPromptsPage({ searchParams }) {
           <option value="published">Published</option>
           <option value="archived">Archived</option>
         </select>
+        <AdminPromptFilters initial={taxonomyFilters} />
         <button className="button" type="submit">
           Filter
         </button>
@@ -138,6 +142,7 @@ export default async function AdminPromptsPage({ searchParams }) {
         </Link>
       </form>
 
+      <AdminPromptBulkActions />
       <div className="panel form-card">
         <div className="section-header">
           <div>
@@ -152,6 +157,7 @@ export default async function AdminPromptsPage({ searchParams }) {
               <table className="table">
                 <thead>
                   <tr>
+                    <th>Select</th>
                     <th>Title</th>
                     <th>Category</th>
                     <th>Status</th>
@@ -167,6 +173,7 @@ export default async function AdminPromptsPage({ searchParams }) {
 
                     return (
                       <tr key={prompt._id || prompt.id}>
+                        <td><input type="checkbox" form="taxonomy-bulk-form" name="promptIds" value={prompt._id || prompt.id} aria-label={`Select ${prompt.title}`} /></td>
                         <td>
                           <PromptSummary prompt={prompt} />
                         </td>
@@ -216,6 +223,7 @@ export default async function AdminPromptsPage({ searchParams }) {
 
                 return (
                   <article className="admin-prompt-card" key={prompt._id || prompt.id}>
+                    <label><input type="checkbox" form="taxonomy-bulk-form" name="promptIds" value={prompt._id || prompt.id} /> Select {prompt.title}</label>
                     <PromptSummary prompt={prompt} />
                     <div className="admin-card-meta">
                       <span>{primaryCategory || "General"}</span>
@@ -250,7 +258,7 @@ export default async function AdminPromptsPage({ searchParams }) {
         {totalPages > 1 ? (
           <nav className="admin-pagination" aria-label="Prompt list pages">
             {page > 1 ? (
-              <Link className="button-secondary compact" href={buildPageHref(page - 1, q, status)}>
+              <Link className="button-secondary compact" href={buildPageHref(page - 1, q, status, taxonomyFilters)}>
                 Previous
               </Link>
             ) : (
@@ -258,7 +266,7 @@ export default async function AdminPromptsPage({ searchParams }) {
             )}
             <span>Page {page} of {totalPages}</span>
             {page < totalPages ? (
-              <Link className="button-secondary compact" href={buildPageHref(page + 1, q, status)}>
+              <Link className="button-secondary compact" href={buildPageHref(page + 1, q, status, taxonomyFilters)}>
                 Next
               </Link>
             ) : (

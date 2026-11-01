@@ -27,6 +27,7 @@ async function unlockMocks(extra = {}) {
   return {
     '@/lib/prompt-pricing': await load('lib/prompt-pricing.js'),
     '@/components/prompt-detail-sections': await load('components/prompt-detail-sections.jsx', {
+      '@/components/sample-image-gallery': { SampleImageGallery: Null },
       '@/components/protected-media': { ProtectedImage: Null, ProtectedVideo: Null, ProtectedMediaFrame: Null }
     }),
     '@/components/CopyButton': { CopyButton: Null },
@@ -44,11 +45,13 @@ async function renderDetail(pricingType, price = 0, promptText = '') {
   mocks['@/lib/api'] = { fetchPromptBySlug: async () => ({ ...prompt, pricingType, price, prompt: promptText }), fetchPublicPrompts: async () => ({ data: [] }) };
   mocks['@/lib/prompt-metadata'] = { getPromptCategories: () => [], getPrimaryPromptCategory: () => '', getPromptCategoryLabel: () => '' };
   mocks['@/utils/categoryIcons'] = { getCategoryIcon: () => Null };
+  mocks['@/lib/taxonomy-seo'] = { jsonLd: JSON.stringify };
   mocks['@/lib/seo'] = { absoluteUrl: x => x, breadcrumbSchema: () => ({}), promptSchema: () => ({}), truncateDescription: x => x };
   for (const [file, name] of [['PromptAccessLink', 'PromptAccessLink'], ['PromptLoginGate', 'PromptLoginGate'], ['prompt-detail-price-badge', 'PromptDetailPriceBadge'], ['record-prompt-view', 'RecordPromptView'], ['saved-prompt-button', 'SavedPromptButton']]) {
     mocks[`@/components/${file}`] = { [name]: Null };
   }
   mocks['@/components/PremiumPromptUnlock'] = await load('components/PremiumPromptUnlock.jsx', mocks);
+  mocks['@/components/PromptLoginGate'] = { PromptLoginGate: ({ children }) => children };
   mocks['next/link'] = ({ children, href }) => React.createElement('a', { href }, children);
   const Page = (await load('app/prompts/[slug]/page.js', mocks)).default;
   return renderToStaticMarkup(await Page({ params: Promise.resolve({ slug: 'test' }) }));
@@ -111,4 +114,14 @@ test('checkout callback and returning-user fetch both restore the complete unloc
     assert.match(html, /Private sample content/);
     assert.match(html, /Private tips content/);
   }
+});
+
+
+test('guest prompt access keeps public page intact and gates only the workspace', async () => {
+  const mocks = { 'next/link': ({ children, href }) => React.createElement('a', { href }, children), 'next/navigation': { usePathname: () => '/prompts/example' }, '@/components/user-auth-provider': { useUserAuth: () => ({ ready: true, isAuthenticated: false }) } };
+  const Gate = (await load('components/PromptLoginGate.jsx', mocks)).PromptLoginGate;
+  const guest = renderToStaticMarkup(React.createElement(Gate, null, 'PRIVATE WORKSPACE'));
+  assert.match(guest, /Sign in to continue/); assert.match(guest, /redirect=%2Fprompts%2Fexample/); assert.equal(guest.includes('PRIVATE WORKSPACE'), false);
+  mocks['@/components/user-auth-provider'].useUserAuth = () => ({ ready: true, isAuthenticated: true });
+  assert.equal(renderToStaticMarkup(React.createElement(Gate, null, 'WORKSPACE')), 'WORKSPACE');
 });

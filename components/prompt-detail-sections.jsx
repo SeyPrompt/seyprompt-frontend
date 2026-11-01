@@ -1,8 +1,10 @@
+import { SampleImageGallery } from "@/components/sample-image-gallery";
 import { Lightbulb } from "lucide-react";
 import { ProtectedImage, ProtectedMediaFrame, ProtectedVideo } from "@/components/protected-media";
 
 function SampleOutputDisplay({ prompt }) {
   const sampleOutput = prompt.sampleOutput;
+  if (prompt.sampleImages?.length) return <SampleImageGallery key={prompt.id || prompt._id || prompt.slug} prompt={prompt} />;
 
   if (!sampleOutput) {
     return (

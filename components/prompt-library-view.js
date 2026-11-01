@@ -24,17 +24,17 @@ const filterOptionRequests = {
   categories: {
     emptyLabel: "No Categories Found",
     label: "All Categories",
-    path: "/api/public/categories"
+    path: "/api/public/taxonomy"
   },
   tags: {
     emptyLabel: "No Tags Found",
     label: "All Tags",
-    path: "/api/public/prompts?limit=1000"
+    path: "/api/public/taxonomy"
   },
   tools: {
     emptyLabel: "No Tools Found",
     label: "All Tools",
-    path: "/api/public/prompts?limit=1000"
+    path: "/api/public/prompts?limit=100"
   }
 };
 
@@ -52,6 +52,7 @@ function mergeSelectedOption(options, selectedValue) {
 }
 
 function normalizeFilterOptions(data, key) {
+  if (Array.isArray(data?.[key])) return data[key].map(row => row.name).filter(Boolean);
   if (key === "tags" || key === "tools") {
     const prompts = Array.isArray(data)
       ? data

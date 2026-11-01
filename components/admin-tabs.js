@@ -18,6 +18,7 @@ export default function AdminTabs() {
       >
         Prompts
       </Link>
+      <Link className={`button-secondary compact${isActive(pathname, "/admin/taxonomy") ? " active" : ""}`} href="/admin/taxonomy/categories">Taxonomy</Link>
       <Link
         className={`button-secondary compact${isActive(pathname, "/admin/users") ? " active" : ""}`}
         href="/admin/users"

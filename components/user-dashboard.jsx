@@ -364,7 +364,7 @@ export function UserDashboard() {
           </div>
         </div>
 
-        <aside className="dashboard-plan-console" aria-label="Premium plans">
+        <aside id="plans" className="dashboard-plan-console" aria-label="Premium plans">
           <div className="dashboard-console-header">
             <span className="dashboard-console-icon" aria-hidden="true">
               <Crown size={22} />

@@ -1,8 +1,11 @@
 "use client";
 
+import AdminSampleGallery from "./admin-sample-gallery";
+import AdminPromptTaxonomy from "./admin-prompt-taxonomy";
+import { UnsavedWarning } from "./admin-taxonomy-controls";
 import { Lightbulb, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getPromptCategories, normalizeCategories } from "@/lib/prompt-metadata";
 
 const MAX_SAMPLE_OUTPUT_FILE_SIZE = 10 * 1024 * 1024;
@@ -27,6 +30,7 @@ const REGION_CURRENCY_MAP = {
   EU: "EUR",
   NZ: "NZD"
 };
+const PRICING_FIELDS = ["pricingType", "price", "currency", "isPurchasable", "creditUnlockEnabled", "directPurchaseEnabled", "creditCost", "regionalPrices"];
 const CURRENCY_OPTIONS = ["INR", "USD", "GBP", "EUR", "NZD"];
 
 function normalizeList(value) {
@@ -169,20 +173,6 @@ function findDuplicateRegion(rows) {
   return "";
 }
 
-function normalizeTaxonomyResponse(data) {
-  const values = Array.isArray(data)
-    ? data
-    : data?.categories || data?.data || data?.items || data?.results || [];
-
-  return normalizeCategories(
-    values.map((item) =>
-      typeof item === "string"
-        ? item
-        : item?.name || item?.label || item?.title || item?.value || ""
-    )
-  );
-}
-
 function slugify(value) {
   return value
     .toLowerCase()
@@ -196,7 +186,7 @@ function getFileFromFormData(formData, fieldName) {
   return file instanceof File && file.size > 0 ? file : null;
 }
 
-function validatePrompt(payload, sampleOutputFile) {
+function validatePrompt(payload, sampleOutputFile, preservePricing = false) {
   if (!payload.title || payload.title.length < 3 || payload.title.length > 120) {
     return "Title must be between 3 and 120 characters.";
   }
@@ -281,7 +271,7 @@ function validatePrompt(payload, sampleOutputFile) {
     return "Regional prices must be valid JSON.";
   }
 
-  if (payload.pricingType === "premium") {
+  if (payload.pricingType === "premium" && !preservePricing) {
     if (
       payload.directPurchaseEnabled &&
       !payload.regionalPrices.some((regionalPrice) => regionalPrice.isActive)
@@ -362,17 +352,25 @@ function getInitialSampleOutput(prompt) {
 
 export function PromptForm({ mode, prompt }) {
   const router = useRouter();
+  const [taxonomy, setTaxonomy] = useState(null);
+  const [dirty, setDirty] = useState(false);
+  const [pricingDirty, setPricingDirty] = useState(false);
+  const preservePricing = mode === "edit" && !pricingDirty;
+  const handleTaxonomyChange = useCallback((value, changed = false) => {
+    setTaxonomy(value); if (changed) setDirty(true);
+  }, []);
   const slugEditedRef = useRef(Boolean(prompt?.slug));
   const initialSampleOutput = getInitialSampleOutput(prompt);
+  const [gallery, setGallery] = useState(() => ({ images: prompt?.sampleImages || [], coverId: prompt?.sampleCoverId || prompt?.sampleImages?.[0]?.id || '', mode: prompt?.samplePromptMode || 'single' }));
+  const [galleryDirty, setGalleryDirty] = useState(false);
+  const [galleryBusy, setGalleryBusy] = useState(false);
+  const handleGalleryChange = value => { setGallery(value); setGalleryDirty(true); setDirty(true); };
   const initialPreviewUrl =
     initialSampleOutput.type === "image" || initialSampleOutput.type === "video"
       ? initialSampleOutput.watermarkedPreviewUrl || initialSampleOutput.value
       : "";
   const initialCategories = getPromptCategories(prompt);
-  const [categories, setCategories] = useState(initialCategories);
-  const [categoryInput, setCategoryInput] = useState("");
-  const [categoryOptions, setCategoryOptions] = useState([]);
-  const [categorySelectValues, setCategorySelectValues] = useState([]);
+  const categories = initialCategories;
   const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
   const [sampleOutputMode, setSampleOutputMode] = useState(
     SAMPLE_OUTPUT_URL_TYPES.includes(initialSampleOutput.type) && initialSampleOutput.value
@@ -396,40 +394,6 @@ export function PromptForm({ mode, prompt }) {
   const [loading, setLoading] = useState(false);
   const regionalPriceCurrenciesKey = getRegionalPriceCurrencies(regionalPriceRows).join(",");
   const monetizationDisabled = pricingType !== "premium";
-
-  useEffect(() => {
-    let active = true;
-
-    async function fetchCategoryOptions() {
-      try {
-        const response = await fetch("/api/admin/categories", {
-          headers: {
-            Accept: "application/json"
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to load categories.");
-        }
-
-        const data = await response.json();
-
-        if (active) {
-          setCategoryOptions(normalizeTaxonomyResponse(data));
-        }
-      } catch {
-        if (active) {
-          setCategoryOptions([]);
-        }
-      }
-    }
-
-    fetchCategoryOptions();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     const currencies = regionalPriceCurrenciesKey
@@ -487,41 +451,8 @@ export function PromptForm({ mode, prompt }) {
     };
   }, [regionalPriceCurrenciesKey]);
 
-  function addCategories(values) {
-    const nextCategories = normalizeCategories(Array.isArray(values) ? values : [values]);
-
-    if (!nextCategories.length) {
-      return;
-    }
-
-    setCategories((currentCategories) =>
-      normalizeCategories([...currentCategories, ...nextCategories])
-    );
-  }
-
-  function addCustomCategory() {
-    addCategories(categoryInput);
-    setCategoryInput("");
-  }
-
-  function removeCategories(values) {
-    const removalKeys = new Set(
-      normalizeCategories(Array.isArray(values) ? values : [values]).map((category) =>
-        category.toLowerCase()
-      )
-    );
-
-    if (!removalKeys.size) {
-      return;
-    }
-
-    setCategories((currentCategories) =>
-      currentCategories.filter((currentCategory) => !removalKeys.has(currentCategory.toLowerCase()))
-    );
-    setCategorySelectValues([]);
-  }
-
   function updateRegionalPriceRow(rowId, field, value) {
+    setPricingDirty(true); setDirty(true);
     setRegionalPriceRows((currentRows) =>
       currentRows.map((row) => {
         if (row.id !== rowId) {
@@ -551,6 +482,7 @@ export function PromptForm({ mode, prompt }) {
   }
 
   function addRegionalPriceRow() {
+    setPricingDirty(true); setDirty(true);
     setRegionalPriceRows((currentRows) => {
       const nextRegion = getNextAvailableRegion(currentRows);
 
@@ -572,6 +504,7 @@ export function PromptForm({ mode, prompt }) {
   }
 
   function removeRegionalPriceRow(rowId) {
+    setPricingDirty(true); setDirty(true);
     setRegionalPriceRows((currentRows) =>
       currentRows.length > 1 ? currentRows.filter((row) => row.id !== rowId) : currentRows
     );
@@ -591,11 +524,14 @@ export function PromptForm({ mode, prompt }) {
     setLoading(true);
     setError("");
 
+    if (galleryBusy) { setError("Wait for the gallery uploads to finish."); setLoading(false); return; }
+    if (!taxonomy?.categoryId) { setError("Select a main category."); setLoading(false); return; }
     const formData = new FormData(event.currentTarget);
     const sampleOutputFile = getFileFromFormData(formData, "sampleOutputFile");
     const sampleOutputType = String(formData.get("sampleOutputType") || "text");
     const sampleOutputUrl = String(formData.get("sampleOutputUrl") || "").trim();
     const sampleOutputFileName = String(formData.get("sampleOutputFileName") || "").trim();
+    if (sampleOutputType === "image" && galleryDirty && gallery.mode === "per-image" && (!gallery.images.length || gallery.images.some(image => !image.instructions?.trim()))) { setError("Add instructions for each sample image in the prompt set."); setLoading(false); return; }
     const featuredOrderValue = String(formData.get("featuredOrder") || "").trim();
     const featuredOrder =
       featuredOrderValue === "" ? undefined : Number(featuredOrderValue);
@@ -624,8 +560,7 @@ export function PromptForm({ mode, prompt }) {
       bytes: Number(formData.get("sampleOutputBytes") || 0) || undefined
     };
     const selectedCategories = normalizeCategories([
-      ...normalizeCategoryInput(formData.get("categories") || "[]"),
-      categoryInput
+      ...normalizeCategoryInput(formData.get("categories") || "[]")
     ]);
     const payload = {
       title: String(formData.get("title") || "").trim(),
@@ -666,7 +601,7 @@ export function PromptForm({ mode, prompt }) {
       featuredOrder
     };
 
-    const validationError = validatePrompt(payload, sampleOutputFile);
+    const validationError = validatePrompt(payload, sampleOutputFile, preservePricing);
 
     if (validationError) {
       setError(validationError);
@@ -718,12 +653,14 @@ export function PromptForm({ mode, prompt }) {
       return;
     }
 
+    setDirty(false);
     router.push("/admin/prompts");
     router.refresh();
   }
 
   function buildJsonPayload(payload) {
     const jsonPayload = {
+      ...taxonomy,
       title: payload.title,
       slug: payload.slug,
       description: payload.description,
@@ -743,8 +680,8 @@ export function PromptForm({ mode, prompt }) {
       visibility: payload.visibility,
       status: payload.status,
       pricingType: payload.pricingType,
-      price: 0,
-      currency: "INR",
+      price: pricingType === "premium" && mode === "edit" ? Number(prompt?.price || 0) : 0,
+      currency: prompt?.currency || "INR",
       isPurchasable: payload.isPurchasable,
       creditUnlockEnabled: payload.creditUnlockEnabled,
       directPurchaseEnabled: payload.directPurchaseEnabled,
@@ -753,6 +690,15 @@ export function PromptForm({ mode, prompt }) {
       isFeatured: payload.isFeatured
     };
 
+    if (galleryDirty || (sampleOutputType !== 'image' && prompt?.sampleImages?.length)) {
+      jsonPayload.sampleImages = sampleOutputType === 'image' ? gallery.images : [];
+      jsonPayload.sampleCoverId = sampleOutputType === 'image' ? gallery.coverId : '';
+      jsonPayload.samplePromptMode = sampleOutputType === 'image' ? gallery.mode : 'single';
+    }
+    if (preservePricing) {
+      jsonPayload.preservePricing = true;
+      for (const field of PRICING_FIELDS) delete jsonPayload[field];
+    }
     if (payload.featuredOrder !== undefined) {
       jsonPayload.featuredOrder = payload.featuredOrder;
     }
@@ -782,6 +728,10 @@ export function PromptForm({ mode, prompt }) {
 
   function buildMultipartPayload(payload, sampleOutputFile) {
     const uploadFormData = new FormData();
+    uploadFormData.append("categoryId", taxonomy.categoryId);
+    uploadFormData.append("secondaryCategoryIds", JSON.stringify(taxonomy.secondaryCategoryIds || []));
+    uploadFormData.append("tagIds", JSON.stringify(taxonomy.tagIds));
+    uploadFormData.append("manualCollectionIds", JSON.stringify(taxonomy.manualCollectionIds));
 
     uploadFormData.append("title", payload.title);
     uploadFormData.append("slug", payload.slug);
@@ -801,17 +751,19 @@ export function PromptForm({ mode, prompt }) {
     uploadFormData.append("tools", JSON.stringify(payload.tools));
     uploadFormData.append("visibility", payload.visibility);
     uploadFormData.append("status", payload.status);
-    uploadFormData.append("pricingType", payload.pricingType);
-    uploadFormData.append("price", "0");
-    uploadFormData.append("currency", "INR");
-    uploadFormData.append("isPurchasable", String(payload.isPurchasable));
-    uploadFormData.append("creditUnlockEnabled", String(payload.creditUnlockEnabled));
-    uploadFormData.append("directPurchaseEnabled", String(payload.directPurchaseEnabled));
-    uploadFormData.append("creditCost", String(payload.creditCost));
-    uploadFormData.append("regionalPrices", JSON.stringify(payload.regionalPrices));
+    if (preservePricing) uploadFormData.append("preservePricing", "true");
+    else {
+      const pricingPayload = buildJsonPayload(payload);
+      for (const field of PRICING_FIELDS) uploadFormData.append(field, typeof pricingPayload[field] === "object" ? JSON.stringify(pricingPayload[field]) : String(pricingPayload[field]));
+    }
     uploadFormData.append("isFeatured", String(payload.isFeatured));
     if (payload.featuredOrder !== undefined) {
       uploadFormData.append("featuredOrder", String(payload.featuredOrder));
+    }
+    if (galleryDirty || (sampleOutputType !== 'image' && prompt?.sampleImages?.length)) {
+      uploadFormData.append('sampleImages', JSON.stringify(sampleOutputType === 'image' ? gallery.images : []));
+      uploadFormData.append('sampleCoverId', sampleOutputType === 'image' ? gallery.coverId : '');
+      uploadFormData.append('samplePromptMode', sampleOutputType === 'image' ? gallery.mode : 'single');
     }
     uploadFormData.append("sampleOutputType", payload.sampleOutputType);
     uploadFormData.append("sampleOutputFileName", payload.sampleOutputFileName);
@@ -820,101 +772,11 @@ export function PromptForm({ mode, prompt }) {
     return uploadFormData;
   }
 
-  const categorySelectOptions = normalizeCategories([...categoryOptions, ...categories]);
-
   return (
-    <form className="panel form-card stack" onSubmit={handleSubmit}>
-      <div className="field">
-        <label htmlFor="categorySelect">Category</label>
-        <input name="category" readOnly type="hidden" value={categories[0] || ""} />
-        <input name="categories" readOnly type="hidden" value={JSON.stringify(categories)} />
-        <div className="category-multiselect">
-          <select
-            id="categorySelect"
-            multiple
-            onChange={(event) =>
-              setCategorySelectValues(
-                Array.from(event.target.selectedOptions).map((option) => option.value)
-              )
-            }
-            value={categorySelectValues}
-          >
-            {categorySelectOptions.length ? (
-              categorySelectOptions.map((categoryOption) => (
-                <option key={categoryOption} value={categoryOption}>
-                  {categoryOption}
-                </option>
-              ))
-            ) : (
-              <option disabled value="">
-                No categories found
-              </option>
-            )}
-          </select>
-          <div className="category-actions">
-            <button
-              className="button-secondary compact"
-              disabled={!categorySelectValues.length}
-              onClick={() => addCategories(categorySelectValues)}
-              type="button"
-            >
-              Add
-            </button>
-            <button
-              className="button-secondary compact"
-              disabled={!categorySelectValues.length}
-              onClick={() => removeCategories(categorySelectValues)}
-              type="button"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
-        <div className="category-tag-input">
-          <input
-            id="categoryInput"
-            maxLength={80}
-            onChange={(event) => setCategoryInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== ",") {
-                return;
-              }
-
-              event.preventDefault();
-              addCustomCategory();
-            }}
-            placeholder="Enter a new category"
-            value={categoryInput}
-          />
-          <button
-            className="button-secondary compact"
-            disabled={!categoryInput.trim()}
-            onClick={addCustomCategory}
-            type="button"
-          >
-            Add New
-          </button>
-        </div>
-        {categories.length ? (
-          <div className="pill-row">
-            {categories.map((category) => (
-              <span className="pill category-tag" key={category}>
-                {category}
-                <button
-                  aria-label={`Remove ${category}`}
-                  onClick={() => removeCategories(category)}
-                  type="button"
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <span className="field-hint muted">
-          The first category is also saved to the legacy category field.
-        </span>
-      </div>
+    <form className="panel form-card stack" onChange={() => setDirty(true)} onSubmit={handleSubmit}>
+      <UnsavedWarning dirty={dirty} />
+      <AdminPromptTaxonomy prompt={prompt} onChange={handleTaxonomyChange} />
+      <input name="categories" type="hidden" readOnly value={JSON.stringify(categories)} />
       <div className="field">
         <label htmlFor="title">Title</label>
         <input
@@ -1128,6 +990,7 @@ export function PromptForm({ mode, prompt }) {
           </select>
         </div>
 
+        {sampleOutputType === 'image' ? <AdminSampleGallery value={gallery} onChange={handleGalleryChange} onBusyChange={setGalleryBusy} legacySample={initialSampleOutput} /> : null}
         {sampleOutputType === "text" ? (
           <div className="field">
             <label htmlFor="sampleOutputValue">Sample output text</label>
@@ -1140,7 +1003,7 @@ export function PromptForm({ mode, prompt }) {
               placeholder="Paste the sample response text..."
             />
           </div>
-        ) : (
+        ) : sampleOutputType === "image" && gallery.images.length ? <p className="field-hint">The selected gallery cover is used as the sample image. Remove all gallery images to edit a single sample instead.</p> : (
           <>
             <div className="field">
               <label htmlFor="sampleOutputMode">Sample output source</label>
@@ -1240,17 +1103,8 @@ export function PromptForm({ mode, prompt }) {
           placeholder="ChatGPT, Canva, Notion"
         />
       </div>
-      <div className="field">
-        <label htmlFor="tags">Tags</label>
-        <input
-          defaultValue={(prompt?.tags || []).join(", ")}
-          id="tags"
-          name="tags"
-          placeholder="instagram, hooks, copywriting"
-        />
-        <span className="field-hint muted">Comma-separated values.</span>
-      </div>
-      <section className="pricing-editor-section" aria-label="Prompt pricing">
+
+      <section className="pricing-editor-section" aria-label="Prompt pricing" onChange={() => { setPricingDirty(true); setDirty(true); }}>
         <div className="pricing-editor-heading">
           <div>
             <h2>Pricing</h2>
@@ -1488,7 +1342,7 @@ export function PromptForm({ mode, prompt }) {
         ) : null}
       </div>
       {error ? <p className="error-text">{error}</p> : null}
-      <button className="button" disabled={loading} type="submit">
+      <button className="button" disabled={loading || galleryBusy} type="submit">
         {loading ? "Saving..." : mode === "create" ? "Create Prompt" : "Update Prompt"}
       </button>
     </form>
