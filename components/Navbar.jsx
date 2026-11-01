@@ -187,7 +187,7 @@ export function Navbar({ categories = [] }) {
             </button>
             <div id="navbar-category-menu" className={`navbar-more-dropdown${categoryMenuOpen ? " open" : ""}`}>
               <div className="navbar-category-grid">
-                {categories.map(category => <Link className="navbar-category-link" href={`/categories/${category.slug}`} key={category.slug} onClick={closeMenu}><img src={categoryImage(category)} alt="" loading="lazy" /><span>{category.name}</span></Link>)}
+                {categories.map(category => <Link className="navbar-category-link" href={`/?category=${encodeURIComponent(category.slug)}`} key={category.slug} onClick={closeMenu}><img src={categoryImage(category)} alt="" loading="lazy" /><span>{category.name}</span></Link>)}
               </div>
             </div>
           </div>
@@ -272,7 +272,7 @@ export function Navbar({ categories = [] }) {
               {link.label}
             </Link>
           ))}
-          <details className="navbar-mobile-categories"><summary>Categories <ChevronDown size={16} /></summary>{categories.map(category => <Link href={`/categories/${category.slug}`} key={category.slug} onClick={closeMenu}>{category.name}</Link>)}</details>
+          <details className="navbar-mobile-categories"><summary>Categories <ChevronDown size={16} /></summary>{categories.map(category => <Link href={`/?category=${encodeURIComponent(category.slug)}`} key={category.slug} onClick={closeMenu}>{category.name}</Link>)}</details>
           {mobileLinks.map(link => <Link className="mobile-nav-link" href={link.href} key={link.href} onClick={closeMenu}>{link.label}</Link>)}
           <details className="navbar-mobile-categories"><summary>More <ChevronDown size={16} /></summary>{moreLinks.map(link => <Link href={link.href} key={link.href} onClick={closeMenu}>{link.label}</Link>)}</details>
 
