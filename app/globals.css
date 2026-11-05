@@ -9953,8 +9953,66 @@ select:not([multiple]) {
   }
 
   .prompt-detail-hero {
+    grid-template-columns: minmax(0, 1fr) auto 44px;
+    gap: 10px 8px;
     border-radius: 18px;
-    padding: 24px 18px 18px;
+    padding: 18px;
+  }
+
+  .prompt-detail-hero-copy {
+    display: contents;
+  }
+
+  .prompt-detail-hero-copy > :not(.prompt-detail-back) {
+    grid-column: 1 / -1;
+  }
+
+  .prompt-detail-back {
+    grid-area: 1 / 1;
+    max-width: 100%;
+    min-height: 44px;
+  }
+
+  .prompt-detail-back svg {
+    flex-shrink: 0;
+  }
+
+  .prompt-hero-visual {
+    grid-area: 1 / 2;
+    width: auto;
+    padding: 0;
+  }
+
+  .prompt-hero-offer-badge {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    width: auto;
+    min-height: 0;
+    padding: 6px 8px;
+    border-radius: 999px;
+    clip-path: none;
+    filter: none;
+  }
+
+  .prompt-hero-offer-badge::before,
+  .prompt-hero-offer-badge small,
+  .prompt-hero-offer-free .prompt-hero-offer-kicker,
+  .prompt-detail-save > span {
+    display: none;
+  }
+
+  .prompt-hero-offer-badge strong {
+    font-size: 0.75rem;
+  }
+
+  .prompt-detail-save {
+    position: absolute;
+    inset: 18px 18px auto auto;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
   }
 
   .prompt-detail-hero .page-title {
