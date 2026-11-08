@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from 'react';
 const LIMIT = 10, MAX_BYTES = 10 * 1024 * 1024;
-export default function AdminSampleGallery({ value, onChange, onBusyChange, legacySample }) {
+export default function AdminSampleGallery({ value, onChange, onBusyChange, legacySample, previewUrls = [] }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [url, setUrl] = useState('');
   const dragging = useRef(null);
   const images = value.images;
@@ -57,7 +57,7 @@ export default function AdminSampleGallery({ value, onChange, onBusyChange, lega
     <p role="status">{busy ? 'Uploading images… Please wait before saving.' : `${images.length} / ${LIMIT} images`}</p>
     {error ? <p role="alert" className="error-text">{error}</p> : null}
     <div className="admin-gallery-grid">{images.map((image, index) => <article className="admin-gallery-item" key={image.id} draggable={!busy} onDragStart={event => { dragging.current = image.id; event.dataTransfer.setData('text/plain', image.id); }} onDragEnd={() => { dragging.current = null; }} onDrop={event => { if (dragging.current) { event.preventDefault(); event.stopPropagation(); move(images.findIndex(row => row.id === dragging.current), index); dragging.current = null; } }}>
-      <img src={image.watermarkedPreviewUrl || image.value} alt={image.altText || `Gallery sample ${index + 1}`} draggable={false} />
+      {previewUrls[index] ? <img src={previewUrls[index]} alt={image.altText || `Gallery sample ${index + 1}`} draggable={false} /> : null}
       <div className="admin-gallery-actions"><strong>Sample {index + 1}</strong><label><input type="radio" name="gallery-cover" checked={value.coverId === image.id} onChange={() => commit(images, { coverId: image.id })} /> Cover</label><button type="button" className="button-secondary compact" aria-label={`Move sample ${index + 1} up`} disabled={index === 0} onClick={() => move(index, index - 1)}>↑</button><button type="button" className="button-secondary compact" aria-label={`Move sample ${index + 1} down`} disabled={index === images.length - 1} onClick={() => move(index, index + 1)}>↓</button><button type="button" className="button-secondary compact" aria-label={`Remove sample ${index + 1}`} onClick={() => commit(images.filter(row => row.id !== image.id))}>Remove</button></div>
       <label className="field">Alt text<input maxLength={180} value={image.altText || ''} onChange={event => update(image.id, 'altText', event.target.value)} placeholder="Describe this image for accessibility" /></label>
       <label className="field">Caption<input maxLength={300} value={image.caption || ''} onChange={event => update(image.id, 'caption', event.target.value)} placeholder="For example: rear view or lifestyle scene" /></label>

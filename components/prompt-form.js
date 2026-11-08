@@ -365,10 +365,12 @@ export function PromptForm({ mode, prompt }) {
   const [galleryDirty, setGalleryDirty] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const handleGalleryChange = value => { setGallery(value); setGalleryDirty(true); setDirty(true); };
-  const initialPreviewUrl =
-    initialSampleOutput.type === "image" || initialSampleOutput.type === "video"
-      ? initialSampleOutput.watermarkedPreviewUrl || initialSampleOutput.value
-      : "";
+  const [sampleFaceBlurEnabled, setSampleFaceBlurEnabled] = useState(prompt?.sampleFaceBlurEnabled ?? true);
+  const [sampleFaceBlurStrength, setSampleFaceBlurStrength] = useState(String(prompt?.sampleFaceBlurStrength ?? 100));
+  const [sampleImageValue, setSampleImageValue] = useState(
+    initialSampleOutput.type === "image" ? initialSampleOutput.value : ""
+  );
+  const [samplePreviews, setSamplePreviews] = useState(null);
   const initialCategories = getPromptCategories(prompt);
   const categories = initialCategories;
   const [sampleOutputType, setSampleOutputType] = useState(initialSampleOutput.type);
@@ -377,6 +379,57 @@ export function PromptForm({ mode, prompt }) {
       ? "direct-url"
       : "upload"
   );
+  const strength = Number(sampleFaceBlurStrength);
+  const blurSettings = {
+    ...(mode === "create" || sampleFaceBlurEnabled !== (prompt?.sampleFaceBlurEnabled ?? true)
+      ? { sampleFaceBlurEnabled } : {}),
+    ...(mode === "create" || strength !== (prompt?.sampleFaceBlurStrength ?? 100)
+      ? { sampleFaceBlurStrength: strength } : {}),
+  };
+  const validBlurStrength = Number.isInteger(strength) && strength >= 1 && strength <= 2000;
+  const singleImage = sampleImageValue === initialSampleOutput.value
+    ? initialSampleOutput
+    : { value: sampleImageValue };
+  const previewImages = gallery.images.length ? gallery.images : sampleImageValue ? [singleImage] : [];
+  const previewRequest = sampleOutputType === "image" && previewImages.length && validBlurStrength
+    ? JSON.stringify({
+        sampleFaceBlurEnabled,
+        sampleFaceBlurStrength: strength,
+        images: previewImages.map(({ value, provider, publicId, resourceType, format, fileName }) =>
+          ({ value, provider, publicId, resourceType, format, fileName })
+        ),
+      })
+    : "";
+  const previewUrls = samplePreviews?.request === previewRequest ? samplePreviews.urls : [];
+  const initialPreviewUrl = sampleOutputType === "video" && initialSampleOutput.type === "video"
+    ? initialSampleOutput.watermarkedPreviewUrl || initialSampleOutput.value
+    : sampleOutputType === "image" && !gallery.images.length ? previewUrls[0] : "";
+
+  useEffect(() => {
+    if (!previewRequest) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/admin/prompts/sample-previews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: previewRequest,
+          signal: controller.signal,
+        });
+        if (response.ok) {
+          const { urls } = await response.json();
+          if (!controller.signal.aborted) setSamplePreviews({ request: previewRequest, urls });
+        }
+      } catch {
+        // A preview request can be retried by changing a setting or image.
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [previewRequest]);
+
   const [isFeatured, setIsFeatured] = useState(Boolean(prompt?.isFeatured));
   const [pricingType, setPricingType] = useState(() => getInitialPricingType(prompt));
   const [directPurchaseEnabled, setDirectPurchaseEnabled] = useState(
@@ -601,7 +654,9 @@ export function PromptForm({ mode, prompt }) {
       featuredOrder
     };
 
-    const validationError = validatePrompt(payload, sampleOutputFile, preservePricing);
+    const validationError = validBlurStrength
+      ? validatePrompt(payload, sampleOutputFile, preservePricing)
+      : "Blur strength must be an integer from 1 to 2000.";
 
     if (validationError) {
       setError(validationError);
@@ -661,6 +716,7 @@ export function PromptForm({ mode, prompt }) {
   function buildJsonPayload(payload) {
     const jsonPayload = {
       ...taxonomy,
+      ...blurSettings,
       title: payload.title,
       slug: payload.slug,
       description: payload.description,
@@ -728,6 +784,9 @@ export function PromptForm({ mode, prompt }) {
 
   function buildMultipartPayload(payload, sampleOutputFile) {
     const uploadFormData = new FormData();
+    for (const [field, value] of Object.entries(blurSettings)) {
+      uploadFormData.append(field, String(value));
+    }
     uploadFormData.append("categoryId", taxonomy.categoryId);
     uploadFormData.append("secondaryCategoryIds", JSON.stringify(taxonomy.secondaryCategoryIds || []));
     uploadFormData.append("tagIds", JSON.stringify(taxonomy.tagIds));
@@ -933,6 +992,33 @@ export function PromptForm({ mode, prompt }) {
         </div>
       </div>
       <div className="sample-output-fields">
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={sampleFaceBlurEnabled}
+            onChange={event => {
+              if (!event.target.checked && !validBlurStrength) {
+                setSampleFaceBlurStrength(String(prompt?.sampleFaceBlurStrength ?? 100));
+              }
+              setSampleFaceBlurEnabled(event.target.checked);
+            }}
+          />
+          Blur faces in sample images
+        </label>
+        <label className="field">
+          Blur strength
+          <input
+            type="number"
+            min={1}
+            max={2000}
+            step={1}
+            required
+            disabled={!sampleFaceBlurEnabled}
+            value={sampleFaceBlurStrength}
+            onChange={event => setSampleFaceBlurStrength(event.target.value)}
+          />
+        </label>
         <input name="sampleOutputProvider" readOnly type="hidden" value={initialSampleOutput.provider} />
         <input name="sampleOutputPublicId" readOnly type="hidden" value={initialSampleOutput.publicId} />
         <input name="sampleOutputResourceType" readOnly type="hidden" value={initialSampleOutput.resourceType} />
@@ -990,7 +1076,7 @@ export function PromptForm({ mode, prompt }) {
           </select>
         </div>
 
-        {sampleOutputType === 'image' ? <AdminSampleGallery value={gallery} onChange={handleGalleryChange} onBusyChange={setGalleryBusy} legacySample={initialSampleOutput} /> : null}
+        {sampleOutputType === 'image' ? <AdminSampleGallery value={gallery} onChange={handleGalleryChange} onBusyChange={setGalleryBusy} legacySample={initialSampleOutput} previewUrls={previewUrls} /> : null}
         {sampleOutputType === "text" ? (
           <div className="field">
             <label htmlFor="sampleOutputValue">Sample output text</label>
@@ -1050,11 +1136,15 @@ export function PromptForm({ mode, prompt }) {
                 </label>
                 <input
                   defaultValue={
-                    initialSampleOutput.type === sampleOutputType ? initialSampleOutput.value : ""
+                    sampleOutputType === "image" ? sampleImageValue
+                      : initialSampleOutput.type === sampleOutputType ? initialSampleOutput.value : ""
                   }
                   id="sampleOutputUrl"
                   key={`${sampleOutputType}-value`}
                   name="sampleOutputUrl"
+                  onChange={event => {
+                    if (sampleOutputType === "image") setSampleImageValue(event.target.value.trim());
+                  }}
                   placeholder={
                     sampleOutputType === "image"
                       ? "https://example.com/sample-output.png"
