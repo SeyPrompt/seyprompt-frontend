@@ -206,6 +206,33 @@ export default async function UserDetailPage({ params }) {
             </div>
           ) : <p className="muted">No retained login activity. Not Available for accounts that have not logged in since tracking began.</p>}
         </section>
+        <section className="stack">
+          <h3>Prompt Clicks</h3>
+          <p className="muted">Up to 100 most recently clicked prompts. Counts cover recorded clicks in the last 90 days.</p>
+          {user.promptClicks == null ? (
+            <p className="muted">Prompt clicks are currently unavailable.</p>
+          ) : user.promptClicks.length ? (
+            <div className="admin-accordion-list">
+              {user.promptClicks.map((click) => (
+                <details className="admin-accordion" key={click.promptId}>
+                  <summary>
+                    {click.title || "Deleted prompt"} · {click.count} {click.count === 1 ? "click" : "clicks"} · {formatDate(click.lastClickedAt)}
+                  </summary>
+                  <dl className="admin-detail-grid">
+                    <div><dt>Prompt ID</dt><dd>{click.promptId}</dd></div>
+                    <div><dt>Last clicked</dt><dd>{formatDate(click.lastClickedAt)}</dd></div>
+                    {click.slug ? (
+                      <div>
+                        <dt>Prompt</dt>
+                        <dd><Link href={`/admin/prompts/${click.promptId}/edit`}>Open in Admin</Link></dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                </details>
+              ))}
+            </div>
+          ) : <p className="muted">No prompt clicks recorded for this user.</p>}
+        </section>
         <section className="admin-user-membership-panel">
           <div>
             <h3>Membership</h3>

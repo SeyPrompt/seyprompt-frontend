@@ -56,6 +56,7 @@ export function PromptCard({ prompt, isUnlocked = false }) {
               trackEvent("prompt_card_title_click", {
                 event_category: "Prompt",
                 event_label: prompt.slug || prompt.title,
+                prompt_id: prompt._id || prompt.id,
                 prompt_slug: prompt.slug,
                 prompt_category: primaryCategory || "General"
               })
@@ -89,6 +90,7 @@ export function PromptCard({ prompt, isUnlocked = false }) {
                 trackEvent("prompt_card_unlocked_view_click", {
                   event_category: "Prompt",
                   event_label: prompt.slug || prompt.title,
+                  prompt_id: prompt._id || prompt.id,
                   prompt_slug: prompt.slug,
                   prompt_category: primaryCategory || "General"
                 })
@@ -112,6 +114,7 @@ export function PromptCard({ prompt, isUnlocked = false }) {
                 trackEvent("prompt_card_click", {
                   event_category: "Prompt",
                   event_label: prompt.slug || prompt.title,
+                  prompt_id: prompt._id || prompt.id,
                   prompt_slug: prompt.slug,
                   prompt_category: primaryCategory || "General"
                 })

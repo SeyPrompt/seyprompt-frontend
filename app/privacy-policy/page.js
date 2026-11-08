@@ -57,6 +57,7 @@ const sections = [
     items: [
       "Essential session storage keeps account, sign-in, saved prompt, cart, checkout, and security features working.",
       "Optional analytics may run through Google Analytics, PostHog, Vercel Analytics, Vercel Speed Insights, and Sentry when the relevant site configuration is enabled.",
+      "For signed-in accounts, SeyPrompt retains prompt click activity for up to 90 days for review by authorized administrators. The click history contains the account ID, prompt ID, and click time. Browser Do Not Track settings are respected for this history.",
       "PostHog is configured with automatic capture and session recording disabled. Product events are sent with sensitive fields removed before capture.",
       "You can limit some cookies and tracking through browser settings or device controls. Browser controls are separate from a site-level consent preference."
     ]
