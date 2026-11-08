@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ExternalListingAction, ExternalListingBadges } from "./external-listing";
 import { LockOpen } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
@@ -25,6 +27,22 @@ export function PromptCard({ prompt, isUnlocked = false }) {
         label: category,
         key: `category-${category}`
       }));
+
+  if (prompt.listingType === "external") {
+    return (
+      <article className="card prompt-card">
+        <ExternalListingBadges listing={prompt} />
+        <div className="prompt-card-copy">
+          <h3><Link href={`/prompts/${prompt.slug}`}>{prompt.title}</Link></h3>
+          <p className="muted prompt-card-description">{description}</p>
+          <div className="pill-row prompt-card-tags">
+            {tagPills.map(tag => <span className="pill" key={tag.key}>{tag.label}</span>)}
+          </div>
+        </div>
+        <div className="prompt-card-footer"><ExternalListingAction listing={prompt} /></div>
+      </article>
+    );
+  }
 
   return (
     <article className="card prompt-card">

@@ -31,7 +31,7 @@ function SampleOutputDisplay({ prompt }) {
     return (
       <ProtectedMediaFrame className="sample-media-box">
         <ProtectedImage
-          alt={sampleOutput.fileName || `${prompt.title} sample output`}
+          alt={prompt.listingType === "external" ? prompt.shareImageAlt : (sampleOutput.fileName || `${prompt.title} sample output`)}
           className="sample-output-image"
           fetchPriority="high"
           height={900}
@@ -76,11 +76,11 @@ function SampleOutputDisplay({ prompt }) {
   return null;
 }
 
-export function PromptSamplePanel({ prompt }) {
+export function PromptSamplePanel({ prompt, label = "Sample output" }) {
   return (
     <section className="prompt-workspace-panel prompt-workspace-sample">
       <div className="prompt-workspace-heading">
-        <p className="eyebrow">Sample output</p>
+        <p className="eyebrow">{label}</p>
       </div>
       <SampleOutputDisplay prompt={prompt} />
     </section>

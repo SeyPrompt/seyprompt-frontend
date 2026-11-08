@@ -195,7 +195,7 @@ function validatePrompt(payload, sampleOutputFile, preservePricing = false) {
     return "Slug is required.";
   }
 
-  if (!payload.prompt || payload.prompt.length < 10 || payload.prompt.length > 10000) {
+  if (payload.listingType !== "external" && (!payload.prompt || payload.prompt.length < 10 || payload.prompt.length > 10000)) {
     return "Prompt must be between 10 and 10,000 characters.";
   }
 
@@ -355,7 +355,10 @@ export function PromptForm({ mode, prompt }) {
   const [taxonomy, setTaxonomy] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [pricingDirty, setPricingDirty] = useState(false);
-  const preservePricing = mode === "edit" && !pricingDirty;
+  const [listingType, setListingType] = useState(prompt?.listingType || "prompt");
+  const [priceBadge, setPriceBadge] = useState(prompt?.priceBadge || "hidden");
+  const isExternal = listingType === "external";
+  const preservePricing = !isExternal && mode === "edit" && !pricingDirty;
   const handleTaxonomyChange = useCallback((value, changed = false) => {
     setTaxonomy(value); if (changed) setDirty(true);
   }, []);
@@ -591,7 +594,7 @@ export function PromptForm({ mode, prompt }) {
     const safeCreditUnlockEnabled = pricingType === "premium" && creditUnlockEnabled;
     const safeDirectPurchaseEnabled = pricingType === "premium" && directPurchaseEnabled;
     const creditCost = pricingType === "premium" ? Number(formData.get("creditCost") || 0) : 0;
-    const regionalPrices =
+    const regionalPrices = isExternal ? [] :
       pricingType === "premium"
         ? buildRegionalPricesPayload()
         : buildRegionalPricesPayload().map((priceRow) => ({
@@ -616,6 +619,18 @@ export function PromptForm({ mode, prompt }) {
       ...normalizeCategoryInput(formData.get("categories") || "[]")
     ]);
     const payload = {
+      listing: isExternal ? {
+        listingType,
+        externalType: String(formData.get("externalType")),
+        redirectUrl: String(formData.get("redirectUrl")).trim(),
+        license: String(formData.get("license")).trim(),
+        priceBadge,
+        ...(priceBadge === "paid" ? {
+          externalPrice: Number(formData.get("externalPrice")),
+          externalCurrency: String(formData.get("externalCurrency"))
+        } : {})
+      } : {},
+      listingType,
       title: String(formData.get("title") || "").trim(),
       slug: String(formData.get("slug") || "").trim(),
       description: String(formData.get("description") || "").trim(),
@@ -643,7 +658,7 @@ export function PromptForm({ mode, prompt }) {
       },
       visibility: String(formData.get("visibility") || "public"),
       status: String(formData.get("status") || "published"),
-      pricingType,
+      pricingType: isExternal ? "free" : pricingType,
       price: 0,
       isPurchasable: safeDirectPurchaseEnabled,
       creditUnlockEnabled: safeCreditUnlockEnabled,
@@ -717,6 +732,7 @@ export function PromptForm({ mode, prompt }) {
     const jsonPayload = {
       ...taxonomy,
       ...blurSettings,
+      ...payload.listing,
       title: payload.title,
       slug: payload.slug,
       description: payload.description,
@@ -759,7 +775,7 @@ export function PromptForm({ mode, prompt }) {
       jsonPayload.featuredOrder = payload.featuredOrder;
     }
 
-    if (payload.sampleOutputType === "text") {
+    if (payload.sampleOutputType === "text" && payload.sampleOutput.value) {
       jsonPayload.sampleOutput = payload.sampleOutput;
       jsonPayload.sampleOutputType = payload.sampleOutputType;
       jsonPayload.sampleOutputFileName = payload.sampleOutputFileName;
@@ -784,6 +800,9 @@ export function PromptForm({ mode, prompt }) {
 
   function buildMultipartPayload(payload, sampleOutputFile) {
     const uploadFormData = new FormData();
+    for (const [field, value] of Object.entries(payload.listing)) {
+      uploadFormData.append(field, String(value));
+    }
     for (const [field, value] of Object.entries(blurSettings)) {
       uploadFormData.append(field, String(value));
     }
@@ -834,6 +853,54 @@ export function PromptForm({ mode, prompt }) {
   return (
     <form className="panel form-card stack" onChange={() => setDirty(true)} onSubmit={handleSubmit}>
       <UnsavedWarning dirty={dirty} />
+      <label className="field">
+        Listing type
+        <select value={listingType} disabled={mode === "edit"} onChange={event => setListingType(event.target.value)}>
+          <option value="prompt">Prompt</option>
+          <option value="external">External link</option>
+        </select>
+      </label>
+      {isExternal && (
+        <div className="form-grid">
+          <label className="field">
+            Type badge
+            <select name="externalType" defaultValue={prompt?.externalType || "github"}>
+              <option value="github">GitHub</option>
+              <option value="template">Template</option>
+              <option value="workflow">Workflow</option>
+              <option value="resource">Resource</option>
+            </select>
+          </label>
+          <label className="field">
+            Destination URL
+            <input name="redirectUrl" type="url" maxLength={2000} defaultValue={prompt?.redirectUrl} required />
+          </label>
+          <label className="field">
+            License (optional)
+            <input name="license" maxLength={80} defaultValue={prompt?.license} />
+          </label>
+          <label className="field">
+            Price badge
+            <select value={priceBadge} onChange={event => setPriceBadge(event.target.value)}>
+              <option value="hidden">Hidden</option>
+              <option value="free">Free</option>
+              <option value="paid">Paid</option>
+            </select>
+          </label>
+          {priceBadge === "paid" && <>
+            <label className="field">
+              External price
+              <input name="externalPrice" type="number" min="0.01" max="100000000" step="0.01" defaultValue={prompt?.externalPrice} required />
+            </label>
+            <label className="field">
+              Currency
+              <select name="externalCurrency" defaultValue={prompt?.externalCurrency || "INR"}>
+                {["INR", "USD", "GBP", "EUR", "NZD"].map(currency => <option key={currency}>{currency}</option>)}
+              </select>
+            </label>
+          </>}
+        </div>
+      )}
       <AdminPromptTaxonomy prompt={prompt} onChange={handleTaxonomyChange} />
       <input name="categories" type="hidden" readOnly value={JSON.stringify(categories)} />
       <div className="field">
@@ -957,7 +1024,7 @@ export function PromptForm({ mode, prompt }) {
         />
         <span className="field-hint muted">Saved with the prompt record for admin use.</span>
       </div>
-      <div className="field">
+      {!isExternal && <div className="field">
         <label htmlFor="prompt">Prompt</label>
         <textarea
           defaultValue={prompt?.prompt || ""}
@@ -967,7 +1034,7 @@ export function PromptForm({ mode, prompt }) {
           name="prompt"
           required
         />
-      </div>
+      </div>}
       <div className="form-grid">
         <div className="field">
           <label htmlFor="image">Image URL</label>
@@ -1194,7 +1261,7 @@ export function PromptForm({ mode, prompt }) {
         />
       </div>
 
-      <section className="pricing-editor-section" aria-label="Prompt pricing" onChange={() => { setPricingDirty(true); setDirty(true); }}>
+      {!isExternal && <section className="pricing-editor-section" aria-label="Prompt pricing" onChange={() => { setPricingDirty(true); setDirty(true); }}>
         <div className="pricing-editor-heading">
           <div>
             <h2>Pricing</h2>
@@ -1377,7 +1444,7 @@ export function PromptForm({ mode, prompt }) {
             {fxRateDate ? ` from ${fxRateDate}` : ""}.
           </span>
         </div>
-      </section>
+      </section>}
       <div className="toolbar">
         <div className="field" style={{ flex: 1 }}>
           <label htmlFor="status">Status</label>

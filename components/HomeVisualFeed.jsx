@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ExternalListingAction, ExternalListingBadges } from "./external-listing";
 import { SampleCollage, GalleryLightbox } from "./sample-image-gallery";
 import { getSampleImages, getCoverIndex } from "@/lib/sample-images";
 import { ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronDown, X } from "lucide-react";
@@ -31,13 +33,15 @@ export function VisualPromptCard({ isUnlocked = false, prompt, index, fallbackIm
   const createdDate = formatPromptCreatedDate(prompt);
   const pricingType = getPromptPricingType(prompt);
   const displayPrice = formatPromptPriceParts(prompt);
+  const isExternal = prompt.listingType === "external";
+  const DetailLink = isExternal ? Link : PromptAccessLink;
 
   return (
     <article className={`home-reference-card home-reference-card-${index % 6}${videoSource ? " has-video" : ""}${hasGallery ? " has-gallery" : ""}`}>
-      <PromptAccessLink
+      <DetailLink
         className="home-reference-card-link"
         href={`/prompts/${prompt.slug}`}
-        onClick={hasGallery ? event => { event.preventDefault(); setGalleryIndex(getCoverIndex(prompt, images)); setGalleryOpen(true); } : undefined}
+        onClick={hasGallery && !isExternal ? event => { event.preventDefault(); setGalleryIndex(getCoverIndex(prompt, images)); setGalleryOpen(true); } : undefined}
       >
         {hasGallery ? <SampleCollage prompt={prompt} /> : videoSource ? (
           <ProtectedVideo
@@ -64,12 +68,12 @@ export function VisualPromptCard({ isUnlocked = false, prompt, index, fallbackIm
           />
         )}
         <span className="home-reference-card-shade" aria-hidden="true" />
-        <span className={`price-badge home-reference-price-badge price-badge-${pricingType}${isUnlocked && pricingType === "premium" ? " price-badge-owned" : ""}`}>
+        {isExternal ? <ExternalListingBadges listing={prompt} overlay /> : <span className={`price-badge home-reference-price-badge price-badge-${pricingType}${isUnlocked && pricingType === "premium" ? " price-badge-owned" : ""}`}>
           <span>
             <span className="price-badge-amount">{displayPrice.label}</span>
             {displayPrice.suffix ? <small>{displayPrice.suffix}</small> : null}
           </span>
-        </span>
+        </span>}
         <span className="home-reference-card-copy">
           <span className="home-reference-card-title">{title} ›</span>
           {createdDate ? (
@@ -79,9 +83,10 @@ export function VisualPromptCard({ isUnlocked = false, prompt, index, fallbackIm
             </span>
           ) : null}
         </span>
-      </PromptAccessLink>
-      <SavedPromptButton className="home-reference-save" iconOnly prompt={prompt} />
-      {hasGallery ? <GalleryLightbox prompt={prompt} images={images} index={galleryIndex} setIndex={setGalleryIndex} open={galleryOpen} onClose={closeGallery} showPromptLink /> : null}
+      </DetailLink>
+      {isExternal ? <div className="external-listing-footer"><ExternalListingAction listing={prompt} /></div>
+        : <SavedPromptButton className="home-reference-save" iconOnly prompt={prompt} />}
+      {hasGallery && !isExternal ? <GalleryLightbox prompt={prompt} images={images} index={galleryIndex} setIndex={setGalleryIndex} open={galleryOpen} onClose={closeGallery} showPromptLink /> : null}
     </article>
   );
 }

@@ -10082,3 +10082,27 @@ select:not([multiple]) {
 .subscription-renewal-options a { text-decoration: underline; text-underline-offset: 3px; }
 .dashboard-plan-console .subscription-renewal-options { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.2); }
 .dashboard-plan-console .subscription-renewal-options a { color: inherit; }
+
+.external-listing-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.external-listing-badges-overlay {
+  position: absolute;
+  inset: 8px 8px auto;
+}
+
+.external-listing-badges-overlay .pill {
+  background: #172923;
+  border-color: transparent;
+  color: white;
+}
+
+.external-listing-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+}

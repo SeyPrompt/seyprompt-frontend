@@ -40,9 +40,9 @@ async function unlockMocks(extra = {}) {
   };
 }
 
-async function renderDetail(pricingType, price = 0, promptText = '') {
+async function renderDetail(pricingType, price = 0, promptText = '', listing = {}) {
   const mocks = await unlockMocks();
-  mocks['@/lib/api'] = { fetchPromptBySlug: async () => ({ ...prompt, pricingType, price, prompt: promptText }), fetchPublicPrompts: async () => ({ data: [] }) };
+  mocks['@/lib/api'] = { fetchPromptBySlug: async () => ({ ...prompt, pricingType, price, prompt: promptText, ...listing }), fetchPublicPrompts: async () => ({ data: [] }) };
   mocks['@/lib/prompt-metadata'] = { getPromptCategories: () => [], getPrimaryPromptCategory: () => '', getPromptCategoryLabel: () => '' };
   mocks['@/utils/categoryIcons'] = { getCategoryIcon: () => Null };
   mocks['@/lib/taxonomy-seo'] = { jsonLd: JSON.stringify };
@@ -50,6 +50,7 @@ async function renderDetail(pricingType, price = 0, promptText = '') {
   for (const [file, name] of [['PromptAccessLink', 'PromptAccessLink'], ['PromptLoginGate', 'PromptLoginGate'], ['prompt-detail-price-badge', 'PromptDetailPriceBadge'], ['record-prompt-view', 'RecordPromptView'], ['saved-prompt-button', 'SavedPromptButton']]) {
     mocks[`@/components/${file}`] = { [name]: Null };
   }
+  mocks['@/components/external-listing'] = await load('components/external-listing.jsx');
   mocks['@/components/PremiumPromptUnlock'] = await load('components/PremiumPromptUnlock.jsx', mocks);
   mocks['@/components/PromptLoginGate'] = { PromptLoginGate: ({ children }) => children };
   mocks['next/link'] = ({ children, href }) => React.createElement('a', { href }, children);
@@ -82,6 +83,26 @@ test('free detail retains sample, compact tips, and usage steps', async () => {
   assert.match(html, /Private tips content/);
   assert.match(html, /Inspect the sample/);
   assert.match(html, /prompt-tips-scroll/);
+});
+
+test('external detail shows its type and optional display price without prompt checkout', async () => {
+  const listing = {
+    listingType: 'external',
+    externalType: 'github',
+    license: 'MIT',
+    redirectUrl: 'https://github.com/morluto/rea'
+  };
+  for (const [priceBadge, expected] of [['hidden', null], ['free', 'Free'], ['paid', '₹499']]) {
+    const html = await renderDetail('free', 0, '', {
+      ...listing, priceBadge, externalPrice: 499, externalCurrency: 'INR'
+    });
+    assert.match(html, /View on GitHub/);
+    assert.match(html, /href="https:\/\/github.com\/morluto\/rea"/);
+    assert.match(html, /MIT license/);
+    assert.doesNotMatch(html, /Unlock the prompt console|Inspect the sample/);
+    assert.equal(html.includes('>Free<'), expected === 'Free');
+    assert.equal(html.includes('>₹499<'), expected === '₹499');
+  }
 });
 
 test('checkout callback and returning-user fetch both restore the complete unlocked workspace', async () => {

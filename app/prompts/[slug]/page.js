@@ -1,6 +1,7 @@
 import { jsonLd } from '@/lib/taxonomy-seo';
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ExternalListingAction, ExternalListingBadges } from "@/components/external-listing";
 import { ArrowLeft } from "lucide-react";
 import { fetchPromptBySlug, fetchPromptMetadataBySlug, fetchPublicPrompts } from "@/lib/api";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
@@ -95,9 +96,10 @@ export default async function PromptDetailPage({ params }) {
   const primaryCategory = getPrimaryPromptCategory(prompt);
   const CategoryIcon = getCategoryIcon(primaryCategory);
   const relatedPrompts = await fetchRelatedPrompts(prompt);
-  const isPremium = getPromptPricingType(prompt) === "premium";
+  const isExternal = prompt.listingType === "external";
+  const isPremium = !isExternal && getPromptPricingType(prompt) === "premium";
   const schemas = [
-    promptSchema(prompt),
+    ...(!isExternal ? [promptSchema(prompt)] : []),
     breadcrumbSchema([
       { name: "Discover", path: "/" },
       ...(prompt.taxonomy?.primary ? [...(prompt.taxonomy.primary.parent ? [{ name: prompt.taxonomy.primary.parent.name, path: prompt.taxonomy.primary.parent.path }] : []), { name: prompt.taxonomy.primary.name, path: prompt.taxonomy.primary.path }] : primaryCategory ? [{ name: primaryCategory, path: getCategoryPath(primaryCategory) }] : []),
@@ -139,16 +141,24 @@ export default async function PromptDetailPage({ params }) {
                     {tool}
                   </span>
                 ))}
-                <SavedPromptButton className="prompt-detail-save" prompt={prompt} />
+                {isExternal ? (prompt.license && <span className="pill">{prompt.license} license</span>) : <SavedPromptButton className="prompt-detail-save" prompt={prompt} />}
               </div>
             </div>
 
             <div className="prompt-hero-visual">
-              <PromptDetailPriceBadge prompt={prompt} />
+              {isExternal ? <ExternalListingBadges listing={prompt} /> : <PromptDetailPriceBadge prompt={prompt} />}
             </div>
           </header>
 
-          <PromptLoginGate>
+          {isExternal ? (
+            <div className="prompt-detail-workspace">
+              {prompt.sampleOutput || prompt.sampleImages?.length ? <PromptSamplePanel prompt={prompt} label="Preview" /> : null}
+              <div className="prompt-workspace-side">
+                <ExternalListingAction listing={prompt} />
+                <PromptTips prompt={prompt} />
+              </div>
+            </div>
+          ) : <PromptLoginGate>
           {!isPremium ? (
             <div className="prompt-flow-steps" aria-label="How to use this prompt">
               <span>1. Inspect the sample</span>
@@ -178,7 +188,7 @@ export default async function PromptDetailPage({ params }) {
             </div>
           )}
 
-          </PromptLoginGate>
+          </PromptLoginGate>}
           {relatedPrompts.length ? (
             <section className="prompt-related-strip" aria-label="Related prompts">
               <div className="prompt-workspace-heading">
@@ -188,8 +198,9 @@ export default async function PromptDetailPage({ params }) {
                 </div>
               </div>
               <div className="related-list prompt-related-grid">
-                {relatedPrompts.map((relatedPrompt) => (
-                  <PromptAccessLink href={`/prompts/${relatedPrompt.slug}`} key={relatedPrompt.slug}>
+                {relatedPrompts.map((relatedPrompt) => {
+                  const RelatedLink = relatedPrompt.listingType === "external" ? Link : PromptAccessLink;
+                  return <RelatedLink href={`/prompts/${relatedPrompt.slug}`} key={relatedPrompt.slug}>
                     <span>
                       {relatedPrompt.title}
                       <small>
@@ -199,8 +210,8 @@ export default async function PromptDetailPage({ params }) {
                         )}
                       </small>
                     </span>
-                  </PromptAccessLink>
-                ))}
+                  </RelatedLink>;
+                })}
               </div>
             </section>
           ) : null}
