@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalListingAction, ExternalListingBadges } from "./external-listing";
+import { ExternalListingBadges } from "./external-listing";
 import { SampleCollage, GalleryLightbox } from "./sample-image-gallery";
 import { getSampleImages, getCoverIndex } from "@/lib/sample-images";
 import { ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronDown, X } from "lucide-react";
@@ -84,8 +84,7 @@ export function VisualPromptCard({ isUnlocked = false, prompt, index, fallbackIm
           ) : null}
         </span>
       </DetailLink>
-      {isExternal ? <div className="external-listing-footer"><ExternalListingAction listing={prompt} /></div>
-        : <SavedPromptButton className="home-reference-save" iconOnly prompt={prompt} />}
+      {!isExternal && <SavedPromptButton className="home-reference-save" iconOnly prompt={prompt} />}
       {hasGallery && !isExternal ? <GalleryLightbox prompt={prompt} images={images} index={galleryIndex} setIndex={setGalleryIndex} open={galleryOpen} onClose={closeGallery} showPromptLink /> : null}
     </article>
   );

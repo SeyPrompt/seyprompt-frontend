@@ -10100,9 +10100,3 @@ select:not([multiple]) {
   border-color: transparent;
   color: white;
 }
-
-.external-listing-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px;
-}

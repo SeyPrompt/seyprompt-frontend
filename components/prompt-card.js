@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalListingAction, ExternalListingBadges } from "./external-listing";
+import { ExternalListingBadges } from "./external-listing";
 import { LockOpen } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { PromptAccessLink } from "@/components/PromptAccessLink";
@@ -39,7 +39,6 @@ export function PromptCard({ prompt, isUnlocked = false }) {
             {tagPills.map(tag => <span className="pill" key={tag.key}>{tag.label}</span>)}
           </div>
         </div>
-        <div className="prompt-card-footer"><ExternalListingAction listing={prompt} /></div>
       </article>
     );
   }
