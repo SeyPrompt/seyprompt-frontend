@@ -587,7 +587,7 @@ export function PromptForm({ mode, prompt }) {
     const sampleOutputType = String(formData.get("sampleOutputType") || "text");
     const sampleOutputUrl = String(formData.get("sampleOutputUrl") || "").trim();
     const sampleOutputFileName = String(formData.get("sampleOutputFileName") || "").trim();
-    if (sampleOutputType === "image" && galleryDirty && gallery.mode === "per-image" && (!gallery.images.length || gallery.images.some(image => !image.instructions?.trim()))) { setError("Add instructions for each sample image in the prompt set."); setLoading(false); return; }
+    if (sampleOutputType === "image" && galleryDirty && !isExternal && gallery.mode === "per-image" && (!gallery.images.length || gallery.images.some(image => !image.instructions?.trim()))) { setError("Add instructions for each sample image in the prompt set."); setLoading(false); return; }
     const featuredOrderValue = String(formData.get("featuredOrder") || "").trim();
     const featuredOrder =
       featuredOrderValue === "" ? undefined : Number(featuredOrderValue);
@@ -765,7 +765,7 @@ export function PromptForm({ mode, prompt }) {
     if (galleryDirty || (sampleOutputType !== 'image' && prompt?.sampleImages?.length)) {
       jsonPayload.sampleImages = sampleOutputType === 'image' ? gallery.images : [];
       jsonPayload.sampleCoverId = sampleOutputType === 'image' ? gallery.coverId : '';
-      jsonPayload.samplePromptMode = sampleOutputType === 'image' ? gallery.mode : 'single';
+      jsonPayload.samplePromptMode = sampleOutputType === 'image' && !isExternal ? gallery.mode : 'single';
     }
     if (preservePricing) {
       jsonPayload.preservePricing = true;
@@ -841,7 +841,7 @@ export function PromptForm({ mode, prompt }) {
     if (galleryDirty || (sampleOutputType !== 'image' && prompt?.sampleImages?.length)) {
       uploadFormData.append('sampleImages', JSON.stringify(sampleOutputType === 'image' ? gallery.images : []));
       uploadFormData.append('sampleCoverId', sampleOutputType === 'image' ? gallery.coverId : '');
-      uploadFormData.append('samplePromptMode', sampleOutputType === 'image' ? gallery.mode : 'single');
+      uploadFormData.append('samplePromptMode', sampleOutputType === 'image' && !isExternal ? gallery.mode : 'single');
     }
     uploadFormData.append("sampleOutputType", payload.sampleOutputType);
     uploadFormData.append("sampleOutputFileName", payload.sampleOutputFileName);
@@ -1143,7 +1143,7 @@ export function PromptForm({ mode, prompt }) {
           </select>
         </div>
 
-        {sampleOutputType === 'image' ? <AdminSampleGallery value={gallery} onChange={handleGalleryChange} onBusyChange={setGalleryBusy} legacySample={initialSampleOutput} previewUrls={previewUrls} /> : null}
+        {sampleOutputType === 'image' ? <AdminSampleGallery isExternal={isExternal} value={gallery} onChange={handleGalleryChange} onBusyChange={setGalleryBusy} legacySample={initialSampleOutput} previewUrls={previewUrls} /> : null}
         {sampleOutputType === "text" ? (
           <div className="field">
             <label htmlFor="sampleOutputValue">Sample output text</label>
