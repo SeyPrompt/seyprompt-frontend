@@ -80,8 +80,8 @@ export default function AiPromptGuidePage() {
               Learn how to craft powerful prompts that generate better results
               instantly.
             </p>
-            <Link className="button" href="/prompts">
-              Explore Prompt Library
+            <Link className="button" href="/">
+              Explore Discover
             </Link>
           </div>
           <div className="guide-hero-card" aria-label="Prompt formula preview">
@@ -234,7 +234,7 @@ export default function AiPromptGuidePage() {
         <div className="container">
           <div className="guide-cta">
             <h2>Start using powerful prompts now</h2>
-            <Link className="button" href="/prompts">
+            <Link className="button" href="/">
               Browse Prompts
             </Link>
           </div>

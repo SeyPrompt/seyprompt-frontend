@@ -80,7 +80,6 @@ export default async function CategoryPage({ params, searchParams }) {
     categorySchema(category, canonicalSlug),
     breadcrumbSchema([
       { name: "Home", path: "/" },
-      { name: "Prompts", path: "/prompts" },
       { name: category, path: getCategoryPath(canonicalSlug) }
     ])
   ];

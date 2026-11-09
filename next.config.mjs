@@ -54,6 +54,9 @@ const nextConfig = {
   },
   typedRoutes: false,
   outputFileTracingRoot: __dirname,
+  async redirects() {
+    return [{ source: "/prompts", destination: "/", permanent: true }];
+  },
   async headers() {
     const privateSeoHeaders = [
       {

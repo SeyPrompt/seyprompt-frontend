@@ -20,7 +20,6 @@ import { useUserAuth } from "@/components/user-auth-provider";
 
 const primaryLinks = [
   { href: "/", label: "Discover" },
-  { href: "/prompts", label: "Prompts" },
 ];
 const moreLinks = [
   { href: "/about", label: "About" },

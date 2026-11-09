@@ -34,7 +34,7 @@ export function HomeAccountStrip() {
                 <Link className="button" href="/saved">
                   Open Saved Prompts
                 </Link>
-                <Link className="button-secondary" href="/prompts">
+                <Link className="button-secondary" href="/">
                   Browse Prompts
                 </Link>
               </>

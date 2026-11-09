@@ -336,7 +336,7 @@ export function UserDashboard() {
           </p>
           <p className="dashboard-mobile-copy">Your prompts, purchases, and access in one place.</p>
           <div className="dashboard-quick-actions">
-            <Link className="button" href="/prompts">
+            <Link className="button" href="/">
               Explore prompt library
               <ArrowRight aria-hidden="true" size={17} />
             </Link>
@@ -509,7 +509,7 @@ export function UserDashboard() {
               <WandSparkles aria-hidden="true" size={30} />
               <h2>No prompt unlocks yet</h2>
               <p>Buy a single premium prompt or activate an all-access plan to start filling this shelf.</p>
-              <Link className="button" href="/prompts">
+              <Link className="button" href="/">
                 Browse prompts
               </Link>
             </div>

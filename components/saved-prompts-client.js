@@ -141,7 +141,7 @@ export function SavedPromptsClient() {
         </p>
         <Link
           className="button"
-          href="/prompts"
+          href="/"
           onClick={() =>
             trackEvent("cta_click", {
               event_category: "Retention",
@@ -150,7 +150,7 @@ export function SavedPromptsClient() {
             })
           }
         >
-          Go to Prompt Library
+          Go to Discover
         </Link>
       </div>
     );

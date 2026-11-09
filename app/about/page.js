@@ -99,7 +99,7 @@ export default function AboutPage() {
             AI with more clarity, structure, and confidence.
           </p>
           <div className="about-hero-actions">
-            <Link className="button" href="/prompts">
+            <Link className="button" href="/">
               Browse Prompts
             </Link>
             <Link className="button-secondary" href="/contact">
@@ -182,8 +182,8 @@ export default function AboutPage() {
             structured, or reach out for a custom prompt workflow.
           </p>
           <div className="about-cta-actions">
-            <Link className="button" href="/prompts">
-              Explore Prompt Library
+            <Link className="button" href="/">
+              Explore Discover
             </Link>
             <Link className="button-secondary" href="/ai-prompt-guide">
               Read the Prompt Guide

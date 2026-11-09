@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/analytics";
 export function TrackedSearchForm({ className = "", placeholder = "Search prompts, tags, tools..." }) {
   return (
     <form
-      action="/prompts"
+      action="/"
       className={className}
       onSubmit={(event) => {
         const formData = new FormData(event.currentTarget);

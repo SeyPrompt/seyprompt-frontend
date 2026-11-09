@@ -417,7 +417,7 @@ export function PromptLibraryView({
           <Link
             aria-label="Reset filters"
             className="button-secondary library-icon-button library-reset-button"
-            href="/prompts"
+            href="/"
             onClick={() =>
               trackEvent("cta_click", {
                 event_category: "Filter",
@@ -501,11 +501,11 @@ export function PromptLibraryView({
           </p>
           <div className="empty-state-actions">
             {hasActiveFilters ? (
-              <Link className="button-secondary" href="/prompts">
+              <Link className="button-secondary" href="/">
                 Clear Filters
               </Link>
             ) : null}
-            <Link className="button" href={loadFailed ? "/prompts" : "/contact"}>
+            <Link className="button" href={loadFailed ? "/" : "/contact"}>
               {loadFailed ? "Try Again" : "Request a Prompt"}
             </Link>
             {loadFailed ? (

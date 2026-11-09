@@ -168,7 +168,7 @@ export default function AiToolsPage() {
                   </a>
                   <Link
                     className="button compact"
-                    href={{ pathname: "/prompts", query: { tool: tool.promptTool } }}
+                    href={{ pathname: "/", query: { tool: tool.promptTool } }}
                   >
                     Matching Prompts
                   </Link>
@@ -209,8 +209,8 @@ export default function AiToolsPage() {
         <div className="container">
           <div className="tools-cta">
             <h2>Find prompts matched to your AI tool</h2>
-            <Link className="button" href="/prompts">
-              Explore Prompt Library
+            <Link className="button" href="/">
+              Explore Discover
             </Link>
           </div>
         </div>

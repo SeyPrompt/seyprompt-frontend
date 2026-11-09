@@ -5,8 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/prompts", label: "Prompt Library" },
+  { href: "/", label: "Discover" },
   { href: "/ai-prompt-guide", label: "AI Prompt Guide" },
   { href: "/ai-tools", label: "AI Tools" },
   { href: "/use-cases", label: "Use Cases" },

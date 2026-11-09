@@ -6,7 +6,7 @@ import { apiUrl } from "@/utils/api";
 import { useUserAuth } from "@/components/user-auth-provider";
 
 function loginHrefForPrompt(href) {
-  const target = typeof href === "string" ? href : href?.pathname || "/prompts";
+  const target = typeof href === "string" ? href : href?.pathname || "/";
 
   return "/login?redirect=" + encodeURIComponent(target);
 }

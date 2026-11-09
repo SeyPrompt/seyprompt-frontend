@@ -9,7 +9,6 @@ import { LEGAL_OPERATOR_DISPLAY, policyLinks } from "@/lib/policy-info";
 
 const exploreLinks = [
   { href: "/", label: "Discover" },
-  { href: "/prompts", label: "All prompts" },
   { href: "/collections", label: "Collections" },
   { href: "/saved", label: "Saved prompts" },
 ];
@@ -33,7 +32,7 @@ export async function Footer() {
             <p className="footer-v2-eyebrow">A little inspiration goes a long way</p>
             <h2>What will you create next?</h2>
           </div>
-          <Link className="footer-v2-explore" href="/prompts">
+          <Link className="footer-v2-explore" href="/">
             Find your next prompt <ArrowUpRight aria-hidden="true" size={18} />
           </Link>
         </div>

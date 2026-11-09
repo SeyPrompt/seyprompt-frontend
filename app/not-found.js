@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BriefcaseBusiness, Code2, Home, Library, Megaphone, Palette } from "lucide-react";
+import { BriefcaseBusiness, Code2, Home, Megaphone, Palette } from "lucide-react";
 
 export const metadata = {
   title: "Page Not Found",
@@ -13,25 +13,25 @@ export const metadata = {
 
 const helpfulLinks = [
   {
-    href: { pathname: "/prompts", query: { category: "Marketing" } },
+    href: { pathname: "/", query: { category: "Marketing" } },
     icon: Megaphone,
     title: "Marketing",
     description: "Campaign, content, SEO, and growth prompts."
   },
   {
-    href: { pathname: "/prompts", query: { category: "Coding" } },
+    href: { pathname: "/", query: { category: "coding-technology" } },
     icon: Code2,
     title: "Coding",
     description: "Debugging, refactoring, testing, and build prompts."
   },
   {
-    href: { pathname: "/prompts", query: { category: "Business" } },
+    href: { pathname: "/", query: { category: "business-marketing" } },
     icon: BriefcaseBusiness,
     title: "Business",
     description: "Strategy, operations, sales, and planning prompts."
   },
   {
-    href: { pathname: "/prompts", query: { category: "Design" } },
+    href: { pathname: "/", query: { category: "design-creativity" } },
     icon: Palette,
     title: "Design",
     description: "Visual, brand, and creative production prompts."
@@ -48,17 +48,12 @@ export default function NotFound() {
           <h1>Prompt not found, but better prompts are waiting.</h1>
           <p>
             The page may have moved, the link may be old, or the URL may have a
-            typo. You can head back home or jump into the main SeyPrompt
-            library.
+            typo. Find more prompts on Discover.
           </p>
           <div className="not-found-actions">
             <Link className="button" href="/">
               <Home size={18} aria-hidden="true" />
-              Go Home
-            </Link>
-            <Link className="button-secondary" href="/prompts">
-              <Library size={18} aria-hidden="true" />
-              Browse Prompt Library
+              Go to Discover
             </Link>
           </div>
         </div>

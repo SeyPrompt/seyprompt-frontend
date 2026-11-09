@@ -124,7 +124,7 @@ export function OrdersClient() {
         <ReceiptText aria-hidden="true" size={30} />
         <h2>No orders yet</h2>
         <p>Your prompt purchases and memberships will appear here.</p>
-        <Link className="button" href="/prompts">
+        <Link className="button" href="/">
           Browse prompts
         </Link>
       </div>

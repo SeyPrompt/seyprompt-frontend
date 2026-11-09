@@ -90,12 +90,12 @@ export function VisualPromptCard({ isUnlocked = false, prompt, index, fallbackIm
   );
 }
 
-export default function HomeVisualFeed({ categories = [], collection, initialCategory = "", initialQuery = "", initialPrompts = [], initialHasMore = false, initialLoadFailed = false }) {
+export default function HomeVisualFeed({ categories = [], collection, initialCategory = "", initialQuery = "", initialPricing = "", legacyCategory = "", tool = "", tag = "", initialPrompts = [], initialHasMore = false, initialLoadFailed = false }) {
   const { isPromptUnlocked } = useAccountAccess();
   const [category, setCategory] = useState(initialCategory);
   const [subcategory, setSubcategory] = useState("");
   const [search, setSearch] = useState(initialQuery);
-  const [pricing, setPricing] = useState("");
+  const [pricing, setPricing] = useState(initialPricing);
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
   const [prompts, setPrompts] = useState(initialPrompts);
@@ -110,16 +110,17 @@ export default function HomeVisualFeed({ categories = [], collection, initialCat
   const selected = categories.find(row => row.slug === category);
   const children = selected?.children || [];
   const title = collection?.name || selected?.name || "All prompts";
-  const activeKey = JSON.stringify([category, subcategory, search, pricing, sort, collection?.slug || ""]);
-  const initialKey = JSON.stringify([initialCategory, "", initialQuery, "", "newest", collection?.slug || ""]);
+  const categoryFilter = category ? "" : legacyCategory;
+  const activeKey = JSON.stringify([category, subcategory, search, pricing, sort, collection?.slug || "", categoryFilter, tool, tag]);
+  const initialKey = JSON.stringify([initialCategory, "", initialQuery, initialPricing, "newest", collection?.slug || "", legacyCategory, tool, tag]);
   const initialData = useRef({ key: initialKey, prompts: initialPrompts, hasMore: initialHasMore, failed: initialLoadFailed });
   const previousKey = useRef(activeKey);
 
   useEffect(() => {
     initialData.current = { key: initialKey, prompts: initialPrompts, hasMore: initialHasMore, failed: initialLoadFailed };
-    setCategory(initialCategory); setSubcategory(""); setSearch(initialQuery); setPricing(""); setSort("newest"); setPage(1);
+    setCategory(initialCategory); setSubcategory(""); setSearch(initialQuery); setPricing(initialPricing); setSort("newest"); setPage(1);
     setPrompts(initialPrompts); setHasMore(initialHasMore); setError(initialLoadFailed ? "Prompts are temporarily unavailable. Please try again." : "");
-  }, [initialKey, initialPrompts, initialHasMore, initialLoadFailed, initialCategory, initialQuery]);
+  }, [initialKey, initialPrompts, initialHasMore, initialLoadFailed, initialCategory, initialQuery, initialPricing]);
 
   useEffect(() => {
     const syncColumns = () => setColumns(window.innerWidth < 600 ? 2 : window.innerWidth < 1000 ? 3 : 4);
@@ -142,6 +143,9 @@ export default function HomeVisualFeed({ categories = [], collection, initialCat
     const params = new URLSearchParams({ limit: "30", page: String(page), discoverSort: sort });
     if (collection) params.set("discoverCollection", collection.slug);
     else if (category) params.set("discoverCategory", category);
+    if (categoryFilter) params.set("category", categoryFilter);
+    if (tool) params.set("tool", tool);
+    if (tag) params.set("tag", tag);
     if (subcategory) params.set("discoverSubcategory", subcategory);
     if (search) params.set("q", search);
     if (pricing) params.set("pricing", pricing);
@@ -156,7 +160,7 @@ export default function HomeVisualFeed({ categories = [], collection, initialCat
       .catch(() => { if (!controller.signal.aborted) setError("Could not load prompts. Please try again."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [activeKey, page, retry, category, subcategory, search, pricing, sort, collection]);
+  }, [activeKey, page, retry, category, subcategory, search, pricing, sort, collection, categoryFilter, tool, tag]);
 
   useEffect(() => {
     if (!hasMore || loading || error || !sentinel.current) return;

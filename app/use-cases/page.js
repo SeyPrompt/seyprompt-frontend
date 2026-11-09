@@ -178,7 +178,7 @@ export default function UseCasesPage() {
         <div className="container">
           <div className="cases-cta">
             <h2>Explore full prompt library</h2>
-            <Link className="button" href="/prompts">
+            <Link className="button" href="/">
               Browse Prompts
             </Link>
           </div>

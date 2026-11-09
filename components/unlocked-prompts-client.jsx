@@ -87,7 +87,7 @@ export function UnlockedPromptsClient() {
         <WandSparkles aria-hidden="true" size={30} />
         <h2>No unlocked prompts yet</h2>
         <p>Purchased prompt unlocks will appear here after checkout.</p>
-        <Link className="button" href="/prompts">
+        <Link className="button" href="/">
           Browse prompts
         </Link>
       </div>
