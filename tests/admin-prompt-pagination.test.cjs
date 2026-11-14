@@ -18,6 +18,7 @@ async function renderPage(params, pages = 5) {
     "@/components/admin-prompt-list-taxonomy": { AdminPromptFilters: () => null, AdminPromptBulkActions: () => null },
     'next/link': ({ children, href, ...props }) => React.createElement('a', { href, ...props }, children),
     'next/navigation': { redirect: (href) => { throw new Error(`redirect:${href}`); } },
+    '@/lib/display-format': { formatCurrency: () => '' },
     '@/lib/auth': { requireAdminToken: async () => 'test-token' },
     '@/lib/api': { fetchAdminPrompts: async (token, query) => {
       assert.equal(token, 'test-token');

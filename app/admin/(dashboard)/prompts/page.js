@@ -5,6 +5,7 @@ import { Eye, ImageIcon, Pencil } from "lucide-react";
 import { fetchAdminPrompts } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
 import { getPromptCategories } from "@/lib/prompt-metadata";
+import { formatCurrency } from "@/lib/display-format";
 import { formatPromptPrice, getPromptPricingType } from "@/lib/prompt-pricing";
 import { getPromptImageSource } from "@/lib/prompt-visuals";
 import { ProtectedImage } from "@/components/protected-media";
@@ -189,7 +190,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                           <span className="status-badge">{prompt.status}</span>
                         </td>
                         <td>
-                          <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                          <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt, formatCurrency)}</span>
                         </td>
                         <td>
                           <span className="admin-readable-count">
@@ -229,7 +230,7 @@ export default async function AdminPromptsPage({ searchParams }) {
                       <span>{primaryCategory || "General"}</span>
                       {remainingCategories.length ? <span>+{remainingCategories.length}</span> : null}
                       <span className="status-badge">{prompt.status}</span>
-                      <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt)}</span>
+                      <span className={`price-badge price-badge-${getPromptPricingType(prompt)}`}>{formatPromptPrice(prompt, formatCurrency)}</span>
                       <span>{formatAdminViewCount(prompt.viewsCount)}</span>
                     </div>
                     <div className="admin-icon-actions">

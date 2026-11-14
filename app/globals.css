@@ -9896,6 +9896,8 @@ select:not([multiple]) {
 }
 
 .admin-entitlement-list {
+  display: grid;
+  gap: 12px;
   max-height: 680px;
   overflow-y: auto;
   padding-right: 4px;

@@ -10,6 +10,7 @@ async function loadComponent(file, overrides = {}, globals = {}) {
   const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const { code } = await swc.transform(source, { jsc: { parser: { syntax: 'ecmascript', jsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const exports = {};
+  if (file !== "lib/display-format.js") overrides["@/lib/display-format"] = await loadComponent("lib/display-format.js");
   vm.runInNewContext(`(function(require,module,exports){${code}\n})`, { console, ...globals })(
     (id) => overrides[id] || (id === 'next/link' ? ({ children, href }) => React.createElement('a', { href }, children) : require(id)), { exports }, exports);
   return exports;
@@ -27,7 +28,7 @@ test('website reporting keeps currencies separate and missing net collections un
   assert.match(html, /Unavailable/);
   assert.match(html, /1 pending/);
   assert.match(html, /Known fees only; 1 unavailable/);
-  assert.match(html, /remain unattributed/);
+  assert.match(html, /matching SeyPrompt checkout receipt/);
 });
 test('unavailable AutoPay shows one-time billing without a dead checkbox or internal setup reasons', async () => {
   const Options = (await loadComponent('components/subscription-renewal-options.jsx')).default;
@@ -182,4 +183,15 @@ test('closing an unpaid Razorpay popup discards its checkout and refreshes witho
   assert.deepEqual(closed, ['draft']);
   assert.equal(refreshes, 1);
   assert.ok(!tracked.includes('checkout_failed'));
+});
+
+test('admin purchase history and payments use the same units and India time', async () => {
+  const { formatIndiaDateTime, formatOrderAmount } = await loadComponent('lib/display-format.js');
+  assert.equal(formatOrderAmount({ type: 'direct_prompt', amount: 1500, currency: 'INR' }), '₹15.00');
+  assert.equal(formatOrderAmount({ type: 'subscription', amount: 15.5, currency: 'INR' }), '₹15.50');
+  assert.equal(formatOrderAmount({ type: 'credit_plan', amount: 100, currency: 'USD' }), '$1.00');
+  assert.equal(formatOrderAmount({ type: 'subscription', amount: 15.5, amountMinor: 1250, currency: 'INR' }), '₹12.50');
+  assert.equal(formatOrderAmount({ amount: 2500, currency: 'JPY', priceSnapshot: { amountMinor: 2500 } }), 'JP¥2,500');
+  assert.match(formatIndiaDateTime('2026-11-14T15:36:00Z'), /14 Nov 2026, 9:06 pm IST/i);
+  assert.match(formatIndiaDateTime('2026-11-14T20:00:00Z'), /15 Nov 2026, 1:30 am IST/i);
 });

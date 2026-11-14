@@ -1,5 +1,6 @@
 "use client";
 
+import { INDIA_TIME_ZONE } from "@/lib/display-format";
 import Link from "next/link";
 
 export default function SubscriptionRenewalOptions({ plan, enabled, onChange, disabled = false }) {
@@ -18,7 +19,7 @@ export default function SubscriptionRenewalOptions({ plan, enabled, onChange, di
       <p aria-live="polite">
         {selected ? <>
           Pay {plan.pricing?.displayPrice} {offer.currency} every {offer.interval} days using your authorized card.
-          {renewalDate && !Number.isNaN(renewalDate.getTime()) ? <> Next expected renewal: {renewalDate.toLocaleDateString("en-IN")}.</> : null}
+          {renewalDate && !Number.isNaN(renewalDate.getTime()) ? <> Next expected renewal: {renewalDate.toLocaleDateString("en-IN", { timeZone: INDIA_TIME_ZONE })}.</> : null}
           {" "}Authorize AutoPay securely in Razorpay. Cancel future renewals from your dashboard; paid access continues until its end date.
         </> : <>
           Pay {plan?.pricing?.displayPrice} {plan?.pricing?.currency} once for {plan?.durationDays} days of all-access.

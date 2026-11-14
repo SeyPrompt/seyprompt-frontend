@@ -6,6 +6,7 @@ import { AdminPromptBulkActions } from "./admin-prompt-list-taxonomy";
 import { DeletePromptButton } from "./delete-prompt-button";
 import { ProtectedImage } from "./protected-media";
 import { getPromptImageSource } from "@/lib/prompt-visuals";
+import { formatCurrency } from "@/lib/display-format";
 import { formatPromptPrice } from "@/lib/prompt-pricing";
 
 export default function AdminTaxonomyPrompts() {
@@ -36,7 +37,7 @@ export default function AdminTaxonomyPrompts() {
     {error ? <p role="alert">{error}</p> : null}{notice ? <p role="status">{notice}</p> : null}{loading ? <p role="status">Loading prompts…</p> : null}
     <section className="panel form-card stack"><p>{result.pagination.total || 0} prompt records</p><div className="table-wrap"><table className="table"><thead><tr><th>Select</th><th>Prompt</th><th>Classification</th><th>Status</th><th>Price</th><th>Views</th><th>Actions</th></tr></thead><tbody>{result.data.map(p => {
       const image = getPromptImageSource(p);
-      return <tr key={p._id}><td><input aria-label={`Select ${p.title}`} type="checkbox" form="taxonomy-bulk-form" name="promptIds" value={p._id} /></td><td><div className="admin-prompt-summary">{image ? <ProtectedImage alt="" src={image} width={72} height={72} /> : null}<div><strong>{p.title}</strong><p className="muted">{p.slug}</p><p>{p.description?.slice(0, 92)}</p><span>{p.category || "Uncategorized"}</span></div></div></td><td>{p.classificationStatus || "unclassified"}</td><td>{p.status}</td><td>{formatPromptPrice(p)}</td><td>{Number(p.viewsCount || 0).toLocaleString("en-IN")} views</td><td><div className="pill-row"><Link href={`/admin/prompts/${p._id}/edit`}>Edit</Link>{p.slug ? <Link target="_blank" rel="noopener noreferrer" href={`/prompts/${p.slug}`}>View</Link> : null}<DeletePromptButton onDeleted={load} id={p._id} /></div></td></tr>;
+      return <tr key={p._id}><td><input aria-label={`Select ${p.title}`} type="checkbox" form="taxonomy-bulk-form" name="promptIds" value={p._id} /></td><td><div className="admin-prompt-summary">{image ? <ProtectedImage alt="" src={image} width={72} height={72} /> : null}<div><strong>{p.title}</strong><p className="muted">{p.slug}</p><p>{p.description?.slice(0, 92)}</p><span>{p.category || "Uncategorized"}</span></div></div></td><td>{p.classificationStatus || "unclassified"}</td><td>{p.status}</td><td>{formatPromptPrice(p, formatCurrency)}</td><td>{Number(p.viewsCount || 0).toLocaleString("en-IN")} views</td><td><div className="pill-row"><Link href={`/admin/prompts/${p._id}/edit`}>Edit</Link>{p.slug ? <Link target="_blank" rel="noopener noreferrer" href={`/prompts/${p.slug}`}>View</Link> : null}<DeletePromptButton onDeleted={load} id={p._id} /></div></td></tr>;
     })}</tbody></table></div>{!loading && !result.data.length ? <p>No prompts found. Broaden the filters or create a prompt.</p> : null}
     <nav className="admin-pagination" aria-label="Prompt pages"><button type="button" disabled={page === 1 || loading} onClick={() => setPage(v => v - 1)}>Previous</button><span>Page {page} of {result.pagination.pages || 1}</span><button type="button" disabled={page >= (result.pagination.pages || 1) || loading} onClick={() => setPage(v => v + 1)}>Next</button></nav></section>
   </div>;

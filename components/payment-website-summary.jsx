@@ -1,14 +1,9 @@
-function money(minor, currency) {
-  if (minor === null || minor === undefined) return "Unavailable";
-  const digits = ["JPY", "KRW"].includes(currency) ? 0 : 2;
-  try { return new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(minor / 10 ** digits); }
-  catch { return `${minor / 10 ** digits} ${currency || "unknown currency"}`; }
-}
+import { formatMinorCurrency as money } from "@/lib/display-format";
 
 export default function PaymentWebsiteSummary({ summary = [] }) {
   return <section className="panel form-card" aria-label="Payment totals">
     <h2>Payment totals</h2>
-    <p className="muted">All records matching the selected website and status, grouped by currency. The transaction list shows up to 100 records.</p>
+    <p className="muted">SeyPrompt payments matching the selected status, grouped by currency. The transaction list shows up to 100 records.</p>
     {summary.length ? <div className="table-wrap"><table className="table">
       <thead><tr><th>Currency</th><th>Transactions</th><th>Successful payments</th><th>Gross payments</th><th>Processed refunds</th><th>Razorpay fees</th><th>Net collections</th></tr></thead>
       <tbody>{summary.map((row) => <tr key={row.currency || "unknown"}>
@@ -22,6 +17,6 @@ export default function PaymentWebsiteSummary({ summary = [] }) {
         <td>{money(row.netCollectionsMinor, row.currency)}</td>
       </tr>)}</tbody>
     </table></div> : <p className="muted">No payment totals available for these filters.</p>}
-    <p className="muted">Net collections are shown only when fees and refund outcomes are known. They are not a bank settlement balance. Historical payments without website metadata remain unattributed.</p>
+    <p className="muted">Net collections are shown only when fees and refund outcomes are known. Historical orders with a matching SeyPrompt checkout receipt are included.</p>
   </section>;
 }

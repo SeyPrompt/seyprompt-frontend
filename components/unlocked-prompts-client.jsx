@@ -1,5 +1,6 @@
 "use client";
 
+import { INDIA_TIME_ZONE } from "@/lib/display-format";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,7 +15,8 @@ function formatDate(value) {
   }
 
   return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium"
+    dateStyle: "medium",
+    timeZone: INDIA_TIME_ZONE
   }).format(new Date(value));
 }
 

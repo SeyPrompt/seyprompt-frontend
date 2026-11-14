@@ -4,6 +4,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { buildRegionalPrices, regionalGatewayPlanId } from "@/lib/recurring-plan-fields";
+import {
+  currencyFractionDigits,
+  formatCurrency,
+  formatIndiaDateTime as formatDate,
+  formatMinorCurrency,
+  formatOrderAmount,
+  paymentTypeLabel
+} from "@/lib/display-format";
 
 const EMPTY_PLAN = {
   name: "",
@@ -61,18 +69,6 @@ const EMPTY_GRANT = {
   durationDays: "30",
   notes: ""
 };
-
-function formatCurrency(amount, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", {
-    currency: currency || "INR",
-    maximumFractionDigits: Number(amount || 0) % 1 === 0 ? 0 : 2,
-    style: "currency"
-  }).format(Number(amount || 0));
-}
-
-function currencyFractionDigits(currency) {
-  return ["JPY", "KRW"].includes(String(currency || "").toUpperCase()) ? 0 : 2;
-}
 
 function minimumCheckoutAmount(currency) {
   return currencyFractionDigits(currency) === 0 ? 1 : 1;
@@ -169,17 +165,6 @@ function summarizePlanPrice(plan) {
       return `${getRegionLabel(normalized.region)} ${formatCurrency(normalized.amount, normalized.currency)}`;
     })
     .join(" / ");
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
 }
 
 function toDateInputValue(value) {
@@ -1005,6 +990,7 @@ export function AdminPaymentsManager({
 
   async function grantEntitlement(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     setLoadingAction("grant");
     setError("");
 
@@ -1013,11 +999,11 @@ export function AdminPaymentsManager({
         await fetch("/api/admin/entitlements", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildGrantPayload(new FormData(event.currentTarget)))
+          body: JSON.stringify(buildGrantPayload(new FormData(form)))
         }),
         "Unable to grant entitlement."
       );
-      event.currentTarget.reset();
+      form.reset();
       setGrantType(EMPTY_GRANT.type);
       router.refresh();
     } catch (grantError) {
@@ -1064,91 +1050,90 @@ export function AdminPaymentsManager({
     <div className="stack">
       {error ? <p className="form-error">{error}</p> : null}
 
-      <div className="panel form-card">
+      {orders ? <div className="panel form-card">
         <div className="section-header">
           <div>
             <strong>{orders.length}</strong> <span className="muted">payment orders</span>
           </div>
         </div>
-        <div className="table-wrap admin-payment-table-wrap">
-          <table className="table admin-payment-table">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Website</th>
-                <th>User</th>
-                <th>Item</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => {
-                const item = order.prompt?.title || order.plan?.name || order.type;
-                const refundable = order.status === "paid" && order.providerPaymentId;
+        {orders.length ? <>
+          <div className="table-wrap admin-payment-table-wrap">
+            <table className="table admin-payment-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>User</th>
+                  <th>Item</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Created (IST)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => {
+                  const item = order.prompt?.title || order.plan?.name || order.creditPlan?.name || order.productNameSnapshot || paymentTypeLabel(order.type);
+                  const refundable = order.status === "paid" && order.providerPaymentId;
 
-                return (
-                  <tr key={getRecordId(order)}>
-                    <td>
-                      <strong>{order.providerOrderId || getRecordId(order)}</strong>
-                      <div className="muted">{order.providerPaymentId || "No payment id"}</div>
-                    </td>
-                    <td><strong>{order.websiteName || order.websiteId || "Unattributed"}</strong>
-                      <div className="muted">{order.websiteDomain || "Historical / unknown origin"}</div></td>
-                    <td>
-                      <strong>{order.user?.email || "Unknown user"}</strong>
-                      {order.user?.name ? <div className="muted">{order.user.name}</div> : null}
-                    </td>
-                    <td>
-                      <strong>{item}</strong>
-                      <div className="muted">{order.type}</div>
-                    </td>
-                    <td>
-                      <strong>{formatCurrency(order.amount, order.currency)}</strong>
-                      {Number(order.discountAmount || 0) > 0 ? (
-                        <div className="muted">Discount {formatCurrency(order.discountAmount, order.currency)}</div>
-                      ) : null}
-                    </td>
-                    <td><StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
-                      {order.refundStatus ? <div className="muted">Refund: {order.refundStatus}</div> : null}</td>
-                    <td>{formatDate(order.createdAt)}</td>
-                    <td>
-                      <button className="button-secondary compact" disabled={!refundable || Boolean(loadingAction)} onClick={() => refundOrder(order)} type="button">
-                        <RotateCcw aria-hidden="true" size={16} />
-                        Refund
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="admin-card-list">
-          {orders.map((order) => {
-            const refundable = order.status === "paid" && order.providerPaymentId;
+                  return (
+                    <tr key={getRecordId(order)}>
+                      <td>
+                        <strong>{order.providerOrderId || getRecordId(order)}</strong>
+                        <div className="muted">{order.providerPaymentId || "No payment id"}</div>
+                      </td>
+                      <td>
+                        <strong>{order.user?.email || "Unknown user"}</strong>
+                        {order.user?.name ? <div className="muted">{order.user.name}</div> : null}
+                      </td>
+                      <td>
+                        <strong>{item}</strong>
+                        <div className="muted">{paymentTypeLabel(order.type)}</div>
+                      </td>
+                      <td>
+                        <strong>{formatOrderAmount(order)}</strong>
+                        {Number(order.discountAmount || 0) > 0 ? (
+                          <div className="muted">Discount {formatCurrency(order.discountAmount, order.currency)}</div>
+                        ) : null}
+                      </td>
+                      <td><StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
+                        {order.refundStatus ? <div className="muted">Refund: {order.refundStatus}</div> : null}</td>
+                      <td>{formatDate(order.createdAt)}</td>
+                      <td>
+                        <button className="button-secondary compact" disabled={!refundable || Boolean(loadingAction)} onClick={() => refundOrder(order)} type="button">
+                          <RotateCcw aria-hidden="true" size={16} />
+                          Refund
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="admin-card-list">
+            {orders.map((order) => {
+              const refundable = order.status === "paid" && order.providerPaymentId;
 
-            return (
-              <article className="admin-prompt-card" key={getRecordId(order)}>
-                <div>
-                  <strong>{order.prompt?.title || order.plan?.name || order.type}</strong>
-                  <p className="muted">{order.user?.email || order.providerOrderId || getRecordId(order)}</p>
-                </div>
-                <div className="admin-card-meta">
-                  <span>{order.websiteName || order.websiteId || "Unattributed"}</span>
-                  {order.websiteDomain ? <span>{order.websiteDomain}</span> : null}
-                  <span>{formatCurrency(order.amount, order.currency)}</span>
-                  <StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
-                  <span>{formatDate(order.createdAt)}</span>
-                </div>
-                <button className="button-secondary compact" disabled={!refundable || Boolean(loadingAction)} onClick={() => refundOrder(order)} type="button">Refund</button>
-              </article>
-            );
-          })}
-        </div>
-      </div>
+              return (
+                <article className="admin-prompt-card" key={getRecordId(order)}>
+                  <div>
+                    <strong>{order.prompt?.title || order.plan?.name || order.creditPlan?.name || order.productNameSnapshot || paymentTypeLabel(order.type)}</strong>
+                    <p className="muted">{order.user?.email || order.providerOrderId || getRecordId(order)}</p>
+                  </div>
+                  <div className="admin-card-meta">
+                    <span>{paymentTypeLabel(order.type)}</span>
+                    <span>{formatOrderAmount(order)}</span>
+                    <StatusBadge tone={order.status === "refunded" ? "muted" : order.status === "paid" ? "success" : "default"}>{order.status}</StatusBadge>
+                    {order.refundStatus ? <span>Refund: {order.refundStatus}</span> : null}
+                    <span>{formatDate(order.createdAt)}</span>
+                  </div>
+                  <button className="button-secondary compact" disabled={!refundable || Boolean(loadingAction)} onClick={() => refundOrder(order)} type="button">Refund</button>
+                </article>
+              );
+            })}
+          </div>
+        </> : <p className="muted">No payments match this status.</p>}
+      </div> : null}
 
       <div className="admin-payment-grid">
         <form className="panel form-card stack admin-payment-form" onSubmit={grantEntitlement}>
@@ -1217,28 +1202,34 @@ export function AdminPaymentsManager({
         <div className="panel form-card">
           <div className="section-header">
             <div>
-              <strong>{entitlements.length}</strong> <span className="muted">entitlement records</span>
+              <h2>Entitlements</h2>
+              {entitlements ? <span className="muted">{entitlements.length} entitlement records</span> : null}
             </div>
           </div>
-          <div className="admin-card-list admin-entitlement-list">
-            {entitlements.map((entitlement) => {
+          {!entitlements ? <p className="form-error">Unable to load entitlements.</p> : null}
+          {entitlements?.length === 0 ? <p className="muted">No entitlements have been recorded.</p> : null}
+          <div className="admin-entitlement-list">
+            {entitlements?.map((entitlement) => {
               const revoked = Boolean(entitlement.revokedAt);
+              const expired = Boolean(entitlement.expiresAt && new Date(entitlement.expiresAt) <= new Date());
+              const scheduled = new Date(entitlement.startsAt) > new Date();
+              const status = revoked ? "Revoked" : expired ? "Expired" : scheduled ? "Scheduled" : "Active";
 
               return (
                 <article className="admin-prompt-card" key={getRecordId(entitlement)}>
                   <div>
-                    <strong>{entitlement.prompt?.title || entitlement.plan?.name || entitlement.type}</strong>
+                    <strong>{entitlement.prompt?.title || entitlement.plan?.name || paymentTypeLabel(entitlement.type)}</strong>
                     <p className="muted">{entitlement.user?.email || entitlement.type}</p>
                   </div>
                   <div className="admin-card-meta">
                     {entitlement.user?.name ? <span>{entitlement.user.name}</span> : null}
                     <span>Starts {formatDate(entitlement.startsAt)}</span>
                     <span>Expires {formatDate(entitlement.expiresAt)}</span>
-                    <StatusBadge tone={revoked ? "danger" : "success"}>{revoked ? "Revoked" : "Active"}</StatusBadge>
+                    <StatusBadge tone={revoked ? "danger" : status === "Active" ? "success" : "muted"}>{status}</StatusBadge>
                   </div>
                   <p className="muted">{entitlement.paymentMode || "ONE_TIME"} · AutoPay {entitlement.autoRenewEnabled ? "enabled" : "disabled"}</p>
                   {entitlement.razorpaySubscriptionId ? <p className="muted">Gateway: {entitlement.razorpaySubscriptionId} · {entitlement.subscriptionStatus}
-                    {" · "}{formatCurrency(entitlement.billingAmount / 100, entitlement.billingCurrency)}
+                    {" · "}{formatMinorCurrency(entitlement.billingAmount, entitlement.billingCurrency)}
                     {entitlement.cancelAtPeriodEnd ? " · Cancellation requested" : ""}
                     {entitlement.lastPaymentFailureAt ? ` · Last failed payment ${formatDate(entitlement.lastPaymentFailureAt)}` : ""}
                   </p> : null}

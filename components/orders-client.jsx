@@ -7,24 +7,7 @@ import { ArrowRight, ReceiptText } from "lucide-react";
 import { useUserAuth } from "@/components/user-auth-provider";
 import { fetchMyPaymentOrders } from "@/lib/payments";
 
-function formatCurrency(amount, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", {
-    currency: currency || "INR",
-    maximumFractionDigits: Number(amount || 0) % 1 === 0 ? 0 : 2,
-    style: "currency"
-  }).format(Number(amount || 0));
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return "Not paid";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
-}
+import { formatIndiaDateTime, formatOrderAmount } from "@/lib/display-format";
 
 function formatOrderType(order) {
   if (order.type === "subscription") {
@@ -164,8 +147,8 @@ export function OrdersClient() {
                   <small>{order.providerPaymentId || order.providerOrderId || order.id}</small>
                 </td>
                 <td>{formatOrderType(order)}</td>
-                <td>{formatDateTime(order.paidAt || order.createdAt)}</td>
-                <td>{formatCurrency(order.amount, order.currency)}</td>
+                <td>{formatIndiaDateTime(order.paidAt || order.createdAt)}</td>
+                <td>{formatOrderAmount(order)}</td>
                 <td>{order.provider === "razorpay" ? "Razorpay" : order.provider || "Payment"}</td>
                 <td>
                   <span className={`order-status order-status-${formatDisplayStatus(order.status)}`}>

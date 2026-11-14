@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchAdminUserById } from "@/lib/api";
 import { requireAdminToken } from "@/lib/auth";
+import { formatIndiaDateTime, formatOrderAmount, paymentTypeLabel } from "@/lib/display-format";
 import { AdminUserActions } from "@/components/admin-user-actions";
 
 export const metadata = {
@@ -17,20 +18,7 @@ export const metadata = {
 };
 
 function formatDate(value) {
-  if (!value) {
-    return "Not Available";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Not Available";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
+  return formatIndiaDateTime(value, "Not Available");
 }
 
 function formatBoolean(value) {
@@ -45,14 +33,6 @@ function formatCreatedByAdmin(value) {
   return formatBoolean(Boolean(value));
 }
 
-function formatCurrency(amount, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", {
-    currency: currency || "INR",
-    maximumFractionDigits: Number(amount || 0) % 1 === 0 ? 0 : 2,
-    style: "currency"
-  }).format(Number(amount || 0));
-}
-
 function formatCreatedMedium(user) {
   return user.authProvider === "google" || user.createdMedium === "gmail" ? "Gmail" : "Mail";
 }
@@ -63,18 +43,6 @@ function formatMembershipStatus(summary, fallback = "free") {
   }
 
   return summary.planName ? `${summary.label}: ${summary.planName}` : summary.label;
-}
-
-function formatPurchaseType(order) {
-  if (order.type === "subscription") {
-    return "Membership purchase";
-  }
-
-  if (order.type === "credit_plan") {
-    return "Credit purchase";
-  }
-
-  return "Prompt purchase";
 }
 
 function formatPurchaseStatus(status) {
@@ -223,8 +191,8 @@ export default async function UserDetailPage({ params }) {
                     <div><dt>Last clicked</dt><dd>{formatDate(click.lastClickedAt)}</dd></div>
                     {click.slug ? (
                       <div>
-                        <dt>Prompt</dt>
-                        <dd><Link href={`/admin/prompts/${click.promptId}/edit`}>Open in Admin</Link></dd>
+                        <dt>Clicked prompt</dt>
+                        <dd><Link href={`/admin/prompts/${click.promptId}/edit`}>Edit {click.title || "prompt"}</Link></dd>
                       </div>
                     ) : null}
                   </dl>
@@ -266,15 +234,15 @@ export default async function UserDetailPage({ params }) {
                 <details className="admin-accordion" key={order.id}>
                   <summary>
                     <span>
-                      <strong>{order.itemName || formatPurchaseType(order)}</strong>
-                      <small>{formatPurchaseType(order)}</small>
+                      <strong>{order.itemName || paymentTypeLabel(order.type)}</strong>
+                      <small>{paymentTypeLabel(order.type)}</small>
                     </span>
                     <span>{formatPurchaseStatus(order.status)}</span>
                   </summary>
                   <dl className="admin-detail-grid">
                     <div>
                       <dt>Amount</dt>
-                      <dd>{formatCurrency(order.amount, order.currency)}</dd>
+                      <dd>{formatOrderAmount(order)}</dd>
                     </div>
                     <div>
                       <dt>Paid</dt>

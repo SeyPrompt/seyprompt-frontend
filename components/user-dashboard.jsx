@@ -1,5 +1,6 @@
 "use client";
 
+import { INDIA_TIME_ZONE } from "@/lib/display-format";
 import Link from "next/link";
 import SubscriptionRenewalOptions from "@/components/subscription-renewal-options";
 import { useRouter } from "next/navigation";
@@ -49,7 +50,8 @@ function formatDate(value) {
   }
 
   return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium"
+    dateStyle: "medium",
+    timeZone: INDIA_TIME_ZONE
   }).format(new Date(value));
 }
 
