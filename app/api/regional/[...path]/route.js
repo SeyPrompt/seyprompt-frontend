@@ -45,7 +45,7 @@ async function proxy(request, { params }) {
       headers: {
         "Content-Type": response.headers.get("content-type") || "application/json",
         "Cache-Control": "private, no-store",
-        "Vary": "Authorization, X-Vercel-IP-Country, CF-IPCountry"
+        "Vary": "Authorization"
       }
     });
   } catch (_error) {

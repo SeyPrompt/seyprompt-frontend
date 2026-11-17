@@ -10,7 +10,7 @@ This internal note records operational and business items that were not publishe
 - Reflected fixed-duration manual all-access plans, single-prompt unlocks, credits, Razorpay payments, analytics providers, Cloudinary media handling, support submissions, and account/authentication data based on the frontend and backend implementation.
 - Verified all-access entitlements start when payment is confirmed and expire after the purchased duration; they do not extend from the end of an existing entitlement.
 - Verified the dashboard disables another all-access purchase while all-access is active.
-- Verified local production-style env values for Google Analytics, PostHog, and Sentry are unset. Code supports Google Analytics, PostHog, Vercel Analytics, Vercel Speed Insights, and Sentry when configured.
+- The app supports Google Analytics and PostHog when configured.
 
 ## Missing Verified Business Information
 

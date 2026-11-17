@@ -10,12 +10,18 @@ const source = (await readFile(new URL("../app/api/regional/[...path]/route.js",
 const { GET, POST } = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 const context = (path) => ({ params: Promise.resolve({ path: path.split("/") }) });
 
-test("country comes from the frontend edge and skips unknown country values", () => {
-  const country = pricingCountryHeaders(new Headers({ "x-vercel-ip-country": " in ", "cf-ipcountry": "US" }));
+test.beforeEach(() => {
+  process.env.RENDER = "true";
+  process.env.PRICING_PROXY_SECRET = "test-pricing-secret";
+});
+
+test("country comes from the Render visitor IP and ignores caller country headers", () => {
+  const country = pricingCountryHeaders(new Headers({ "cf-connecting-ip": "49.36.1.1", "cf-ipcountry": "US" }));
   assert.equal(country["cf-ipcountry"], undefined);
-  assert.equal(country["x-vercel-ip-country"], "IN");
-  assert.equal(pricingCountryHeaders(new Headers({ "cf-ipcountry": "XX", "cloudfront-viewer-country": "IN" }))["x-vercel-ip-country"], "IN");
-  assert.deepEqual(pricingCountryHeaders(new Headers({ "cf-ipcountry": "T1" })), {});
+  assert.equal(country["x-pricing-country"], "IN");
+  assert.equal(pricingCountryHeaders(new Headers({ "cf-connecting-ip": "2405:200:1000::1" }))["x-pricing-country"], "IN");
+  assert.deepEqual(pricingCountryHeaders(new Headers({ "cf-connecting-ip": "49.36.1.1, 8.8.8.8" })), {});
+  assert.deepEqual(pricingCountryHeaders(new Headers({ "cf-ipcountry": "IN", "x-pricing-country": "IN" })), {});
   assert.deepEqual(pricingCountryHeaders(new Headers()), {});
 });
 
@@ -36,9 +42,9 @@ test("prompt display and checkout forward the same India country without sharing
   const calls = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     calls.push({ url, options });
-    return Response.json({ pricing: { currency: options.headers.get("x-vercel-ip-country") === "IN" ? "INR" : "USD", displayAmount: options.headers.get("x-vercel-ip-country") === "IN" ? 20 : 1 } });
+    return Response.json({ pricing: { currency: options.headers.get("x-pricing-country") === "IN" ? "INR" : "USD", displayAmount: options.headers.get("x-pricing-country") === "IN" ? 20 : 1 } });
   });
-  const geo = { "x-vercel-ip-country": "IN", cookie: "private=value" };
+  const geo = { "cf-connecting-ip": "49.36.1.1", cookie: "private=value" };
   const display = await GET(new Request("https://seyprompt.com/api/regional/public/prompts/example?limit=2", { headers: geo }), context("public/prompts/example"));
   assert.equal((await display.json()).pricing.currency, "INR");
   assert.equal(display.headers.get("cache-control"), "private, no-store");
@@ -53,7 +59,7 @@ test("prompt display and checkout forward the same India country without sharing
   assert.equal(calls[1].options.headers.get("authorization"), "Bearer test");
   assert.deepEqual(JSON.parse(calls[1].options.body), { promptId: "example" });
 
-  const international = await GET(new Request("https://seyprompt.com/api/regional/public/prompts/example", { headers: { "x-vercel-ip-country": "US" } }), context("public/prompts/example"));
+  const international = await GET(new Request("https://seyprompt.com/api/regional/public/prompts/example", { headers: { "cf-connecting-ip": "8.8.8.8" } }), context("public/prompts/example"));
   assert.equal((await international.json()).pricing.currency, "USD");
 });
 
@@ -73,13 +79,13 @@ test("server-rendered public prompts forward the incoming country", async (t) =>
   const apiSource = (await readFile(new URL("../lib/api.js", import.meta.url), "utf8"))
     .replace('import "server-only";', "")
     .replace('import { cache } from "react";', 'const cache = (fn) => fn;')
-    .replace('import { headers } from "next/headers";', 'const headers = async () => new Headers({ "x-vercel-ip-country": "IN" });')
+    .replace('import { headers } from "next/headers";', 'const headers = async () => new Headers({ "cf-connecting-ip": "49.36.1.1" });')
     .replace("@/lib/pricing-country", new URL("../lib/pricing-country.js", import.meta.url).href)
     .replace("@/utils/api", new URL("../utils/api.js", import.meta.url).href);
   const { fetchPromptBySlug } = await import(`data:text/javascript;base64,${Buffer.from(apiSource).toString("base64")}`);
   t.mock.method(globalThis, "fetch", async (url, options) => {
     assert.match(url, /\/api\/public\/prompts\/packaging-prompt$/);
-    assert.equal(options.headers["x-vercel-ip-country"], "IN");
+    assert.equal(options.headers["x-pricing-country"], "IN");
     assert.equal(options.cache, "no-store");
     return Response.json({ slug: "packaging-prompt", pricing: { currency: "INR", displayAmount: 20 } });
   });
@@ -92,10 +98,12 @@ test("localhost country override applies only in development and after edge head
   try {
     process.env.DEV_PRICING_COUNTRY = "IN";
     process.env.NODE_ENV = "development";
-    assert.equal(pricingCountryHeaders(new Headers())["x-vercel-ip-country"], "IN");
-    assert.equal(pricingCountryHeaders(new Headers({ "x-vercel-ip-country": "US" }))["x-vercel-ip-country"], "US");
+    assert.equal(pricingCountryHeaders(new Headers())["x-pricing-country"], "IN");
+    assert.equal(pricingCountryHeaders(new Headers({ "cf-connecting-ip": "8.8.8.8" }))["x-pricing-country"], "US");
     process.env.NODE_ENV = "production";
     assert.deepEqual(pricingCountryHeaders(new Headers()), {});
+    delete process.env.PRICING_PROXY_SECRET;
+    assert.deepEqual(pricingCountryHeaders(new Headers({ "cf-connecting-ip": "49.36.1.1" })), {});
   } finally {
     if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = savedNodeEnv;

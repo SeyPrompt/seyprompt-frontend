@@ -8,18 +8,19 @@ const source = (await readFile(new URL("../app/api/user-auth/[...path]/route.js"
   .replace("@/utils/api", new URL("../utils/api.js", import.meta.url).href);
 const { POST } = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 const context = path => ({ params: Promise.resolve({ path: path.split("/") }) });
-test("geo is signed only on Vercel; caller coordinates and arbitrary forwarded headers are omitted", t => {
-  const previous = { VERCEL: process.env.VERCEL, LOGIN_METADATA_PROXY_SECRET: process.env.LOGIN_METADATA_PROXY_SECRET };
+test("geo is signed only on Render; caller coordinates and arbitrary forwarded headers are omitted", t => {
+  const previous = { RENDER: process.env.RENDER, LOGIN_METADATA_PROXY_SECRET: process.env.LOGIN_METADATA_PROXY_SECRET };
   t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
   process.env.LOGIN_METADATA_PROXY_SECRET = "s".repeat(32);
-  process.env.VERCEL = "0";
-  const headers = new Headers({ "x-vercel-ip-country": "IN", "x-forwarded-for": "8.8.8.8", "x-vercel-ip-city": "New%20Delhi", "x-vercel-ip-latitude": "12" });
+  process.env.RENDER = "false";
+  const headers = new Headers({ "cf-connecting-ip": "49.36.1.1", "x-forwarded-for": "8.8.8.8", "cf-ipcountry": "US", "cf-ipcity": "Caller city", "latitude": "12" });
   assert.deepEqual(loginProxyHeaders(headers, "/user/login", {}), {});
-  process.env.VERCEL = "1";
+  process.env.RENDER = "true";
   const signed = loginProxyHeaders(headers, "/user/login", {});
   const data = JSON.parse(Buffer.from(signed["x-login-context"], "base64url"));
-  assert.equal(data.city, "New Delhi");
-  assert.equal(data.ip, null);
+  assert.equal(data.country, "IN");
+  assert.notEqual(data.city, "Caller city");
+  assert.equal(data.ip, "49.36.1.1");
   assert.equal(data.latitude, undefined);
   assert.notEqual(signed["x-login-signature"], loginProxyHeaders(headers, "/user/google", {})["x-login-signature"]);
 });
@@ -59,14 +60,14 @@ test("tab-session referral strips paths; storage errors and all GPS states prese
   assert.equal(collectLoginMetadata().referral, null);
 });
 
- test("login location can use the configured pricing proxy key and the dedicated key takes precedence", t => {
-  const keys = ["VERCEL", "LOGIN_METADATA_PROXY_SECRET", "PRICING_PROXY_SECRET"];
+test("login location can use the configured pricing proxy key and the dedicated key takes precedence", t => {
+  const keys = ["RENDER", "LOGIN_METADATA_PROXY_SECRET", "PRICING_PROXY_SECRET"];
   const old = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   t.after(() => { for (const [key, value] of Object.entries(old)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
-  process.env.VERCEL = "1";
+  process.env.RENDER = "true";
   delete process.env.LOGIN_METADATA_PROXY_SECRET;
   process.env.PRICING_PROXY_SECRET = "test-pricing-key";
-  const headers = new Headers({ "x-vercel-ip-country": "IN", "x-vercel-ip-city": "Bengaluru" });
+  const headers = new Headers({ "cf-connecting-ip": "49.36.1.1" });
   const signed = loginProxyHeaders(headers, "/user/google", {});
   assert.equal(JSON.parse(Buffer.from(signed["x-login-context"], "base64url")).country, "IN");
   process.env.LOGIN_METADATA_PROXY_SECRET = "dedicated-login-key";

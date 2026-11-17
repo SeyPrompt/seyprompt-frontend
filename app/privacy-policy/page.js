@@ -41,7 +41,7 @@ const sections = [
       "IP addresses expire after seven days and are removed by automatic database cleanup. Expired IPs are hidden immediately; physical deletion may briefly lag. Sign-in history is limited to the latest 50 events within 90 days, with expired events removed by hourly cleanup. Login totals and first referral/campaign labels remain with your account until deletion. Historical login counts before tracking began are unknown.",
       "First referral attribution uses only the external referring domain and available UTM campaign labels from the first visit observed in your tab session. We do not store full referral URLs, raw user agents, screen resolution, or browser fingerprints. Do not put personal information in campaign tags.",
       "SeyPrompt does not request GPS permission or collect or store precise coordinates. Ordinary sign-in, purchases and browsing do not require location permission. There is currently no precise-location record or permission to withdraw in SeyPrompt.",
-      "Sign-in metadata is restricted to authorized administrators for account support and security. It is not included in public profile responses or intentionally sent to PostHog or Sentry. You can request deletion of stored sign-in metadata through support; account deletion also erases these metadata records."
+      "Sign-in metadata is restricted to authorized administrators for account support and security. It is not included in public profile responses or intentionally sent to PostHog. You can request deletion of stored sign-in metadata through support; account deletion also erases these metadata records."
     ]
   },
   {
@@ -56,7 +56,7 @@ const sections = [
     title: "Cookies, Sessions, And Analytics",
     items: [
       "Essential session storage keeps account, sign-in, saved prompt, cart, checkout, and security features working.",
-      "Optional analytics may run through Google Analytics, PostHog, Vercel Analytics, Vercel Speed Insights, and Sentry when the relevant site configuration is enabled.",
+      "Optional analytics may run through Google Analytics and PostHog when the relevant site configuration is enabled.",
       "For signed-in accounts, SeyPrompt retains prompt click activity for up to 90 days for review by authorized administrators. The click history contains the account ID, prompt ID, and click time. Browser Do Not Track settings are respected for this history.",
       "PostHog is configured with automatic capture and session recording disabled. Product events are sent with sensitive fields removed before capture.",
       "You can limit some cookies and tracking through browser settings or device controls. Browser controls are separate from a site-level consent preference."

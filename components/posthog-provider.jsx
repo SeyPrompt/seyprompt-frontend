@@ -53,7 +53,6 @@ export function SeyPromptPostHogProvider({ children }) {
         client.register({
           app: "seyprompt-frontend",
           environment:
-            process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ||
             process.env.NODE_ENV ||
             "development",
           release: process.env.NEXT_PUBLIC_APP_VERSION || "",

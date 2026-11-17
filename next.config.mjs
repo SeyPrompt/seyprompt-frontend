@@ -2,7 +2,6 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { withSentryConfig } from "@sentry/nextjs/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,6 +52,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: appVersion
   },
   typedRoutes: false,
+  serverExternalPackages: ["geoip-lite"],
   outputFileTracingRoot: __dirname,
   async redirects() {
     return [{ source: "/prompts", destination: "/", permanent: true }];
@@ -90,14 +90,4 @@ const nextConfig = {
   }
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT || "seyprompt-frontend",
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true,
-  widenClientFileUpload: true,
-  sourcemaps: {
-    deleteSourcemapsAfterUpload: true,
-  },
-  disableLogger: true,
-});
+export default nextConfig;
